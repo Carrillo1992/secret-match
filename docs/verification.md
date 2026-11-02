@@ -62,8 +62,8 @@ From the repo root: `docker compose up --build` starts PostgreSQL, the API and t
 
 For any ticket with user-visible behaviour:
 
-1. Start the stack and walk the ticket's main scenario end to end, as each role involved (admin, participant).
-2. Try the unhappy paths: invalid input, unauthorised access (another group's data, a participant doing admin actions), expired or invalid invite link.
+1. Start the stack and walk the ticket's main scenario end to end, as each role involved (Admin, Member).
+2. Try the unhappy paths: invalid input, unauthorised access (another group's data, a Member doing Admin actions), expired or invalid invite link.
 3. Check at **phone width (~375 px)** and desktop.
 4. Keyboard-only pass: everything reachable and operable, focus visible.
 5. For animations: turn on reduced motion in the OS and check that the alternative works.

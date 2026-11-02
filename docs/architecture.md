@@ -74,6 +74,8 @@ The module list is a starting point. Grilling and specs may merge or split modul
 
 - Stateless authentication with JWT bearer tokens. Spring Security resource-server style; no server sessions.
 - Passwords hashed with BCrypt (or Argon2).
+- **Sign-in methods: email + password, and Google.** Google uses the ID-token flow: the SPA gets an ID token from Google Identity Services and posts it to the API, which verifies it against Google's public keys and issues our own access/refresh tokens. No server-side OAuth redirect or session.
+- A User is identified by a unique email and may have a password, a Google link, or both. Signing in with Google links automatically to an existing User with the same email. Password registration requires email verification, so nobody can pre-claim someone else's email before they sign in with Google.
 - Authorisation is per group: being authenticated is not enough, the use case checks membership/role.
 - CORS allows only the SPA origin.
 - **Tokens: short-lived access token + refresh token.**
@@ -90,6 +92,8 @@ The module list is a starting point. Grilling and specs may merge or split modul
 - **Time**: all instants stored and transported in UTC. A `Clock` bean is injected where time matters.
 - **API docs**: springdoc OpenAPI at `/v3/api-docs` (Swagger UI only outside `prod`).
 - **Email delivery: sent within the request, after the transaction commits.** The use case publishes an application event and a `@TransactionalEventListener(phase = AFTER_COMMIT)` calls the `notification` port. An email is therefore never sent for a change that rolled back. A failed send is logged (without personal data) and does **not** fail or undo the business action. There are no automatic retries; an outbox table is the upgrade path if that becomes a problem.
+- **No scheduled jobs in the MVP.** The free host sleeps when idle, so an in-process scheduler (`@Scheduled`, Quartz) cannot be trusted to fire on time. Time-triggered emails (e.g. an Exchange Date reminder) are deferred. Upgrade path: a daily `@Scheduled` job that is idempotent (sends what is due and not yet sent, also on startup) plus an external scheduled ping (e.g. GitHub Actions) to wake the API.
+- **Language**: the UI and all emails are in Spanish only for the MVP. Code, docs and API identifiers stay in English.
 
 ## 3. Frontend
 

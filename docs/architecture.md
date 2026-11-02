@@ -54,7 +54,7 @@ infrastructure ──▶ application ──▶ domain
 | Module | Responsibility |
 |---|---|
 | `identity` | Accounts, registration/login, password hashing, JWT issuing |
-| `group` | Groups, membership, roles (admin/participant), invitation codes |
+| `group` | Groups, membership, the Admin role, Invite Links |
 | `wishlist` | Wish items, personal preferences, the "please don't" list |
 | `draw` | Exclusions, the draw engine, assignments and their lifecycle |
 | `mailbox` | Anonymous giver→receiver questions and answers |
@@ -65,7 +65,7 @@ The module list is a starting point. Grilling and specs may merge or split modul
 
 ### 2.3 Draw engine
 
-- A **pure domain service** in `draw.domain`: participants + exclusion rules + a random source in, a complete assignment (or a "no valid assignment exists" result) out. No I/O, no Spring.
+- A **pure domain service** in `draw.domain`: Members + Exclusions + a random source in, a complete set of Assignments (or a "no valid Draw exists" result) out. No I/O, no Spring.
 - Approach: randomised backtracking (Fisher–Yates shuffled candidate order) over a constraint graph, with pruning. The details belong to the draw spec.
 - Determinism: the random source is injected, so a fixed seed reproduces a draw in tests.
 - Running a draw and persisting its assignments happen in one transaction. A group cannot end up half-drawn.

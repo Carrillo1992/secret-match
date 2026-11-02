@@ -32,7 +32,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 - Immutable by default: `final` fields, `List.copyOf`, no setters on domain objects. State changes go through intention-revealing methods (`group.launchDraw(...)`, not `group.setStatus(...)`).
 - `Optional` only as a return type, never as a field or parameter.
 - Prefer `sealed` types + pattern-matching `switch` over `instanceof` chains or status-flag `if` cascades.
-- Identifiers are typed value objects (`GroupId`, `ParticipantId`) wrapping a `UUID`, not raw `UUID`/`Long` in domain signatures.
+- Identifiers are typed value objects (`GroupId`, `MemberId`) wrapping a `UUID`, not raw `UUID`/`Long` in domain signatures.
 
 ### 2.3 Application and web layer
 
@@ -65,7 +65,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 - **Backend**: JUnit 5 + AssertJ. Domain and draw engine get fast pure unit tests, with no Spring context. Use cases and persistence get integration tests against real PostgreSQL via Testcontainers. Mock only ports to external systems (e.g. the email sender), never domain objects.
 - Test names describe behaviour: `@DisplayName("assigns nobody to themselves")` or `assignsNobodyToThemselves()`.
 - Expected values come from an independent source (literal, worked example, spec), never recomputed the way the production code does.
-- **Draw engine**: besides example-based tests, run invariant checks over many seeds and generated groups (no self-assignment, every participant gives and receives exactly once, all exclusions respected, no 2-cycles when forbidden, impossible configurations reported as such).
+- **Draw engine**: besides example-based tests, run invariant checks over many seeds and generated groups (no self-assignment, every Member gives and receives exactly once, all Exclusions respected, no reciprocal pairs, impossible configurations reported as such).
 - **Frontend**: component tests for behaviour that matters to users (form validation, reveal flow, guards). No snapshot tests of whole templates.
 
 ## 5. API conventions

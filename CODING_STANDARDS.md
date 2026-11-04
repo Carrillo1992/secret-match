@@ -16,7 +16,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 - **Anonymity invariant.** No giver identity in any receiver-facing output: DTOs, emails, logs, exception messages, URLs. Logs never contain message bodies, wishlist contents, emails or tokens.
 - **Time and randomness are dependencies.** Code that reads the clock or draws random numbers receives a `Clock` / random generator, so tests are deterministic.
 
-## 2. Backend (Java 21 / Spring Boot 3)
+## 2. Backend (Java 21 / Spring Boot 4)
 
 ### 2.1 Structure
 

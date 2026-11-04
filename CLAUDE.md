@@ -1,6 +1,6 @@
 # SecretMatch
 
-Secret Santa / gift-exchange web app: invite-link groups, wishlists, an exclusion-aware draw engine, an anonymous giver→receiver mailbox and an interactive reveal. Monorepo: `backend/` (Java 21, Spring Boot 3, PostgreSQL) and `frontend/` (Angular, signals, Tailwind).
+Secret Santa / gift-exchange web app: invite-link groups, wishlists, an exclusion-aware draw engine, an anonymous giver→receiver mailbox and an interactive reveal. Monorepo: `backend/` (Java 21, Spring Boot 4, PostgreSQL) and `frontend/` (Angular, signals, Tailwind).
 
 Work follows Spec-Driven Development: specs and tickets are GitHub issues (see **Agent skills** below). Code without a spec or ticket behind it is the exception, not the rule.
 
@@ -24,6 +24,7 @@ These docs describe intent. If code and docs disagree, surface it instead of sil
 - **Anonymity is a product invariant**: a receiver must never be able to learn who their giver is. That covers API responses, logs, emails and error messages. Treat any leak as a critical bug.
 - **Secrets** only come from environment variables. Never commit them, not even in examples (`.env.example` holds placeholder values only).
 - Do not add dependencies, modules or abstractions the current ticket does not need.
+- When adding a dependency or framework, take the latest stable version from its registry (Maven Central, npm), never from memory.
 
 ## Agent skills
 

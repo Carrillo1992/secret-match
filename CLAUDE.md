@@ -1,6 +1,6 @@
 # SecretMatch
 
-Secret Santa / gift-exchange web app: invite-link groups, wishlists, an exclusion-aware draw engine, an anonymous giver→receiver mailbox and an interactive reveal. Monorepo: `backend/` (Java 21, Spring Boot 3, PostgreSQL) and `frontend/` (Angular, signals, Tailwind).
+Secret Santa / gift-exchange web app: invite-link groups, wishlists, an exclusion-aware draw engine, an anonymous giver→receiver mailbox and an interactive reveal. Monorepo: `backend/` (Java 21, Spring Boot 4, PostgreSQL) and `frontend/` (Angular, signals, Tailwind).
 
 Work follows Spec-Driven Development: specs and tickets are GitHub issues (see **Agent skills** below). Code without a spec or ticket behind it is the exception, not the rule.
 

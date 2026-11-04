@@ -8,19 +8,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@AutoConfigureRestTestClient
 @ActiveProfiles("test")
 @Import(TestPostgres.class)
 class ApiSkeletonIT {
@@ -29,7 +27,7 @@ class ApiSkeletonIT {
     private static final String SPA_ORIGIN = "http://spa.test";
 
     @Autowired
-    TestRestTemplate http;
+    RestTestClient http;
 
     @Autowired
     JdbcTemplate jdbc;
@@ -37,10 +35,9 @@ class ApiSkeletonIT {
     @Test
     @DisplayName("reports itself healthy, database included")
     void reportsItselfHealthy() {
-        ResponseEntity<String> response = http.getForEntity("/actuator/health", String.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).contains("\"status\":\"UP\"");
+        http.get().uri("/actuator/health").exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> assertThat(body).contains("\"status\":\"UP\""));
     }
 
     @Test
@@ -55,50 +52,43 @@ class ApiSkeletonIT {
     @Test
     @DisplayName("serves the OpenAPI document")
     void servesOpenApiDocument() {
-        ResponseEntity<String> response = http.getForEntity("/v3/api-docs", String.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).contains("\"openapi\":\"3.");
+        http.get().uri("/v3/api-docs").exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).value(body -> assertThat(body).contains("\"openapi\":\"3."));
     }
 
     @Test
     @DisplayName("serves Swagger UI outside prod")
     void servesSwaggerUiOutsideProd() {
-        ResponseEntity<String> response = http.getForEntity("/swagger-ui/index.html", String.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        http.get().uri("/swagger-ui/index.html").exchange().expectStatus().isOk();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/actuator","/actuator/info", "/actuator/env", "/actuator/metrics", "/actuator/flyway"})
+    @ValueSource(strings = {"/actuator", "/actuator/info", "/actuator/env", "/actuator/metrics", "/actuator/flyway"})
     @DisplayName("exposes no actuator endpoint other than health")
     void exposesNoActuatorEndpointOtherThanHealth(String path) {
-        ResponseEntity<String> response = http.getForEntity(path, String.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        http.get().uri(path).exchange().expectStatus().isNotFound();
     }
 
     @Test
     @DisplayName("lets the SPA origin read the health endpoint")
     void letsSpaOriginReadHealth() {
-        ResponseEntity<String> response = preflightHealthFrom(SPA_ORIGIN);
-
-        assertThat(response.getHeaders().getAccessControlAllowOrigin()).isEqualTo(SPA_ORIGIN);
+        preflightHealthFrom(SPA_ORIGIN)
+                .expectHeader().valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, SPA_ORIGIN);
     }
 
     @Test
     @DisplayName("rejects cross-origin requests from any other origin")
     void rejectsOtherOrigins() {
-        ResponseEntity<String> response = preflightHealthFrom("http://evil.test");
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(response.getHeaders().getAccessControlAllowOrigin()).isNull();
+        preflightHealthFrom("http://evil.test")
+                .expectStatus().isForbidden()
+                .expectHeader().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN);
     }
 
-    private ResponseEntity<String> preflightHealthFrom(String origin) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setOrigin(origin);
-        headers.setAccessControlRequestMethod(HttpMethod.GET);
-        return http.exchange("/actuator/health", HttpMethod.OPTIONS, new HttpEntity<>(headers), String.class);
+    private RestTestClient.ResponseSpec preflightHealthFrom(String origin) {
+        return http.options().uri("/actuator/health")
+                .header(HttpHeaders.ORIGIN, origin)
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+                .exchange();
     }
 }

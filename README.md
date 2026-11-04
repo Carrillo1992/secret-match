@@ -12,7 +12,7 @@ SecretMatch is a full-stack web app to organise Secret Santa / gift exchanges fo
 
 | Layer | Technology |
 |---|---|
-| Backend | Java 21, Spring Boot 3 (Web, Security + JWT, Data JPA, Validation), PostgreSQL |
+| Backend | Java 21, Spring Boot 4 (Web, Security + JWT, Data JPA, Validation), PostgreSQL |
 | Frontend | Angular (standalone components, signals), Tailwind CSS |
 | Email | Resend API |
 | Deploy | Docker (multi-stage), free-tier hosting |

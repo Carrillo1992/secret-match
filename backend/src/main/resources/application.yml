@@ -1,0 +1,23 @@
+# Shared by every profile. Every secret and URL comes from an environment variable;
+# see .env.example at the repo root for the full list.
+spring:
+  application:
+    name: secret-match-api
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      discovery:
+        enabled: false
+      cors:
+        allowed-origins: ${CORS_ALLOWED_ORIGIN}
+        allowed-methods: GET
+  endpoint:
+    health:
+      show-details: never

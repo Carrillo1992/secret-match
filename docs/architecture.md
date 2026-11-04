@@ -108,6 +108,7 @@ frontend/src/app
         └── data-access/  # API client + types + feature state (signals)
 ```
 
+- **Runtime config**: the SPA reads `/config.json` (`apiBaseUrl`) before bootstrapping, so one build works against any API origin. `public/config.json` serves `ng serve`; the Docker image rewrites it from `API_BASE_URL` at container start; a static host writes it in its build step.
 - Routes are lazy-loaded per feature.
 - An HTTP interceptor attaches the JWT. Route guards protect authenticated and admin-only pages.
 - Feature state lives in signal-based services in `data-access`. There is no global store library unless a spec proves the need.

@@ -54,9 +54,9 @@ Run from `frontend/`:
 | `npm run build` | Production build compiles with strict TypeScript |
 | `npm run api:generate` + `git diff --exit-code src/app/core/api/generated` | Generated API client matches the backend's OpenAPI document (needed whenever the API changed) |
 
-### Whole stack ⏳
+### Whole stack
 
-From the repo root: `docker compose up --build` starts PostgreSQL, the API and the SPA locally. Use it for manual and end-to-end checks.
+From the repo root: `docker compose up --build` starts PostgreSQL, the API and the SPA locally (SPA on http://localhost:4200, API on http://localhost:8080). Use it for manual and end-to-end checks. If a port is taken, override it in `.env` (`API_PORT`, `SPA_PORT`, `POSTGRES_PORT`; see `.env.example`).
 
 ## 3. Manual verification (UI and flows)
 

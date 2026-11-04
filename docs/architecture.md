@@ -113,7 +113,7 @@ frontend/src/app
 - An HTTP interceptor attaches the JWT. Route guards protect authenticated and admin-only pages.
 - Feature state lives in signal-based services in `data-access`. There is no global store library unless a spec proves the need.
 - The visual design comes from the design system (Claude Design). Its tokens are mirrored in the Tailwind config.
-- **API types are generated from the OpenAPI document**, never written by hand. The generated code lives in one folder (e.g. `src/app/core/api/generated`), is committed, and is never edited manually. Feature `data-access` services wrap it. Regenerating after an API change is part of the same ticket, and CI fails if the committed client is out of date with the backend's spec.
+- **API types are generated from the OpenAPI document**, never written by hand. The generated code lives in one folder (e.g. `src/app/core/api/generated`), is committed, and is never edited manually. Feature `data-access` services wrap it. Regenerating after an API change is part of the same ticket, and CI fails if the committed client is out of date with the backend's spec. Exception: Actuator (`/actuator/health`) is not in the OpenAPI document, so its one response type is hand-written next to the code that calls it.
 
 ## 4. Repository and delivery
 

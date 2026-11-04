@@ -14,17 +14,14 @@
         <p class="rounded-full bg-red-100 px-4 py-1 font-semibold text-red-800">
           No se puede conectar con la API
         </p>
+        <button
+          type="button"
+          class="rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+          (click)="health.recheck()"
+        >
+          Reintentar
+        </button>
       }
     }
   </div>
-
-  @if (health.status() === 'down') {
-    <button
-      type="button"
-      class="rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-      (click)="health.recheck()"
-    >
-      Reintentar
-    </button>
-  }
 </main>

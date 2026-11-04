@@ -8,14 +8,16 @@ export interface AppConfig {
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG');
 
-export async function loadAppConfig(url = '/config.json'): Promise<AppConfig> {
-  const response = await fetch(url);
+const CONFIG_URL = '/config.json';
+
+export async function loadAppConfig(): Promise<AppConfig> {
+  const response = await fetch(CONFIG_URL);
   if (!response.ok) {
-    throw new Error(`Could not load ${url}: HTTP ${response.status}`);
+    throw new Error(`Could not load ${CONFIG_URL}: HTTP ${response.status}`);
   }
   const config = (await response.json()) as Partial<AppConfig>;
   if (typeof config.apiBaseUrl !== 'string' || config.apiBaseUrl === '') {
-    throw new Error(`${url} must define a non-empty "apiBaseUrl"`);
+    throw new Error(`${CONFIG_URL} must define a non-empty "apiBaseUrl"`);
   }
   return { apiBaseUrl: config.apiBaseUrl.replace(/\/+$/, '') };
 }

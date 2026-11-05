@@ -1,0 +1,54 @@
+# Runs the frontend checks of docs/verification.md §2 on PRs that touch the frontend.
+# backend/openapi.json is included because the generated client is built from it:
+# a PR that changes the API contract must also carry the regenerated client.
+name: Frontend
+
+on:
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "backend/openapi.json"
+      - ".github/workflows/frontend.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Generated API client matches backend/openapi.json
+        run: |
+          npm run api:generate
+          if [ -n "$(git status --porcelain -- src/app/core/api/generated)" ]; then
+            git status --short -- src/app/core/api/generated
+            git diff -- src/app/core/api/generated
+            echo "::error::The committed API client is stale. Run 'npm run api:generate' in frontend/ and commit the result."
+            exit 1
+          fi
+
+      - name: Lint and formatting
+        run: npm run lint
+
+      - name: Tests with coverage
+        run: npm test -- --watch=false
+
+      - name: Production build
+        run: npm run build

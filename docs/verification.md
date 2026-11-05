@@ -2,8 +2,6 @@
 
 How to prove a ticket is done. Every implementer, human or agent, runs these checks **before** declaring a ticket done or opening a PR, and reports the result in the PR.
 
-> Commands marked ⏳ become available once the corresponding scaffolding ticket lands. Until then, skip them and say so in the PR.
-
 ## 1. Definition of Done
 
 A ticket is done when **all** of these are true:
@@ -47,7 +45,7 @@ In the backend the exclusions are by class name (see the JaCoCo plugin in `backe
 
 Coverage is a floor, not a goal. A test written only to raise the number (no meaningful assertion, or one that tests implementation details) is rejected in review.
 
-### Frontend ⏳
+### Frontend
 
 Run from `frontend/`:
 
@@ -56,7 +54,7 @@ Run from `frontend/`:
 | `npm run lint` | ESLint (+ Prettier check) |
 | `npm test -- --watch=false` | Unit and component tests |
 | `npm run build` | Production build compiles with strict TypeScript |
-| `npm run api:generate` + `git diff --exit-code src/app/core/api/generated` | Generated API client matches the committed OpenAPI snapshot `backend/openapi.json` |
+| `npm run api:generate` + `git status --porcelain src/app/core/api/generated` (must print nothing) | Generated API client matches the committed OpenAPI snapshot `backend/openapi.json` |
 
 ### Whole stack
 
@@ -83,6 +81,13 @@ For any change touching assignments, the mailbox, notifications or their APIs:
 - [ ] Logs and error messages contain no assignment pairs or message bodies.
 - [ ] There is an automated test asserting the receiver-facing response shape for the changed endpoint.
 
-## 5. Continuous integration ⏳
+## 5. Continuous integration
 
-GitHub Actions runs the section 2 checks on every PR, filtered by path (`backend/**`, `frontend/**`). A PR is mergeable only when CI is green. Local verification is still required: CI confirms it, it does not replace it.
+GitHub Actions runs the section 2 checks on every PR, filtered by path (`.github/workflows/`):
+
+| Workflow | Runs when the PR touches | Checks |
+|---|---|---|
+| `backend.yml` | `backend/**` | Spotless check, `./mvnw verify` |
+| `frontend.yml` | `frontend/**`, `backend/openapi.json` | Generated-client drift, lint, tests with coverage, production build |
+
+The frontend workflow also runs on snapshot changes because the generated client is built from it: a PR that changes the API contract must carry the regenerated client too. A PR is mergeable only when CI is green. Local verification is still required: CI confirms it, it does not replace it.

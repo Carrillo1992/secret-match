@@ -11,3 +11,4 @@ loadAppConfig()
       'SecretMatch no se ha podido iniciar. Recarga la página en unos minutos.';
     console.error(err);
   });
+// throwaway CI probe

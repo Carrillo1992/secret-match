@@ -4,3 +4,11 @@ management:
     web:
       cors:
         allowed-origins: http://spa.test
+
+secretmatch:
+  mail:
+    from-address: no-reply@secretmatch.test
+    app-base-url: http://spa.test
+    # Nothing listens here: tests that send replace the EmailSender or start their own Mailpit.
+    mailpit:
+      url: http://localhost:1

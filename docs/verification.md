@@ -58,7 +58,7 @@ Run from `frontend/` with Node 24 (the version CI and the frontend image use):
 
 ### Whole stack
 
-From the repo root: `docker compose up --build` starts PostgreSQL, the API and the SPA locally (SPA on http://localhost:4200, API on http://localhost:8080). Use it for manual and end-to-end checks. If a port is taken, override it in `.env` (`API_PORT`, `SPA_PORT`, `POSTGRES_PORT`; see `.env.example`).
+From the repo root: `docker compose up --build` starts PostgreSQL, the API, the SPA and the local mail catcher (SPA on http://localhost:4200, API on http://localhost:8080, Mailpit on http://localhost:8025). Use it for manual and end-to-end checks; every email the API sends shows up in Mailpit. If a port is taken, override it in `.env` (`API_PORT`, `SPA_PORT`, `POSTGRES_PORT`, `MAILPIT_PORT`; see `.env.example`).
 
 ## 3. Manual verification (UI and flows)
 

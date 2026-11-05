@@ -20,9 +20,9 @@ A ticket is done when **all** of these are true:
 
 ## 2. Automated checks
 
-### Backend ⏳
+### Backend
 
-Run from `backend/`:
+Run from `backend/` with a JDK 21 as `JAVA_HOME` (`./mvnw spotless:apply` fixes formatting):
 
 | Command | What it covers |
 |---|---|
@@ -40,6 +40,8 @@ The build fails below these floors: JaCoCo `check` goal in the backend, the test
 | Frontend, overall | 80 % |
 
 Excluded from measurement, because testing them adds no confidence: the application `main` class, Spring `@Configuration` classes, plain DTOs/records without logic, the generated API client, and frontend bootstrap files (`main.ts`, `app.config.ts`).
+
+In the backend the exclusions are by class name (see the JaCoCo plugin in `backend/pom.xml`): `SecretMatchApplication`, `*Configuration`, and web DTOs named `*Request` / `*Response`. Name classes accordingly, and keep logic out of anything that matches those patterns.
 
 Coverage is a floor, not a goal. A test written only to raise the number (no meaningful assertion, or one that tests implementation details) is rejected in review.
 

@@ -39,7 +39,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 - One **use case** = one application service method with a clear command/query in and result out. Transactions (`@Transactional`) live here, not in controllers or the domain.
 - Controllers are thin: map request DTO → command, call the use case, map result → response DTO. No business logic, never return entities.
 - Request DTOs are validated with Jakarta Validation (`@Valid`, `@NotBlank`…).
-- Errors: domain exceptions are translated in one `@RestControllerAdvice` into RFC 9457 `ProblemDetail` responses. No stack traces in responses.
+- Errors: domain exceptions are translated in one `@RestControllerAdvice` into RFC 9457 `ProblemDetail` responses. No stack traces in responses. A domain exception extends `shared.domain.DomainException` with a kebab-case `code`; it is answered as `422` with `type` `urn:secretmatch:problem:<code>` and its message as `detail`, so the message must be safe to show (anonymity invariant). Any other exception is answered as a `500` problem with a generic `detail` and logged in full.
 - Authorisation checks ("is this user an admin of this group?") happen in the application layer, not only in the controller.
 
 ### 2.4 Persistence

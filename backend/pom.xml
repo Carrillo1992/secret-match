@@ -161,7 +161,7 @@
                                 <rule>
                                     <element>PACKAGE</element>
                                     <includes>
-                                        <include>com.secretmatch.draw.domain</include>
+                                        <include>com.secretmatch.draw.domain*</include>
                                     </includes>
                                     <limits>
                                         <limit>

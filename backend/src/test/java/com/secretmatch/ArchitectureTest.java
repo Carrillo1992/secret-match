@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 @AnalyzeClasses(packages = "com.secretmatch", importOptions = DoNotIncludeTests.class)
 class ArchitectureTest {
 
-    private static final Pattern MODULE_LAYER = Pattern.compile("com\\.secretmatch\\.(\\w+)\\.(\\w+)(\\..*)?");
+    private static final Pattern MODULE_PACKAGE = Pattern.compile("com\\.secretmatch\\.(\\w+)\\.(\\w+)(\\..*)?");
     private static final Pattern APPLICATION_API = Pattern.compile("com\\.secretmatch\\.\\w+\\.application(\\..*)?");
     private static final Pattern SHARED_DOMAIN = Pattern.compile("com\\.secretmatch\\.shared\\.domain(\\..*)?");
 
@@ -78,7 +78,7 @@ class ArchitectureTest {
     }
 
     private static Optional<String> moduleOf(JavaClass javaClass) {
-        Matcher matcher = MODULE_LAYER.matcher(javaClass.getPackageName());
+        Matcher matcher = MODULE_PACKAGE.matcher(javaClass.getPackageName());
         return matcher.matches() ? Optional.of(matcher.group(1)) : Optional.empty();
     }
 

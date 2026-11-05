@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * Turns every error into an RFC 9457 problem: Spring MVC's own exceptions (unknown route, bad request,
- * unsupported method…) through {@link ResponseEntityExceptionHandler}, and domain exceptions as 422 with a
- * stable {@code type} per error kind.
+ * Answers with an RFC 9457 problem for Spring MVC's own exceptions (unknown route, bad request, unsupported
+ * method…) through {@link ResponseEntityExceptionHandler}, and for domain exceptions as 422 with a stable
+ * {@code type} per error kind. Other unexpected exceptions still reach Spring Boot's default error handling.
  */
 @RestControllerAdvice
 class ProblemDetailAdvice extends ResponseEntityExceptionHandler {

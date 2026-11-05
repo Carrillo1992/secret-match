@@ -2,6 +2,8 @@ package com.secretmatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Clock;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.client.RestTestClient;
@@ -32,12 +35,19 @@ class ApiSkeletonIT {
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    Clock clock;
+
     @Test
     @DisplayName("reports itself healthy, database included")
     void reportsItselfHealthy() {
-        http.get().uri("/actuator/health").exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class).value(body -> assertThat(body).contains("\"status\":\"UP\""));
+        http.get()
+                .uri("/actuator/health")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(String.class)
+                .value(body -> assertThat(body).contains("\"status\":\"UP\""));
     }
 
     @Test
@@ -52,9 +62,13 @@ class ApiSkeletonIT {
     @Test
     @DisplayName("serves the OpenAPI document")
     void servesOpenApiDocument() {
-        http.get().uri("/v3/api-docs").exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class).value(body -> assertThat(body).contains("\"openapi\":\"3."));
+        http.get()
+                .uri("/v3/api-docs")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(String.class)
+                .value(body -> assertThat(body).contains("\"openapi\":\"3."));
     }
 
     @Test
@@ -73,20 +87,45 @@ class ApiSkeletonIT {
     @Test
     @DisplayName("lets the SPA origin read the health endpoint")
     void letsSpaOriginReadHealth() {
-        preflightHealthFrom(SPA_ORIGIN)
-                .expectHeader().valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, SPA_ORIGIN);
+        preflightHealthFrom(SPA_ORIGIN).expectHeader().valueEquals(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, SPA_ORIGIN);
     }
 
     @Test
     @DisplayName("rejects cross-origin requests from any other origin")
     void rejectsOtherOrigins() {
         preflightHealthFrom("http://evil.test")
-                .expectStatus().isForbidden()
-                .expectHeader().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN);
+                .expectStatus()
+                .isForbidden()
+                .expectHeader()
+                .doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN);
+    }
+
+    @Test
+    @DisplayName("answers an unknown route with an RFC 9457 problem")
+    void answersUnknownRouteWithProblem() {
+        http.get()
+                .uri("/api/v1/no-such-route")
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectHeader()
+                .contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+                .expectBody()
+                .jsonPath("$.status")
+                .isEqualTo(404)
+                .jsonPath("$.title")
+                .isEqualTo("Not Found");
+    }
+
+    @Test
+    @DisplayName("provides a UTC clock for injection")
+    void providesUtcClock() {
+        assertThat(clock.getZone()).isEqualTo(ZoneOffset.UTC);
     }
 
     private RestTestClient.ResponseSpec preflightHealthFrom(String origin) {
-        return http.options().uri("/actuator/health")
+        return http.options()
+                .uri("/actuator/health")
                 .header(HttpHeaders.ORIGIN, origin)
                 .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
                 .exchange();

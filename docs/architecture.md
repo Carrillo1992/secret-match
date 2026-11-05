@@ -47,7 +47,7 @@ infrastructure ──▶ application ──▶ domain
 ```
 
 - `domain` depends on nothing outside the JDK.
-- A module uses another module only through that module's `application` API, never its repositories or JPA entities.
+- A module uses another module only through that module's `application` API, never its repositories or JPA entities. The one exception is `shared.domain` (e.g. `DomainException`), which any module may use.
 
 ### 2.2 Modules (initial cut)
 

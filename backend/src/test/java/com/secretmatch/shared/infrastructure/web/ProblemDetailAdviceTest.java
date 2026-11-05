@@ -33,8 +33,24 @@ class ProblemDetailAdviceTest {
         assertThat(result).bodyJson().doesNotHavePath("$.trace");
     }
 
+    @Test
+    @DisplayName("answers an unexpected error with a 500 problem that hides the exception message")
+    void answersUnexpectedErrorWithOpaqueProblem() throws Exception {
+        MvcTestResult result = mvc.get().uri("/crash").exchange();
+
+        assertThat(result).hasStatus(500).hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(result).bodyJson().extractingPath("$.status").isEqualTo(500);
+        assertThat(result).bodyJson().extractingPath("$.detail").isEqualTo("An unexpected error occurred.");
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("internal secret");
+    }
+
     @RestController
     static class RuleBreakingController {
+
+        @GetMapping("/crash")
+        String crash() {
+            throw new IllegalStateException("internal secret");
+        }
 
         @GetMapping("/rule-breaker")
         String breakRule() {

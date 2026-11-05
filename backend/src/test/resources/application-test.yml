@@ -1,0 +1,6 @@
+# Integration tests. The datasource comes from Testcontainers (@ServiceConnection).
+management:
+  endpoints:
+    web:
+      cors:
+        allowed-origins: http://spa.test

@@ -1,0 +1,5 @@
+# Developer machine / docker compose. Swagger UI stays on (springdoc default).
+management:
+  endpoint:
+    health:
+      show-details: always

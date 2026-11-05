@@ -26,6 +26,26 @@ secret-match/
 └── docs/       # architecture, ADRs, verification guide
 ```
 
+## Running locally
+
+Requires Docker. From the repo root:
+
+```bash
+cp .env.example .env    # optional: compose falls back to the same local placeholders
+docker compose up --build
+```
+
+Then open http://localhost:4200. The landing page shows "API OK" when the API is reachable.
+
+Working on one side only:
+
+| | Command (from the folder) | Needs |
+|---|---|---|
+| API | `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` | Java 21, PostgreSQL, the API variables in `.env.example` exported |
+| API tests | `./mvnw verify` | Java 21, Docker (Testcontainers) |
+| SPA | `npm start` | Node 22.22+/24.15+, API on http://localhost:8080 (`public/config.json`) |
+| SPA tests | `npm test -- --watch=false` | Node |
+
 ## License
 
 TBD

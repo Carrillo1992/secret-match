@@ -3,3 +3,9 @@ management:
   endpoint:
     health:
       show-details: always
+
+secretmatch:
+  mail:
+    # Local mail catcher (Mailpit): every email lands there, nothing is really delivered.
+    mailpit:
+      url: ${MAILPIT_URL}

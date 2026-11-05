@@ -62,3 +62,4 @@ export class Api {
     return firstValueFrom(obs);
   }
 }
+// stale: hand edit to the generated client

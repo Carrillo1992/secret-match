@@ -28,3 +28,4 @@ springdoc:
   show-actuator: true
   # Stable key order keeps the committed openapi.json snapshot diff-friendly.
   writer-with-order-by-keys: true
+# throwaway CI probe

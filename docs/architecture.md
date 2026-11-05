@@ -113,7 +113,8 @@ frontend/src/app
 - An HTTP interceptor attaches the JWT. Route guards protect authenticated and admin-only pages.
 - Feature state lives in signal-based services in `data-access`. There is no global store library unless a spec proves the need.
 - The visual design comes from the design system (Claude Design). Its tokens are mirrored in the Tailwind config.
-- **API types are generated from the OpenAPI document**, never written by hand. The generated code lives in one folder (e.g. `src/app/core/api/generated`), is committed, and is never edited manually. Feature `data-access` services wrap it. Regenerating after an API change is part of the same ticket, and CI fails if the committed client is out of date with the backend's spec. Exception: Actuator (`/actuator/health`) is not in the OpenAPI document, so its one response type is hand-written next to the code that calls it.
+- **API calls go through a client generated from the OpenAPI document**, never written by hand. The contract is `backend/openapi.json`, a committed snapshot of `/v3/api-docs` that a backend integration test keeps identical to what the API serves. `npm run api:generate` (ng-openapi-gen) turns it into `src/app/core/api/generated`, which is committed and never edited manually. Feature `data-access` services wrap it. Regenerating after an API change (snapshot and client) is part of the same ticket, and CI fails if the committed client is out of date with the snapshot.
+- Actuator's `/actuator/health` is part of the OpenAPI document too (`springdoc.show-actuator`), with its response narrowed to `{ status }`, so even the health check uses the generated client.
 
 ## 4. Repository and delivery
 

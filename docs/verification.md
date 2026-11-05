@@ -29,6 +29,8 @@ Run from `backend/` with a JDK 21 as `JAVA_HOME` (`./mvnw spotless:apply` fixes 
 | `./mvnw spotless:check` | Formatting |
 | `./mvnw verify` | Compile, unit tests, integration tests (Testcontainers PostgreSQL: Docker must be running), ArchUnit layer rules, coverage report |
 
+`./mvnw verify` also fails when `backend/openapi.json` no longer matches the OpenAPI document the API serves. After an intended API change, refresh it with `./mvnw verify -Dopenapi.snapshot.update=true`, then run `npm run api:generate` in `frontend/` and commit both.
+
 ### Coverage floors
 
 The build fails below these floors: JaCoCo `check` goal in the backend, the test runner's coverage thresholds in the frontend.
@@ -54,7 +56,7 @@ Run from `frontend/`:
 | `npm run lint` | ESLint (+ Prettier check) |
 | `npm test -- --watch=false` | Unit and component tests |
 | `npm run build` | Production build compiles with strict TypeScript |
-| `npm run api:generate` + `git diff --exit-code src/app/core/api/generated` | Generated API client matches the backend's OpenAPI document (needed whenever the API changed) |
+| `npm run api:generate` + `git diff --exit-code src/app/core/api/generated` | Generated API client matches the committed OpenAPI snapshot `backend/openapi.json` |
 
 ### Whole stack
 

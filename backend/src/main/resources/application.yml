@@ -21,3 +21,10 @@ management:
   endpoint:
     health:
       show-details: never
+
+springdoc:
+  # Health is in the OpenAPI document so the SPA reaches it through the generated client.
+  # Only exposed actuator endpoints are documented (health, see above).
+  show-actuator: true
+  # Stable key order keeps the committed openapi.json snapshot diff-friendly.
+  writer-with-order-by-keys: true

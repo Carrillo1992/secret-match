@@ -47,7 +47,7 @@ Coverage is a floor, not a goal. A test written only to raise the number (no mea
 
 ### Frontend
 
-Run from `frontend/`:
+Run from `frontend/` with Node 24 (the version CI and the frontend image use):
 
 | Command | What it covers |
 |---|---|
@@ -87,7 +87,7 @@ GitHub Actions runs the section 2 checks on every PR, filtered by path (`.github
 
 | Workflow | Runs when the PR touches | Checks |
 |---|---|---|
-| `backend.yml` | `backend/**` | Spotless check, `./mvnw verify` |
-| `frontend.yml` | `frontend/**`, `backend/openapi.json` | Generated-client drift, lint, tests with coverage, production build |
+| `backend.yml` | `backend/**`, the workflow file itself | Spotless check, `./mvnw verify` |
+| `frontend.yml` | `frontend/**`, `backend/openapi.json`, the workflow file itself | Generated-client drift, lint, tests with coverage, production build |
 
-The frontend workflow also runs on snapshot changes because the generated client is built from it: a PR that changes the API contract must carry the regenerated client too. A PR is mergeable only when CI is green. Local verification is still required: CI confirms it, it does not replace it.
+The frontend workflow also runs on snapshot changes because the generated client is built from it: a PR that changes the API contract must carry the regenerated client too. A PR is mergeable only when CI is green. Today that is a review rule, not a GitHub setting: both workflows are path-filtered, and a required status check that a PR skips stays "Expected" forever and blocks the merge. Making it enforced needs a check that always runs (for example a gate job), which is a separate decision. Local verification is still required: CI confirms it, it does not replace it.

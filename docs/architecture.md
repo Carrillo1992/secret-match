@@ -58,7 +58,7 @@ infrastructure ──▶ application ──▶ domain
 | `wishlist` | Wish items, personal preferences, the "please don't" list |
 | `draw` | Exclusions, the draw engine, assignments and their lifecycle |
 | `mailbox` | Anonymous giver→receiver questions and answers |
-| `notification` | Email composition and sending (Resend adapter) |
+| `notification` | Email delivery: the shared Spanish template and sending (Resend adapter). The module that triggers an email writes its text (ADR 0003) |
 | `shared` | Truly cross-cutting bits only (typed id base, error model, clock config) |
 
 The module list is a starting point. Grilling and specs may merge or split modules, and if they do, update this table.
@@ -91,9 +91,22 @@ The module list is a starting point. Grilling and specs may merge or split modul
 - **Config**: Spring profiles (`local`, `test`, `prod`) and environment variables for every secret and URL.
 - **Time**: all instants stored and transported in UTC. A `Clock` bean is injected where time matters.
 - **API docs**: springdoc OpenAPI at `/v3/api-docs` (Swagger UI only outside `prod`).
-- **Email delivery: sent within the request, after the transaction commits.** The use case publishes an application event and a `@TransactionalEventListener(phase = AFTER_COMMIT)` calls the `notification` port. An email is therefore never sent for a change that rolled back. A failed send is logged (without personal data) and does **not** fail or undo the business action. There are no automatic retries; an outbox table is the upgrade path if that becomes a problem. Concretely, a use case publishes `notification.application.EmailRequested`; the `EmailSender` port is backed by Resend in `prod` and by a local mail catcher (Mailpit, in the compose stack) in every other profile, so nothing is really delivered outside `prod`.
+- **Email delivery: sent within the request, after the transaction commits.** The use case publishes an application event and a `@TransactionalEventListener(phase = AFTER_COMMIT)` calls the `notification` port. An email is therefore never sent for a change that rolled back. A failed send is logged (without personal data) and does **not** fail or undo the business action. There are no automatic retries; an outbox table is the upgrade path if that becomes a problem. The `EmailSender` port is backed by Resend in `prod` and by a local mail catcher (Mailpit, in the compose stack) in every other profile, so nothing is really delivered outside `prod`. See 2.6 for how to add an email.
 - **No scheduled jobs in the MVP.** The free host sleeps when idle, so an in-process scheduler (`@Scheduled`, Quartz) cannot be trusted to fire on time. Time-triggered emails (e.g. an Exchange Date reminder) are deferred. Upgrade path: a daily `@Scheduled` job that is idempotent (sends what is due and not yet sent, also on startup) plus an external scheduled ping (e.g. GitHub Actions) to wake the API.
 - **Language**: the UI and all emails are in Spanish only for the MVP. Code, docs and API identifiers stay in English.
+
+### 2.6 Adding an email
+
+Every email in the catalogue (#6) goes through the same path. The module that triggers it writes the text, and `notification` owns the layout and the sending (ADR 0003).
+
+1. **Publish from the use case, inside its transaction.** Inject `ApplicationEventPublisher` and publish a `notification.application.EmailRequested(recipient, subject, message, linkPath)` from the `@Transactional` use case method. It goes out only after the commit. Published outside a transaction it is sent right away, because nothing can roll back.
+2. **Write the text in Spanish, plain text only.** `subject` and `message` are plain text: a blank line separates paragraphs, and the template escapes everything. Do not add a greeting from a person, a signature or a call-to-action button: the base template already adds the SecretMatch sender, an "Abrir SecretMatch" link and a footer. `linkPath` is a path inside the SPA (e.g. `/groups/{groupId}`), never a full URL.
+3. **Check anonymity.** An email to a Receiver must not reveal the Giver: no name, email or anything that could identify them, not even in the subject (section 4 of `docs/verification.md`).
+4. **Never log emails.** Do not log the event, the recipient or the text. `EmailRequested` and `OutgoingEmail` print as `[redacted]`. Adapters report failures only as `EmailDeliveryException` with a message that is safe to log (e.g. the HTTP status).
+5. **Test it.**
+   - In the use case's integration test, replace `EmailSender` with a recording fake (see `EmailDeliveryIT`) and assert the recipient and subject.
+   - For a Receiver-facing email, also assert that the Giver's identity is absent.
+   - In the running stack, check the email in Mailpit (http://localhost:8025).
 
 ## 3. Frontend
 

@@ -1,12 +1,8 @@
-import { InjectionToken } from '@angular/core';
-
 /** Deployment-specific settings, read from `/config.json` before the app boots. */
 export interface AppConfig {
   /** Origin of the REST API, without a trailing slash, e.g. `http://localhost:8080`. */
   readonly apiBaseUrl: string;
 }
-
-export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG');
 
 const CONFIG_URL = '/config.json';
 

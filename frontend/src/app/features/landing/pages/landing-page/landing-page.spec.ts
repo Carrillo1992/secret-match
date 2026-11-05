@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { APP_CONFIG } from '../../../../core/config/app-config';
+import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { LandingPage } from './landing-page';
 
 const HEALTH_URL = 'http://api.test/actuator/health';
@@ -15,7 +15,7 @@ describe('LandingPage', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: APP_CONFIG, useValue: { apiBaseUrl: 'http://api.test' } },
+        provideApiConfiguration('http://api.test'),
       ],
     });
     api = TestBed.inject(HttpTestingController);

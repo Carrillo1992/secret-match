@@ -1,0 +1,51 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "OpenAPI definition",
+    "version" : "v0"
+  },
+  "tags" : [ {
+    "description" : "Monitor and interact",
+    "externalDocs" : {
+      "description" : "Spring Boot Actuator Web API Documentation",
+      "url" : "https://docs.spring.io/spring-boot/docs/current/actuator-api/html/"
+    },
+    "name" : "Actuator"
+  } ],
+  "paths" : {
+    "/actuator/health" : {
+      "get" : {
+        "operationId" : "health",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Health"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Actuator web endpoint 'health'",
+        "tags" : [ "Actuator" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "Health" : {
+        "type" : "object",
+        "description" : "Overall API health as reported by Actuator. Only status is part of the contract.",
+        "properties" : {
+          "status" : {
+            "type" : "string",
+            "description" : "UP when the API and its database work."
+          }
+        },
+        "required" : [ "status" ]
+      }
+    }
+  }
+}

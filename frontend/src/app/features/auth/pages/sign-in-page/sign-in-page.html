@@ -1,0 +1,73 @@
+<app-sheet-layout>
+  <h1 class="font-display text-3xl font-bold tracking-tight">Inicia sesión</h1>
+  <p class="mt-1.5 text-ink-muted">Entra para ver tus grupos.</p>
+
+  <form class="mt-6 flex flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="flex flex-col gap-1.5">
+      <label for="sign-in-email" class="font-bold">Correo electrónico</label>
+      <input
+        id="sign-in-email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        appField
+        [attr.aria-invalid]="showsError(form.controls.email) || null"
+        [attr.aria-describedby]="showsError(form.controls.email) ? 'sign-in-email-error' : null"
+      />
+      @if (showsError(form.controls.email)) {
+        <p id="sign-in-email-error" class="text-sm font-semibold text-danger">
+          Escribe tu correo electrónico.
+        </p>
+      }
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="sign-in-password" class="font-bold">Contraseña</label>
+      <input
+        id="sign-in-password"
+        type="password"
+        formControlName="password"
+        autocomplete="current-password"
+        appField
+        [attr.aria-invalid]="showsError(form.controls.password) || null"
+        [attr.aria-describedby]="
+          showsError(form.controls.password) ? 'sign-in-password-error' : null
+        "
+      />
+      @if (showsError(form.controls.password)) {
+        <p id="sign-in-password-error" class="text-sm font-semibold text-danger">
+          Escribe tu contraseña.
+        </p>
+      }
+    </div>
+
+    @if (submitError(); as error) {
+      <p
+        role="alert"
+        class="rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+      >
+        @switch (error) {
+          @case ('invalid-credentials') {
+            El correo o la contraseña no son correctos.
+          }
+          @case ('email-not-verified') {
+            Aún no has confirmado tu correo. Abre el enlace que te enviamos al registrarte.
+          }
+          @default {
+            No hemos podido iniciar sesión. Inténtalo de nuevo en un momento.
+          }
+        }
+      </p>
+    }
+
+    <button type="submit" appButton class="mt-2" [disabled]="sending()">
+      <svg lucideLogIn [size]="20"></svg>
+      {{ sending() ? 'Entrando…' : 'Entrar' }}
+    </button>
+  </form>
+
+  <p class="mt-6 text-center">
+    ¿No tienes cuenta?
+    <a routerLink="/sign-up" appLink>Crea una</a>
+  </p>
+</app-sheet-layout>

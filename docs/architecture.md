@@ -80,7 +80,9 @@ The module list is a starting point. Grilling and specs may merge or split modul
 - CORS allows only the SPA origin.
 - **Tokens: short-lived access token + refresh token.**
   - Access token: JWT, ~15 min lifetime, sent as `Authorization: Bearer`, kept in memory by the SPA (not in `localStorage`).
-  - Refresh token: opaque random value, ~30 days, delivered in an `HttpOnly`, `Secure` cookie scoped to the refresh endpoint. Stored **hashed** in the database so it can be revoked (logout, password change).
+  - Refresh token: opaque random value, ~30 days, delivered in an `HttpOnly`, `Secure` cookie scoped to the session endpoints (`/api/v1/sessions`: refresh and sign-out). Stored **hashed** in the database so it can be revoked (logout, password change). Every refresh token belongs to one session (the token family started by one sign-in); signing out revokes that session only.
+  - Endpoints: `POST /api/v1/sessions` (sign in), `POST /api/v1/sessions/refresh`, `DELETE /api/v1/sessions/current` (sign out). A request without a valid access token gets a `401` problem (`urn:secretmatch:problem:unauthenticated`); a refresh that fails is the `session-expired` domain problem.
+  - The JWT is signed with HS256 using `JWT_SIGNING_KEY` (Base64, at least 256 bits). The API issues and checks its own tokens, so no key pair or external issuer is needed.
   - Rotation: every refresh issues a new refresh token and invalidates the old one. Reuse of an invalidated token revokes the whole token family.
   - The SPA and API live on different domains on the free hosts, so the cookie needs `SameSite=None`. A custom domain shared by both would allow `SameSite=Lax`/`Strict` later.
 
@@ -124,6 +126,7 @@ frontend/src/app
 - **Runtime config**: the SPA reads `/config.json` (`apiBaseUrl`) before bootstrapping, so one build works against any API origin. `public/config.json` serves `ng serve`; the Docker image rewrites it from `API_BASE_URL` at container start; a static host writes it in its build step.
 - Routes are lazy-loaded per feature.
 - An HTTP interceptor attaches the JWT. Route guards protect authenticated and admin-only pages.
+- The session lives in `core/auth` (`AuthSession`): the access token stays in a signal in memory. After a reload the guard restores it with one silent refresh. On a `401` the interceptor refreshes once and retries the request, and if that fails it sends the User to `/sign-in`. Concurrent refreshes share one request, because the API treats a second refresh with an already rotated cookie as a reuse.
 - Feature state lives in signal-based services in `data-access`. There is no global store library unless a spec proves the need.
 - The visual design is defined in `DESIGN.md`; its tokens live in Tailwind's `@theme` in `frontend/src/styles.css`. New screens are designed with the human first (the `design` skill).
 - **API calls go through a client generated from the OpenAPI document**, never written by hand. The contract is `backend/openapi.json`, a committed snapshot of `/v3/api-docs` that a backend integration test keeps identical to what the API serves. `npm run api:generate` (ng-openapi-gen) turns it into `src/app/core/api/generated`, which is committed and never edited manually. Feature `data-access` services wrap it. Regenerating after an API change (snapshot and client) is part of the same ticket, and CI fails if the committed client is out of date with the snapshot.

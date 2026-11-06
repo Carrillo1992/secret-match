@@ -41,6 +41,7 @@ services:
       MAILPIT_URL: http://mailpit:8025
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@secretmatch.local}
       APP_BASE_URL: http://localhost:${SPA_PORT:-4200}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:-bG9jYWwtb25seS1wbGFjZWhvbGRlci1jaGFuZ2UtbWUtMDEyMzQ1Ng==}
     ports:
       - "${API_PORT:-8080}:8080"
 

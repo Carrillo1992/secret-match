@@ -1,11 +1,7 @@
 package com.secretmatch.identity.domain;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.HexFormat;
 
 /**
  * The secret in a link emailed to a User, such as a sign-up verification link. Only the inbox ever sees
@@ -41,12 +37,7 @@ public final class EmailLinkToken {
     }
 
     public TokenHash hash() {
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-            return new TokenHash(HexFormat.of().formatHex(digest));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("every JDK provides SHA-256", e);
-        }
+        return TokenHash.of(value);
     }
 
     @Override

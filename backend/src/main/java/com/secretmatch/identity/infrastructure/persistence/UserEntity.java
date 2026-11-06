@@ -1,5 +1,10 @@
 package com.secretmatch.identity.infrastructure.persistence;
 
+import com.secretmatch.identity.domain.DisplayName;
+import com.secretmatch.identity.domain.EmailAddress;
+import com.secretmatch.identity.domain.PasswordHash;
+import com.secretmatch.identity.domain.User;
+import com.secretmatch.identity.domain.UserId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -28,4 +33,13 @@ class UserEntity {
     private Instant createdAt;
 
     protected UserEntity() {}
+
+    User toDomain() {
+        return new User(
+                new UserId(id),
+                new EmailAddress(email),
+                new DisplayName(displayName),
+                passwordHash == null ? null : new PasswordHash(passwordHash),
+                createdAt);
+    }
 }

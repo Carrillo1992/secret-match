@@ -5,7 +5,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/** Only the SPA may call the API from a browser (docs/architecture.md §2.4). */
+/**
+ * Only the SPA may call the API from a browser (docs/architecture.md §2.4), with credentials, so the
+ * refresh token cookie reaches the session endpoints.
+ */
 @Configuration(proxyBeanMethods = false)
 class CorsConfiguration implements WebMvcConfigurer {
 
@@ -17,6 +20,9 @@ class CorsConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**").allowedOrigins(allowedOrigin).allowedMethods("GET", "POST");
+        registry.addMapping("/api/**")
+                .allowedOrigins(allowedOrigin)
+                .allowedMethods("GET", "POST", "DELETE")
+                .allowCredentials(true);
     }
 }

@@ -2,6 +2,8 @@ package com.secretmatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.secretmatch.identity.application.AccessTokens;
+import com.secretmatch.identity.domain.UserId;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -37,6 +39,9 @@ class ApiSkeletonIT {
 
     @Autowired
     Clock clock;
+
+    @Autowired
+    AccessTokens accessTokens;
 
     @Test
     @DisplayName("reports itself healthy, database included")
@@ -105,6 +110,9 @@ class ApiSkeletonIT {
     void answersUnknownRouteWithProblem() {
         http.get()
                 .uri("/api/v1/no-such-route")
+                .header(
+                        HttpHeaders.AUTHORIZATION,
+                        "Bearer " + accessTokens.issueFor(UserId.newId()).value())
                 .exchange()
                 .expectStatus()
                 .isNotFound()
@@ -115,6 +123,21 @@ class ApiSkeletonIT {
                 .isEqualTo(404)
                 .jsonPath("$.title")
                 .isEqualTo("Not Found");
+    }
+
+    @Test
+    @DisplayName("answers any API route with a 401 problem when the caller is not signed in")
+    void answersUnauthenticatedCallerWithProblem() {
+        http.get()
+                .uri("/api/v1/no-such-route")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectHeader()
+                .contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+                .expectBody()
+                .jsonPath("$.type")
+                .isEqualTo("urn:secretmatch:problem:unauthenticated");
     }
 
     @Test

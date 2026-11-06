@@ -46,9 +46,9 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
-            <!-- BCrypt only. The full Security starter (filter chain, JWT) arrives with sign-in (#15). -->
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
+            <!-- Filter chain, BCrypt, and JWT access tokens (issued and checked by the API itself). -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

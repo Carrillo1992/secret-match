@@ -99,6 +99,15 @@ describe('GroupPage', () => {
     expect(backLink()).toBeDefined();
   });
 
+  it('treats a malformed Group link like a Group that cannot be found', async () => {
+    http
+      .expectOne(GROUP_URL)
+      .flush({ status: 400, title: 'Bad Request' }, { status: 400, statusText: 'Bad Request' });
+    await settle();
+
+    expect(text(page().querySelector('h1'))).toBe('No encontramos este grupo');
+  });
+
   it('offers a retry when the Group cannot be loaded', async () => {
     http.expectOne(GROUP_URL).error(new ProgressEvent('error'), { status: 0 });
     await settle();

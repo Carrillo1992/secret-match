@@ -89,7 +89,7 @@ The module list is a starting point. Grilling and specs may merge or split modul
 
 ### 2.5 Cross-cutting
 
-- **Errors**: domain exceptions → `@RestControllerAdvice` → RFC 9457 `ProblemDetail`.
+- **Errors**: domain exceptions → `@RestControllerAdvice` → RFC 9457 `ProblemDetail`: `422`, or `404` for a `shared.domain.NotFoundException` (something the caller may not know exists, such as a Group to a non-Member).
 - **Migrations**: Flyway, versioned SQL in `backend/src/main/resources/db/migration`.
 - **Config**: Spring profiles (`local`, `test`, `prod`) and environment variables for every secret and URL.
 - **Time**: all instants stored and transported in UTC. A `Clock` bean is injected where time matters.

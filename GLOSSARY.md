@@ -42,6 +42,10 @@ _Avoid_: Organizer, owner, host
 The day the gifts are handed over in a Group.
 _Avoid_: Event date, deadline, party date
 
+**Budget**:
+How much each gift in a Group should cost, in euros. Optional and informational only: nothing is ever checked against it.
+_Avoid_: Price limit, spending cap, max price
+
 **Invite Link**:
 The single shareable link through which Users join a Group. Regenerating it invalidates the previous one, and it stops working once the Draw is made.
 _Avoid_: Invitation code, join code, invitation

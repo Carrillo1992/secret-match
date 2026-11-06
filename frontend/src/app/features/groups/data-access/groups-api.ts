@@ -13,7 +13,10 @@ export type GroupSummary = GroupSummaryResponse;
 export type Group = GroupResponse;
 export type NewGroup = CreateGroupRequest;
 
-/** `not-found` covers a Group the User is not a Member of: the API answers both the same. */
+/**
+ * `not-found` covers a Group the User is not a Member of (the API answers both the same) and a
+ * malformed link, whose id is not even a Group id.
+ */
 export type GroupOutcome =
   | { readonly status: 'found'; readonly group: Group }
   | { readonly status: 'not-found' }
@@ -38,7 +41,8 @@ export class GroupsApi {
     try {
       return { status: 'found', group: await this.api.invoke(group, { groupId }) };
     } catch (error) {
-      const notFound = error instanceof HttpErrorResponse && error.status === 404;
+      const notFound =
+        error instanceof HttpErrorResponse && (error.status === 404 || error.status === 400);
       return { status: notFound ? 'not-found' : 'failed' };
     }
   }

@@ -10,6 +10,7 @@ Work follows Spec-Driven Development: specs and tickets are GitHub issues (see *
 |---|---|
 | write a spec or tickets, add a module, or change how layers talk | `docs/architecture.md` |
 | write or review code | `CODING_STANDARDS.md` (plus `backend/CLAUDE.md` or `frontend/CLAUDE.md` when working in those folders) |
+| design or build a user-visible screen or component | `DESIGN.md`, then the `design` skill before writing it |
 | declare a ticket done or open a PR | `docs/verification.md`, and actually run what it says |
 | name a domain concept anywhere (code, tests, issues) | `GLOSSARY.md` |
 | touch an area with past decisions | `docs/adr/` |

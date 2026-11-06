@@ -6,6 +6,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { LucideGift } from '@lucide/angular';
+import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { SignUpApi } from '../../data-access/sign-up-api';
 import { emailShape, maxUtf8Bytes, notBlank, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 
@@ -14,7 +16,7 @@ type SubmitError = 'invalid' | 'failed';
 @Component({
   selector: 'app-sign-up-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, SheetLayout, LucideGift],
   templateUrl: './sign-up-page.html',
 })
 export class SignUpPage {

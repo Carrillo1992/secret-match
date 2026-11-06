@@ -1,5 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  LucideCircleCheck,
+  LucideClock,
+  LucideLoaderCircle,
+  LucideUnlink,
+  LucideWifiOff,
+} from '@lucide/angular';
+import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
+import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { NewLinkButton } from '../../components/new-link-button/new-link-button';
 import { NewVerificationLink } from '../../data-access/new-verification-link';
 import { SignUpApi, VerifyEmailOutcome } from '../../data-access/sign-up-api';
@@ -11,7 +20,17 @@ type VerifyEmailStatus = 'verifying' | VerifyEmailOutcome;
 @Component({
   selector: 'app-verify-email-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NewLinkButton, RouterLink],
+  imports: [
+    NewLinkButton,
+    RouterLink,
+    SheetLayout,
+    StatusHeader,
+    LucideCircleCheck,
+    LucideClock,
+    LucideLoaderCircle,
+    LucideUnlink,
+    LucideWifiOff,
+  ],
   templateUrl: './verify-email-page.html',
   providers: [NewVerificationLink],
 })

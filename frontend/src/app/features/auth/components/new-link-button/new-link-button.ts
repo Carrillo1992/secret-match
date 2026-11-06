@@ -9,7 +9,7 @@ import { NewLinkStatus } from '../../data-access/new-verification-link';
     <div class="flex flex-col gap-3">
       <button
         type="button"
-        class="rounded-md border border-slate-900 px-4 py-2 font-medium text-slate-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+        class="inline-flex h-12 items-center justify-center rounded-full border-2 border-primary px-6 font-display font-semibold text-primary transition-colors duration-200 hover:bg-primary hover:text-on-primary focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
         [disabled]="status() === 'sending'"
         (click)="requested.emit()"
       >
@@ -18,13 +18,15 @@ import { NewLinkStatus } from '../../data-access/new-verification-link';
       <div role="status" aria-live="polite" class="text-sm">
         @switch (status()) {
           @case ('sent') {
-            <p class="text-green-800">
+            <p class="font-semibold text-success">
               Te hemos enviado un enlace nuevo; el anterior ya no sirve. Si tampoco llega, puede que
               ese correo ya tenga una cuenta.
             </p>
           }
           @case ('failed') {
-            <p class="text-red-800">No hemos podido enviar el enlace. Inténtalo de nuevo.</p>
+            <p class="font-semibold text-danger">
+              No hemos podido enviar el enlace. Inténtalo de nuevo.
+            </p>
           }
         }
       </div>

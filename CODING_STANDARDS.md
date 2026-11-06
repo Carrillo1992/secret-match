@@ -56,7 +56,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 - Strict TypeScript: no `any`, no non-null `!` to silence the compiler. API types live in one place per feature (`data-access`).
 - Feature folders: `features/<feature>/{pages,components,data-access}`. Pages orchestrate, components are presentational (inputs in, outputs out, no HTTP).
 - Typed reactive forms. Validation messages are shown next to the field.
-- Styling: Tailwind utilities using the design tokens in the Tailwind config. No hard-coded colours or arbitrary values when a token exists, and no component CSS unless Tailwind cannot express it (e.g. canvas).
+- Styling: Tailwind utilities using the design tokens in `@theme` (`frontend/src/styles.css`), following `DESIGN.md`. No hard-coded colours or arbitrary values when a token exists, and no component CSS unless Tailwind cannot express it (e.g. canvas).
 - **Accessibility is part of done**: semantic HTML, labelled controls, visible focus, keyboard access. Animations (scratch card, gift reveal) respect `prefers-reduced-motion` and have a non-gesture alternative (a button).
 
 ## 4. Testing

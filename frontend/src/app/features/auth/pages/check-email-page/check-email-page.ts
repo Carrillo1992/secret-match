@@ -1,6 +1,9 @@
 import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { LucideMailCheck } from '@lucide/angular';
+import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
+import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { NewLinkButton } from '../../components/new-link-button/new-link-button';
 import { NewVerificationLink } from '../../data-access/new-verification-link';
 import { SIGN_UP_RULES } from '../../data-access/sign-up-rules';
@@ -9,7 +12,7 @@ import { SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 @Component({
   selector: 'app-check-email-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NewLinkButton, RouterLink],
+  imports: [NewLinkButton, RouterLink, SheetLayout, StatusHeader, LucideMailCheck],
   templateUrl: './check-email-page.html',
   providers: [NewVerificationLink],
 })

@@ -16,7 +16,8 @@
       @case ('expired') {
         <h1 class="text-3xl font-bold text-slate-900">Este enlace ha caducado</h1>
         <p class="mt-4 mb-6 text-slate-700">
-          Los enlaces duran {{ rules.linkValidityHours }} horas. Te enviamos otro al mismo correo.
+          Los enlaces duran {{ rules.linkValidityHours }} horas. Si tu cuenta sigue pendiente de
+          confirmar, te enviamos otro al mismo correo.
         </p>
         <app-new-link-button [status]="newLink.status()" (requested)="askNewLink()" />
       }
@@ -34,7 +35,8 @@
       @case ('invalid') {
         <h1 class="text-3xl font-bold text-slate-900">Este enlace no es válido</h1>
         <p class="mt-4 text-slate-700">
-          Abre el enlace del último correo que te enviamos, completo. Si no lo encuentras,
+          Si pediste otro enlace después, este ya no sirve: abre el del último correo que te
+          enviamos. Si no lo encuentras,
           <a
             routerLink="/sign-up"
             class="underline hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"

@@ -7,10 +7,10 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { NewLinkRequest } from '../../models/new-link-request';
+import { LinkTokenRequest } from '../../models/link-token-request';
 
 export interface SendNewLinkInPlaceOf$Params {
-      body: NewLinkRequest
+      body: LinkTokenRequest
 }
 
 export function sendNewLinkInPlaceOf(http: HttpClient, rootUrl: string, params: SendNewLinkInPlaceOf$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {

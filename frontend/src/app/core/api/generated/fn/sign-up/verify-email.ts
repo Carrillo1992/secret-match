@@ -7,10 +7,10 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { EmailVerificationRequest } from '../../models/email-verification-request';
+import { LinkTokenRequest } from '../../models/link-token-request';
 
 export interface VerifyEmail$Params {
-      body: EmailVerificationRequest
+      body: LinkTokenRequest
 }
 
 export function verifyEmail(http: HttpClient, rootUrl: string, params: VerifyEmail$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {

@@ -67,6 +67,7 @@ describe('VerifyEmailPage', () => {
     await harness.navigateByUrl('/verify-email?token=tok-123');
     await answerVerification('verification-link-expired');
     expect(heading()).toContain('ha caducado');
+    expect(page().textContent).toContain('Si tu cuenta sigue pendiente');
 
     page().querySelector('button')?.click();
     const request = http.expectOne(NEW_LINK_URL);
@@ -90,6 +91,7 @@ describe('VerifyEmailPage', () => {
     await answerVerification('verification-link-invalid');
 
     expect(heading()).toContain('no es válido');
+    expect(page().textContent).toContain('abre el del último correo');
     expect(page().querySelector('a[href="/sign-up"]')).not.toBeNull();
   });
 

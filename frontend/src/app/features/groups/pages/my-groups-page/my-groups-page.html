@@ -1,0 +1,53 @@
+<app-shell>
+  <button type="button" appButton="secondary" shellActions (click)="signOut()">
+    <svg lucideLogOut [size]="18"></svg>
+    Cerrar sesión
+  </button>
+
+  @if (signOutFailed()) {
+    <p
+      role="alert"
+      class="mb-6 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+    >
+      No hemos podido cerrar la sesión. Inténtalo de nuevo en un momento.
+    </p>
+  }
+
+  <h1 class="font-display text-3xl font-bold tracking-tight">Mis grupos</h1>
+
+  @if (isLoading()) {
+    <p role="status" class="mt-1.5 text-ink-muted">Cargando…</p>
+  } @else if (loaded(); as loaded) {
+    @if (loaded.groups.length > 0) {
+      <p class="mt-1.5 text-ink-muted">Hola, {{ loaded.me.displayName }}. Estos son tus grupos.</p>
+      <ul aria-label="Tus grupos" class="mt-6 flex flex-col gap-4">
+        @for (group of loaded.groups; track group.id) {
+          <li><app-group-card [group]="group" /></li>
+        }
+      </ul>
+    } @else {
+      <section
+        class="mt-6 flex flex-col items-center rounded-card bg-surface p-5 text-center shadow-card"
+      >
+        <app-gift-illustration class="h-40 w-full" />
+        <h2 class="mt-4 font-display text-lg font-semibold">Aún no tienes grupos</h2>
+        <p class="mt-1.5 text-ink-muted">
+          Hola, {{ loaded.me.displayName }}. Crea uno para el intercambio de tu familia o de tus
+          amigos.
+        </p>
+      </section>
+    }
+    <a appButton routerLink="/groups/new" class="mt-6 w-full">
+      <svg lucidePlus [size]="20"></svg>
+      Crear grupo
+    </a>
+  } @else {
+    <p
+      role="alert"
+      class="mt-6 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+    >
+      No hemos podido cargar tus grupos. Inténtalo de nuevo.
+    </p>
+    <button type="button" appButton="secondary" class="mt-4" (click)="reload()">Reintentar</button>
+  }
+</app-shell>

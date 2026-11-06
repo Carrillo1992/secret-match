@@ -11,6 +11,12 @@ export type { SendNewLinkForSignUp$Params as SendNewLinkForSignUp$Params } from 
 export { sendNewLinkForSignUp as sendNewLinkForSignUp } from './fn/sign-up/send-new-link-for-sign-up';
 export type { SendNewLinkInPlaceOf$Params as SendNewLinkInPlaceOf$Params } from './fn/sign-up/send-new-link-in-place-of';
 export { sendNewLinkInPlaceOf as sendNewLinkInPlaceOf } from './fn/sign-up/send-new-link-in-place-of';
+export type { MyGroups$Params as MyGroups$Params } from './fn/groups/my-groups';
+export { myGroups as myGroups } from './fn/groups/my-groups';
+export type { Create$Params as Create$Params } from './fn/groups/create';
+export { create as create } from './fn/groups/create';
+export type { Group$Params as Group$Params } from './fn/groups/group';
+export { group as group } from './fn/groups/group';
 export type { SignIn$Params as SignIn$Params } from './fn/sessions/sign-in';
 export { signIn as signIn } from './fn/sessions/sign-in';
 export type { SignOut$Params as SignOut$Params } from './fn/sessions/sign-out';

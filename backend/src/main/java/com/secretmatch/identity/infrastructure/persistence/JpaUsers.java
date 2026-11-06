@@ -5,6 +5,8 @@ import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
@@ -30,6 +32,13 @@ class JpaUsers implements Users {
     @Override
     public Optional<User> findById(UserId id) {
         return repository.findById(id.value()).map(UserEntity::toDomain);
+    }
+
+    @Override
+    public List<User> findAllById(Collection<UserId> ids) {
+        return repository.findAllById(ids.stream().map(UserId::value).toList()).stream()
+                .map(UserEntity::toDomain)
+                .toList();
     }
 
     @Override

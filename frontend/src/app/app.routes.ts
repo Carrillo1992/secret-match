@@ -39,10 +39,24 @@ export const routes: Routes = [
   },
   {
     path: 'home',
-    title: 'Inicio · SecretMatch',
+    title: 'Mis grupos · SecretMatch',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/home/pages/home-page/home-page').then((m) => m.HomePage),
+      import('./features/groups/pages/my-groups-page/my-groups-page').then((m) => m.MyGroupsPage),
+  },
+  {
+    path: 'groups/new',
+    title: 'Nuevo grupo · SecretMatch',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/pages/new-group-page/new-group-page').then((m) => m.NewGroupPage),
+  },
+  {
+    path: 'groups/:groupId',
+    title: 'Grupo · SecretMatch',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/pages/group-page/group-page').then((m) => m.GroupPage),
   },
   { path: '**', redirectTo: '' },
 ];

@@ -3,6 +3,8 @@ package com.secretmatch.identity.application;
 import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /** Port to where Users are stored. */
@@ -13,6 +15,9 @@ public interface Users {
     Optional<User> findByEmail(EmailAddress email);
 
     Optional<User> findById(UserId id);
+
+    /** The Users with these ids; ids without a User are left out. */
+    List<User> findAllById(Collection<UserId> ids);
 
     /**
      * Stores a new User, unless one with the same email exists already (for instance, created a moment

@@ -1,0 +1,78 @@
+<app-shell>
+  <a routerLink="/home" appLink standalone class="gap-1">
+    <svg lucideChevronLeft [size]="18"></svg>
+    Mis grupos
+  </a>
+
+  @if (isLoading()) {
+    <p role="status" class="mt-4 text-ink-muted">Cargando…</p>
+  } @else if (group(); as group) {
+    <h1 class="mt-4 font-display text-3xl font-bold tracking-tight break-words">
+      {{ group.name }}
+    </h1>
+
+    <dl class="mt-6 flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card">
+      <div class="flex gap-3">
+        <svg lucideCalendar [size]="20" class="mt-0.5 shrink-0 text-ink-muted"></svg>
+        <div>
+          <dt class="font-bold">Fecha del intercambio</dt>
+          <dd class="text-ink-muted">
+            <time [attr.datetime]="group.exchangeDate">{{ date(group.exchangeDate) }}</time>
+          </dd>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <svg lucideWallet [size]="20" class="mt-0.5 shrink-0 text-ink-muted"></svg>
+        <div>
+          <dt class="font-bold">Presupuesto</dt>
+          <dd class="text-ink-muted">
+            @if (group.budget !== undefined) {
+              {{ euros(group.budget) }} por regalo
+            } @else {
+              Sin presupuesto
+            }
+          </dd>
+        </div>
+      </div>
+    </dl>
+
+    <section aria-labelledby="group-members" class="mt-6 rounded-card bg-surface p-5 shadow-card">
+      <h2 id="group-members" class="font-display text-lg font-semibold">
+        Miembros ({{ group.members.length }})
+      </h2>
+      <ul aria-label="Miembros" class="mt-3 flex flex-col gap-3">
+        @for (member of group.members; track $index) {
+          <li class="flex items-center gap-3">
+            <span
+              aria-hidden="true"
+              class="flex size-10 shrink-0 items-center justify-center rounded-full bg-subtle font-display font-bold"
+              >{{ initial(member.displayName) }}</span
+            >
+            <span class="min-w-0 break-words">{{ member.displayName }}</span>
+            @if (member.admin) {
+              <span appChip>Admin</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  } @else if (notFound()) {
+    <div class="mt-6">
+      <app-status-header>
+        <svg lucideSearchX statusIcon [size]="30"></svg>
+        No encontramos este grupo
+      </app-status-header>
+      <p class="mt-1.5 text-ink-muted">
+        Puede que el enlace no esté bien o que el grupo ya no exista.
+      </p>
+    </div>
+  } @else {
+    <p
+      role="alert"
+      class="mt-6 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+    >
+      No hemos podido cargar el grupo. Inténtalo de nuevo.
+    </p>
+    <button type="button" appButton="secondary" class="mt-4" (click)="reload()">Reintentar</button>
+  }
+</app-shell>

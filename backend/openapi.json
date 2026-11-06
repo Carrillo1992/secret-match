@@ -54,6 +54,85 @@
         "tags" : [ "sign-up" ]
       }
     },
+    "/api/v1/groups" : {
+      "get" : {
+        "description" : "Soonest Exchange Date first.",
+        "operationId" : "myGroups",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/GroupSummaryResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The Groups the signed-in User is a Member of",
+        "tags" : [ "groups" ]
+      },
+      "post" : {
+        "description" : "The signed-in User becomes its Admin and first Member.",
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateGroupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Create a Group",
+        "tags" : [ "groups" ]
+      }
+    },
+    "/api/v1/groups/{groupId}" : {
+      "get" : {
+        "operationId" : "group",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "A Group the signed-in User is a Member of",
+        "tags" : [ "groups" ]
+      }
+    },
     "/api/v1/sessions" : {
       "post" : {
         "description" : "Sets the refresh token cookie. A wrong email or password gets the same answer.",
@@ -227,6 +306,26 @@
         },
         "required" : [ "accessToken", "expiresAt" ]
       },
+      "CreateGroupRequest" : {
+        "type" : "object",
+        "properties" : {
+          "budget" : {
+            "type" : "number",
+            "description" : "In euros, to the cent. Leave it out for a Group without a budget.",
+            "minimum" : 0
+          },
+          "exchangeDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "exchangeDate", "name" ]
+      },
       "CurrentUserResponse" : {
         "type" : "object",
         "properties" : {
@@ -238,6 +337,63 @@
           }
         },
         "required" : [ "displayName", "email" ]
+      },
+      "GroupResponse" : {
+        "type" : "object",
+        "properties" : {
+          "budget" : {
+            "type" : "number",
+            "description" : "In euros; absent when the Group has no budget."
+          },
+          "exchangeDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "members" : {
+            "type" : "array",
+            "description" : "The Admin first.",
+            "items" : {
+              "$ref" : "#/components/schemas/MemberResponse"
+            }
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "exchangeDate", "id", "members", "name" ]
+      },
+      "GroupSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "admin" : {
+            "type" : "boolean",
+            "description" : "Whether the signed-in User is its Admin."
+          },
+          "budget" : {
+            "type" : "number",
+            "description" : "In euros; absent when the Group has no budget."
+          },
+          "exchangeDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "memberCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "admin", "exchangeDate", "id", "memberCount", "name" ]
       },
       "Health" : {
         "type" : "object",
@@ -259,6 +415,18 @@
           }
         },
         "required" : [ "token" ]
+      },
+      "MemberResponse" : {
+        "type" : "object",
+        "properties" : {
+          "admin" : {
+            "type" : "boolean"
+          },
+          "displayName" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "admin", "displayName" ]
       },
       "SignInRequest" : {
         "type" : "object",

@@ -65,7 +65,7 @@ Generous and soft. `rounded-field` (16 px) for inputs, `rounded-card` (28 px) fo
 The controls below are attribute directives in `shared/ui` that put the recipe on a native element, so each look has one source of truth and keeps native semantics. Never copy their class lists into a template; on the element, add only placement classes (`w-full`, `mt-6`), never colours or sizes. To change how a control looks, change its directive.
 
 - **Primary button / link-as-button**: `<button appButton>` or `<a appButton>` (`Button`, `shared/ui/button`): tall, filled terracotta, Outfit label, room for a leading icon, dimmed when disabled. Add `w-full` in a sheet.
-- **Secondary button**: `appButton="secondary"`: shorter, outlined in `primary`, fills on hover.
+- **Secondary button**: `appButton="secondary"`: shorter, outlined in `primary`, fills on hover, dimmed when disabled.
 - **Text input**: `<input appField>` (`Field`, `shared/ui/field`): `rounded-field` on `bg-field` with a `line` border that turns `danger` when `aria-invalid` is set. The screen keeps the label (`font-bold`) above, the hint (`text-sm text-ink-muted`) or error (`text-sm font-semibold text-danger`) below, and the `aria-invalid` / `aria-describedby` wiring.
 - **Inline link**: `<a appLink>` (`TextLink`, `shared/ui/text-link`): semibold, `primary`, underlined. A link standing on its own line (not inside a sentence) is `<a appLink standalone>`, which adds a 44 px touch target.
 - **Alert**: `role="alert"` + `rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger` (or the `success` pair). Still a class list: it has one use so far; it becomes a directive when a second screen needs it.

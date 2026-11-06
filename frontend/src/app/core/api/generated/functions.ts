@@ -3,3 +3,11 @@
 
 export type { Health$Params as Health$Params } from './fn/actuator/health';
 export { health as health } from './fn/actuator/health';
+export type { VerifyEmail$Params as VerifyEmail$Params } from './fn/sign-up/verify-email';
+export { verifyEmail as verifyEmail } from './fn/sign-up/verify-email';
+export type { SignUp$Params as SignUp$Params } from './fn/sign-up/sign-up';
+export { signUp as signUp } from './fn/sign-up/sign-up';
+export type { SendNewLinkForSignUp$Params as SendNewLinkForSignUp$Params } from './fn/sign-up/send-new-link-for-sign-up';
+export { sendNewLinkForSignUp as sendNewLinkForSignUp } from './fn/sign-up/send-new-link-for-sign-up';
+export type { SendNewLinkInPlaceOf$Params as SendNewLinkInPlaceOf$Params } from './fn/sign-up/send-new-link-in-place-of';
+export { sendNewLinkInPlaceOf as sendNewLinkInPlaceOf } from './fn/sign-up/send-new-link-in-place-of';

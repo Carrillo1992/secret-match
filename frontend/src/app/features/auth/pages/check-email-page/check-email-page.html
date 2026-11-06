@@ -1,0 +1,47 @@
+<main class="flex min-h-dvh flex-col items-center justify-center bg-slate-50 px-4 py-10">
+  <div class="w-full max-w-sm">
+    <h1 class="text-center text-3xl font-bold text-slate-900">Revisa tu correo</h1>
+    <p class="mt-4 text-center text-slate-700">
+      @if (email) {
+        Te hemos enviado un enlace a <strong class="wrap-break-word">{{ email }}</strong> para
+        confirmar tu cuenta.
+      } @else {
+        Te hemos enviado un enlace para confirmar tu cuenta.
+      }
+      Caduca en {{ rules.linkValidityHours }} horas.
+    </p>
+
+    <section
+      aria-labelledby="new-link-heading"
+      class="mt-8 rounded-lg bg-white p-6 shadow-sm ring-1 ring-slate-200"
+    >
+      <h2 id="new-link-heading" class="font-semibold text-slate-900">¿No te ha llegado?</h2>
+      @if (signUpId) {
+        <p class="mt-1 mb-4 text-sm text-slate-600">
+          Mira en la carpeta de spam o pide otro enlace.
+        </p>
+        <app-new-link-button
+          [status]="newLink.status()"
+          (requested)="newLink.forSignUp(signUpId)"
+        />
+      } @else {
+        <p class="mt-1 text-sm text-slate-600">
+          Mira en la carpeta de spam o
+          <a
+            routerLink="/sign-up"
+            class="underline hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+            >vuelve a registrarte</a
+          >.
+        </p>
+      }
+    </section>
+
+    <p class="mt-6 text-center">
+      <a
+        routerLink="/"
+        class="text-slate-700 underline hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+        >Volver al inicio</a
+      >
+    </p>
+  </div>
+</main>

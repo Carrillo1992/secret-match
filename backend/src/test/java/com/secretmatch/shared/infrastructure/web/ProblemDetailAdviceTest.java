@@ -9,12 +9,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@WebMvcTest
+// Only the test controller: the real ones need their use cases, which a web slice does not load.
+@WebMvcTest(controllers = ProblemDetailAdviceTest.RuleBreakingController.class)
+@ActiveProfiles("test")
 @Import(ProblemDetailAdviceTest.RuleBreakingController.class)
 class ProblemDetailAdviceTest {
 

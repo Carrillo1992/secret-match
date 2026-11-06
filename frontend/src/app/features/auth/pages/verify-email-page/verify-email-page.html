@@ -1,0 +1,60 @@
+<main class="flex min-h-dvh flex-col items-center justify-center bg-slate-50 px-4 py-10">
+  <div class="w-full max-w-sm text-center" aria-live="polite">
+    @switch (status()) {
+      @case ('verifying') {
+        <h1 class="text-3xl font-bold text-slate-900">Confirmando tu correo…</h1>
+      }
+      @case ('verified') {
+        <h1 class="text-3xl font-bold text-slate-900">¡Correo confirmado!</h1>
+        <p class="mt-4 text-slate-700">Tu cuenta ya está lista.</p>
+        <a
+          routerLink="/"
+          class="mt-6 inline-block rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+          >Ir al inicio</a
+        >
+      }
+      @case ('expired') {
+        <h1 class="text-3xl font-bold text-slate-900">Este enlace ha caducado</h1>
+        <p class="mt-4 mb-6 text-slate-700">
+          Los enlaces duran {{ rules.linkValidityHours }} horas. Si tu cuenta sigue pendiente de
+          confirmar, te enviamos otro al mismo correo.
+        </p>
+        <app-new-link-button [status]="newLink.status()" (requested)="askNewLink()" />
+      }
+      @case ('used') {
+        <h1 class="text-3xl font-bold text-slate-900">Este enlace ya se ha usado</h1>
+        <p class="mt-4 text-slate-700">
+          Tu correo ya está confirmado y tu cuenta está lista: no tienes que hacer nada más.
+        </p>
+        <a
+          routerLink="/"
+          class="mt-6 inline-block rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+          >Ir al inicio</a
+        >
+      }
+      @case ('invalid') {
+        <h1 class="text-3xl font-bold text-slate-900">Este enlace no es válido</h1>
+        <p class="mt-4 text-slate-700">
+          Si pediste otro enlace después, este ya no sirve: abre el del último correo que te
+          enviamos. Si no lo encuentras,
+          <a
+            routerLink="/sign-up"
+            class="underline hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+            >vuelve a registrarte</a
+          >.
+        </p>
+      }
+      @case ('failed') {
+        <h1 class="text-3xl font-bold text-slate-900">No hemos podido confirmar tu correo</h1>
+        <p class="mt-4 text-slate-700">Puede ser un problema de conexión.</p>
+        <button
+          type="button"
+          class="mt-6 rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+          (click)="verify()"
+        >
+          Reintentar
+        </button>
+      }
+    }
+  </div>
+</main>

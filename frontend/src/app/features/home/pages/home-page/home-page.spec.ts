@@ -83,4 +83,19 @@ describe('HomePage', () => {
     expect(session.isSignedIn()).toBe(false);
     expect(TestBed.inject(Router).url).toBe('/sign-in');
   });
+
+  it('stays on the page and says so when the session cannot be ended', async () => {
+    await harness.navigateByUrl('/home');
+    http.expectOne(ME_URL).flush({ email: 'ana@example.com', displayName: 'Ana' });
+    await settle();
+
+    button('Cerrar sesión')?.click();
+    http.expectOne(SIGN_OUT_URL).error(new ProgressEvent('error'), { status: 0 });
+    await settle();
+
+    expect(TestBed.inject(Router).url).toBe('/home');
+    expect(page().querySelector('[role="alert"]')?.textContent).toContain(
+      'No hemos podido cerrar la sesión',
+    );
+  });
 });

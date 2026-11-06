@@ -22,6 +22,10 @@ _Avoid_: Pending user, unverified account, activation
 The link in the email that verifies a Sign-up Verification. Asking for a new one replaces it: only the latest link of a sign-up works.
 _Avoid_: Activation link, confirmation code, magic link
 
+**Session**:
+A User being signed in on one device. It starts when they sign in with their email and password, survives page reloads, and ends when they sign out, after 30 days without use, or as soon as a stolen copy of it is detected. Signing out ends only that Session, not the User's others.
+_Avoid_: Login, connection
+
 **Group**:
 A single gift exchange: a set of Members who take part in one Draw. Next year's exchange is a new Group.
 _Avoid_: Exchange, event, room, edition

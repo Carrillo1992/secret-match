@@ -4,6 +4,15 @@
     Cerrar sesión
   </button>
 
+  @if (signOutFailed()) {
+    <p
+      role="alert"
+      class="mb-6 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+    >
+      No hemos podido cerrar la sesión. Inténtalo de nuevo en un momento.
+    </p>
+  }
+
   @if (user.isLoading()) {
     <p role="status" class="text-ink-muted">Cargando…</p>
   } @else if (user.value(); as me) {

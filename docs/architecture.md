@@ -83,7 +83,8 @@ The module list is a starting point. Grilling and specs may merge or split modul
   - Refresh token: opaque random value, ~30 days, delivered in an `HttpOnly`, `Secure` cookie scoped to the session endpoints (`/api/v1/sessions`: refresh and sign-out). Stored **hashed** in the database so it can be revoked (logout, password change). Every refresh token belongs to one session (the token family started by one sign-in); signing out revokes that session only.
   - Endpoints: `POST /api/v1/sessions` (sign in), `POST /api/v1/sessions/refresh`, `DELETE /api/v1/sessions/current` (sign out). A request without a valid access token gets a `401` problem (`urn:secretmatch:problem:unauthenticated`); a refresh that fails is the `session-expired` domain problem.
   - The JWT is signed with HS256 using `JWT_SIGNING_KEY` (Base64, at least 256 bits). The API issues and checks its own tokens, so no key pair or external issuer is needed.
-  - Rotation: every refresh issues a new refresh token and invalidates the old one. Reuse of an invalidated token revokes the whole token family.
+  - Rotation: every refresh issues a new refresh token and invalidates the old one. Reuse of an invalidated token revokes the whole token family. Exception: for 10 seconds after a rotation, the old token still gets an access token, with no new cookie. That covers two tabs reloading at once with the same cookie, since the browser already holds the new one. After those 10 seconds it counts as a reuse.
+  - A refresh or sign-out sent from any origin other than the SPA is refused with `403` by the CORS processing, before it reaches the API. Another site cannot rotate or end a session through the browser's cookie.
   - The SPA and API live on different domains on the free hosts, so the cookie needs `SameSite=None`. A custom domain shared by both would allow `SameSite=Lax`/`Strict` later.
 
 ### 2.5 Cross-cutting

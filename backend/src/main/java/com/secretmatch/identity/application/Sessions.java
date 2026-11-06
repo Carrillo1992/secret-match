@@ -88,17 +88,21 @@ public class Sessions {
     }
 
     /**
-     * Swaps a refresh token for a new access token and a new refresh token. A token that was already
-     * swapped ends its whole session, because only a copy of it can come back.
+     * Swaps the refresh token from the cookie for a new access token and a new refresh token. A token that
+     * was already swapped ends its whole session, because only a copy of it can come back; unless it was
+     * swapped a moment ago, which is a concurrent refresh from another tab rather than a copy.
      *
-     * @throws SessionExpiredException if the token is unknown, expired, revoked or reused
+     * @param cookieValue the refresh token as the cookie carried it; {@code null} or blank when there was none
+     * @throws SessionExpiredException if the token is missing, unknown, expired, revoked or reused
      */
     @Transactional(noRollbackFor = SessionExpiredException.class)
-    public SignedIn refresh(RefreshTokenValue presented) {
+    public RefreshOutcome refresh(String cookieValue) {
+        RefreshTokenValue presented = presentedToken(cookieValue).orElseThrow(SessionExpiredException::new);
         Instant now = clock.instant();
         RefreshToken token = refreshTokens.findByTokenHash(presented.hash()).orElseThrow(SessionExpiredException::new);
         return switch (token.stateAt(now)) {
-            case ACTIVE -> rotate(token, now);
+            case ACTIVE -> new RefreshOutcome.Rotated(rotate(token, now));
+            case JUST_ROTATED -> new RefreshOutcome.AlreadyRotated(accessTokens.issueFor(token.userId()));
             case ROTATED -> {
                 refreshTokens.revokeSession(token.sessionId(), now);
                 throw new SessionExpiredException();
@@ -107,11 +111,14 @@ public class Sessions {
         };
     }
 
-    /** Ends the session of this refresh token, if it has one. Signing out twice is not an error. */
+    /**
+     * Ends the session of the refresh token from the cookie, if it has one. Signing out twice, or without a
+     * cookie, is not an error.
+     */
     @Transactional
-    public void signOut(RefreshTokenValue presented) {
-        refreshTokens
-                .findByTokenHash(presented.hash())
+    public void signOut(String cookieValue) {
+        presentedToken(cookieValue)
+                .flatMap(presented -> refreshTokens.findByTokenHash(presented.hash()))
                 .ifPresent(token -> refreshTokens.revokeSession(token.sessionId(), clock.instant()));
     }
 
@@ -138,6 +145,12 @@ public class Sessions {
         RefreshTokenValue value = RefreshTokenValue.generate(random);
         refreshTokens.save(RefreshToken.startSession(userId, value, clock.instant()));
         return new SignedIn(accessTokens.issueFor(userId), value);
+    }
+
+    private static Optional<RefreshTokenValue> presentedToken(String cookieValue) {
+        return cookieValue == null || cookieValue.isBlank()
+                ? Optional.empty()
+                : Optional.of(RefreshTokenValue.of(cookieValue));
     }
 
     /** A malformed email cannot have a User; it is refused like any unknown one. */

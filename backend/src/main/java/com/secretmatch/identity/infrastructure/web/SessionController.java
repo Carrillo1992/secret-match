@@ -1,12 +1,12 @@
 package com.secretmatch.identity.infrastructure.web;
 
+import com.secretmatch.identity.application.AccessToken;
 import com.secretmatch.identity.application.CurrentUser;
+import com.secretmatch.identity.application.RefreshOutcome;
 import com.secretmatch.identity.application.Sessions;
 import com.secretmatch.identity.application.SignInCommand;
 import com.secretmatch.identity.application.SignedIn;
 import com.secretmatch.identity.domain.RefreshToken;
-import com.secretmatch.identity.domain.RefreshTokenValue;
-import com.secretmatch.identity.domain.SessionExpiredException;
 import com.secretmatch.identity.domain.UserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -61,19 +61,17 @@ class SessionController {
             description = "Rotates the cookie. Reusing an old cookie ends the whole session.")
     ResponseEntity<AccessTokenResponse> refresh(
             @Parameter(hidden = true) @CookieValue(name = REFRESH_COOKIE, required = false) String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new SessionExpiredException();
-        }
-        return signedIn(sessions.refresh(RefreshTokenValue.of(refreshToken)));
+        return switch (sessions.refresh(refreshToken)) {
+            case RefreshOutcome.Rotated rotated -> signedIn(rotated.session());
+            case RefreshOutcome.AlreadyRotated alreadyRotated -> ResponseEntity.ok(body(alreadyRotated.accessToken()));
+        };
     }
 
     @DeleteMapping("/sessions/current")
     @Operation(summary = "Sign out", description = "Ends the session of the refresh token cookie and clears it.")
     ResponseEntity<Void> signOut(
             @Parameter(hidden = true) @CookieValue(name = REFRESH_COOKIE, required = false) String refreshToken) {
-        if (refreshToken != null && !refreshToken.isBlank()) {
-            sessions.signOut(RefreshTokenValue.of(refreshToken));
-        }
+        sessions.signOut(refreshToken);
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
                 .header(HttpHeaders.SET_COOKIE, refreshCookie("", Duration.ZERO).toString())
                 .build();
@@ -87,13 +85,13 @@ class SessionController {
     }
 
     private static ResponseEntity<AccessTokenResponse> signedIn(SignedIn signedIn) {
-        return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        refreshCookie(signedIn.refreshToken().value(), RefreshToken.VALIDITY)
-                                .toString())
-                .body(new AccessTokenResponse(
-                        signedIn.accessToken().value(), signedIn.accessToken().expiresAt()));
+        String cookie = refreshCookie(signedIn.refreshToken().value(), RefreshToken.VALIDITY)
+                .toString();
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie).body(body(signedIn.accessToken()));
+    }
+
+    private static AccessTokenResponse body(AccessToken accessToken) {
+        return new AccessTokenResponse(accessToken.value(), accessToken.expiresAt());
     }
 
     /**

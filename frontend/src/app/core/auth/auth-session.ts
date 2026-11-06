@@ -43,14 +43,20 @@ export class AuthSession {
     return this.refreshing;
   }
 
-  /** Ends the session in the API. The SPA forgets it either way. */
-  async signOut(): Promise<void> {
-    this.token.set(null);
+  /**
+   * Ends the session in the API, then forgets the access token. If the API cannot be reached the
+   * User stays signed in: the refresh cookie would bring the session back on the next reload anyway.
+   *
+   * @returns whether the session ended
+   */
+  async signOut(): Promise<boolean> {
     try {
       await this.api.invoke(signOut);
     } catch {
-      // The access token is gone already; an unreachable API only leaves the cookie to expire.
+      return false;
     }
+    this.token.set(null);
+    return true;
   }
 
   private async requestRefresh(): Promise<boolean> {

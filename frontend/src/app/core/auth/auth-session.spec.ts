@@ -169,19 +169,20 @@ describe('AuthSession', () => {
       expect(request.request.method).toBe('DELETE');
       expect(request.request.withCredentials).toBe(true);
       request.flush(null, { status: 204, statusText: 'No Content' });
-      await done;
 
+      await expect(done).resolves.toBe(true);
       expect(session.isSignedIn()).toBe(false);
     });
 
-    it('forgets the access token even if the API cannot be reached', async () => {
+    it('stays signed in and says so when the API cannot end the session', async () => {
       await signedIn();
 
       const done = session.signOut();
       http.expectOne(SIGN_OUT_URL).error(new ProgressEvent('error'), { status: 0 });
-      await done;
 
-      expect(session.isSignedIn()).toBe(false);
+      // The cookie would still bring the session back on the next reload.
+      await expect(done).resolves.toBe(false);
+      expect(session.isSignedIn()).toBe(true);
     });
   });
 

@@ -14,11 +14,19 @@ public final class RefreshToken {
     /** How long a token works after it was issued; every refresh starts the count again. */
     public static final Duration VALIDITY = Duration.ofDays(30);
 
+    /**
+     * How long a spent token still counts as a refresh racing its own rotation (two tabs reloading at once
+     * share one cookie) rather than a reuse.
+     */
+    public static final Duration REUSE_GRACE = Duration.ofSeconds(10);
+
     /** What a presented token is worth at a given instant. */
     public enum State {
         /** Can be rotated. */
         ACTIVE,
-        /** Already spent: presenting it again is a reuse. */
+        /** Spent a moment ago: the request raced the rotation, so it gets an access token but no new token. */
+        JUST_ROTATED,
+        /** Spent: presenting it again is a reuse. */
         ROTATED,
         /** Its session ended (sign-out or reuse). */
         REVOKED,
@@ -60,7 +68,7 @@ public final class RefreshToken {
             return State.REVOKED;
         }
         if (rotatedAt != null) {
-            return State.ROTATED;
+            return now.isBefore(rotatedAt.plus(REUSE_GRACE)) ? State.JUST_ROTATED : State.ROTATED;
         }
         if (!now.isBefore(expiresAt)) {
             return State.EXPIRED;

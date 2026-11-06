@@ -213,10 +213,52 @@ class SessionsIT {
         verifiedUser(email, "Ana", PASSWORD);
         Session stolen = signedIn(signIn(email, PASSWORD));
         Session rotated = signedIn(refresh(stolen.refreshToken()));
+        clock.advance(Duration.ofSeconds(11));
 
         expectProblem(refresh(stolen.refreshToken()), "session-expired");
 
         expectProblem(refresh(rotated.refreshToken()), "session-expired");
+    }
+
+    @Test
+    @DisplayName("two tabs refreshing with the same cookie at once both get an access token, and the session survives")
+    void concurrentRefreshesKeepTheSession() {
+        verifiedUser(email, "Ana", PASSWORD);
+        Session signedIn = signedIn(signIn(email, PASSWORD));
+        Session firstTab = signedIn(refresh(signedIn.refreshToken()));
+
+        EntityExchangeResult<String> secondTab = refresh(signedIn.refreshToken())
+                .expectStatus()
+                .isOk()
+                .expectBody(String.class)
+                .returnResult();
+
+        assertThat(secondTab.getResponseHeaders().get(HttpHeaders.SET_COOKIE))
+                .as("the browser already holds the rotated cookie the first tab got")
+                .isNull();
+        String secondAccessToken =
+                JSON.readTree(secondTab.getResponseBody()).get("accessToken").asString();
+        me(secondAccessToken).expectStatus().isOk();
+        clock.advance(Duration.ofSeconds(11));
+        refresh(firstTab.refreshToken()).expectStatus().isOk();
+    }
+
+    @Test
+    @DisplayName("another site cannot make the browser refresh the session")
+    void refreshFromAnotherSiteIsRefused() {
+        verifiedUser(email, "Ana", PASSWORD);
+        Session session = signedIn(signIn(email, PASSWORD));
+
+        http.post()
+                .uri("/api/v1/sessions/refresh")
+                .header(HttpHeaders.ORIGIN, "http://evil.test")
+                .cookie("refresh_token", session.refreshToken())
+                .exchange()
+                .expectStatus()
+                .isForbidden();
+
+        clock.advance(Duration.ofSeconds(11));
+        refresh(session.refreshToken()).expectStatus().isOk();
     }
 
     @Test

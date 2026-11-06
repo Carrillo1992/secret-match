@@ -36,11 +36,21 @@ class RefreshTokenTest {
 
         RefreshToken successor = token.rotate(next, refreshedAt);
 
-        assertThat(token.stateAt(refreshedAt)).isEqualTo(State.ROTATED);
+        assertThat(token.stateAt(refreshedAt.plusSeconds(10))).isEqualTo(State.ROTATED);
         assertThat(successor.sessionId()).isEqualTo(token.sessionId());
         assertThat(successor.userId()).isEqualTo(user);
         assertThat(successor.tokenHash()).isEqualTo(next.hash());
         assertThat(successor.expiresAt()).isEqualTo(Instant.parse("2027-01-20T10:00:00Z"));
+    }
+
+    @Test
+    @DisplayName("a token rotated less than 10 seconds ago is just rotated, not yet a reuse")
+    void graceAfterRotation() {
+        RefreshToken token = RefreshToken.startSession(user, RefreshTokenValue.generate(RANDOM), SIGNED_IN);
+        token.rotate(RefreshTokenValue.generate(RANDOM), SIGNED_IN);
+
+        assertThat(token.stateAt(SIGNED_IN.plusSeconds(9))).isEqualTo(State.JUST_ROTATED);
+        assertThat(token.stateAt(SIGNED_IN.plusSeconds(10))).isEqualTo(State.ROTATED);
     }
 
     @Test

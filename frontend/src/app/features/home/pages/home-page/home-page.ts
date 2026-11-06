@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { LucideLogOut } from '@lucide/angular';
 import { AuthSession } from '../../../../core/auth/auth-session';
@@ -19,9 +19,14 @@ export class HomePage {
   private readonly router = inject(Router);
 
   protected readonly user = inject(CurrentUser);
+  protected readonly signOutFailed = signal(false);
 
   protected async signOut(): Promise<void> {
-    await this.session.signOut();
-    await this.router.navigateByUrl('/sign-in');
+    this.signOutFailed.set(false);
+    if (await this.session.signOut()) {
+      await this.router.navigateByUrl('/sign-in');
+    } else {
+      this.signOutFailed.set(true);
+    }
   }
 }

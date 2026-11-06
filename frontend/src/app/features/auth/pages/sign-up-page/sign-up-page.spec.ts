@@ -4,6 +4,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { forgetReturnPath, rememberedReturnPath } from '../../../../core/auth/return-path';
 import { SignUpPage } from './sign-up-page';
 
 const SIGN_UP_URL = 'http://api.test/api/v1/sign-ups';
@@ -151,5 +153,51 @@ describe('SignUpPage', () => {
 
     expect(page.querySelector('[role="alert"]')?.textContent).toContain('Inténtalo de nuevo');
     expect(page.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
+  });
+});
+
+describe('SignUpPage on the way somewhere', () => {
+  afterEach(() => forgetReturnPath());
+
+  it('remembers where the User was going, for when they sign in after verifying their email', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'sign-up', component: SignUpPage }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideApiConfiguration('http://api.test'),
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const harness = await RouterTestingHarness.create('/sign-up?next=%2Fjoin%2Fq8Xf3kL0');
+    const page = harness.routeNativeElement as HTMLElement;
+    const type = (id: string, value: string) => {
+      const input = page.querySelector<HTMLInputElement>(`#${id}`);
+      if (!input) {
+        throw new Error(`No field #${id}`);
+      }
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    };
+    for (const input of page.querySelectorAll<HTMLInputElement>('input')) {
+      type(
+        input.id,
+        input.type === 'email'
+          ? 'ana@example.com'
+          : input.type === 'password'
+            ? 'turrón-y-polvorones'
+            : 'Ana',
+      );
+    }
+    page.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    await harness.fixture.whenStable();
+    http
+      .expectOne(SIGN_UP_URL)
+      .flush({ signUpId: 'id-1' }, { status: 202, statusText: 'Accepted' });
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(rememberedReturnPath()).toBe('/join/q8Xf3kL0');
+    http.verify();
   });
 });

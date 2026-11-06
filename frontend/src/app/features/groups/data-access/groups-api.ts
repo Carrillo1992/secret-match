@@ -1,7 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
-import { create, group, myGroups } from '../../../core/api/generated/functions';
+import {
+  create,
+  group,
+  join,
+  myGroups,
+  regenerateInviteLink,
+} from '../../../core/api/generated/functions';
 import {
   CreateGroupRequest,
   GroupResponse,
@@ -25,6 +31,12 @@ export type GroupOutcome =
 export type CreateGroupOutcome =
   | { readonly status: 'created'; readonly groupId: string }
   | { readonly status: 'exchange-date-not-in-future' }
+  | { readonly status: 'failed' };
+
+/** `invalid` covers an unknown, malformed or regenerated code: the API answers them all the same. */
+export type JoinOutcome =
+  | { readonly status: 'joined'; readonly groupId: string }
+  | { readonly status: 'invalid' }
   | { readonly status: 'failed' };
 
 /** The signed-in User's Groups, with the API's errors turned into outcomes a page can show. */
@@ -55,6 +67,27 @@ export class GroupsApi {
       return problemCode(error) === 'exchange-date-not-in-future'
         ? { status: 'exchange-date-not-in-future' }
         : { status: 'failed' };
+    }
+  }
+
+  /** Joins the Group of this Invite Link code; a Member already in it just gets the Group back. */
+  async join(inviteCode: string): Promise<JoinOutcome> {
+    try {
+      const { groupId } = await this.api.invoke(join, { body: { inviteCode } });
+      return { status: 'joined', groupId };
+    } catch (error) {
+      const invalid =
+        error instanceof HttpErrorResponse && (error.status === 404 || error.status === 400);
+      return { status: invalid ? 'invalid' : 'failed' };
+    }
+  }
+
+  /** The Group with its new Invite Link, or `null` when it could not be regenerated. */
+  async regenerateInviteLink(groupId: string): Promise<Group | null> {
+    try {
+      return await this.api.invoke(regenerateInviteLink, { groupId });
+    } catch {
+      return null;
     }
   }
 }

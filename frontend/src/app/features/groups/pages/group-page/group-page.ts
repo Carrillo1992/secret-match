@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, resource } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  resource,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LucideCalendar, LucideChevronLeft, LucideSearchX, LucideWallet } from '@lucide/angular';
@@ -8,6 +16,10 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
+import {
+  InviteLinkCard,
+  RegenerateStatus,
+} from '../../components/invite-link-card/invite-link-card';
 import { euros, longExchangeDate } from '../../data-access/group-format';
 import { GroupsApi } from '../../data-access/groups-api';
 
@@ -22,6 +34,7 @@ import { GroupsApi } from '../../data-access/groups-api';
     Chip,
     StatusHeader,
     TextLink,
+    InviteLinkCard,
     LucideCalendar,
     LucideChevronLeft,
     LucideSearchX,
@@ -31,6 +44,7 @@ import { GroupsApi } from '../../data-access/groups-api';
 })
 export class GroupPage {
   private readonly groupsApi = inject(GroupsApi);
+  private readonly origin = inject(DOCUMENT).location.origin;
   private readonly groupId = toSignal(
     inject(ActivatedRoute).paramMap.pipe(map((params) => params.get('groupId') ?? '')),
     { requireSync: true },
@@ -52,8 +66,26 @@ export class GroupPage {
   });
   protected readonly notFound = computed(() => this.result()?.status === 'not-found');
 
+  /** The Invite Link to share: the SPA's own address, so it works on any host. */
+  protected readonly inviteLink = computed(() => {
+    const group = this.group();
+    return group ? `${this.origin}/join/${encodeURIComponent(group.inviteCode)}` : '';
+  });
+  protected readonly regenerateStatus = signal<RegenerateStatus>('idle');
+
   protected readonly date = longExchangeDate;
   protected readonly euros = euros;
+
+  protected async regenerateInviteLink(): Promise<void> {
+    this.regenerateStatus.set('regenerating');
+    const group = await this.groupsApi.regenerateInviteLink(this.groupId());
+    if (group) {
+      this.outcome.set({ status: 'found', group });
+      this.regenerateStatus.set('regenerated');
+    } else {
+      this.regenerateStatus.set('failed');
+    }
+  }
 
   protected reload(): void {
     this.outcome.reload();

@@ -68,6 +68,7 @@ The controls below are attribute directives in `shared/ui` that put the recipe o
 - **Secondary button**: `appButton="secondary"`: shorter, outlined in `primary`, fills on hover, dimmed when disabled.
 - **Text input**: `<input appField>` (`Field`, `shared/ui/field`): `rounded-field` on `bg-field` with a `line` border that turns `danger` when `aria-invalid` is set. The screen keeps the label (`font-bold`) above, the hint (`text-sm text-ink-muted`) or error (`text-sm font-semibold text-danger`) below, and the `aria-invalid` / `aria-describedby` wiring.
 - **Inline link**: `<a appLink>` (`TextLink`, `shared/ui/text-link`): semibold, `primary`, underlined. A link standing on its own line (not inside a sentence) is `<a appLink standalone>`, which adds a 44 px touch target.
+- **Chip**: `<span appChip>` or `<li appChip>` (`Chip`, `shared/ui/chip`): a short fact as a pill (a role, a count, an amount): `rounded-full bg-subtle`, `text-sm font-semibold` in `ink`. A label, not a control: it is never clickable. Chosen in #20.
 - **Alert**: `role="alert"` + `rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger` (or the `success` pair). Still a class list: it has one use so far; it becomes a directive when a second screen needs it.
 
 ## Layout patterns

@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, resource } from '@angular/core';
-import { Api } from '../../../core/api/generated/api';
-import { currentUser } from '../../../core/api/generated/functions';
+import { Api } from '../api/generated/api';
+import { currentUser } from '../api/generated/functions';
 
 /** The signed-in User, loaded once when the service is created. Provide it at the page. */
 @Injectable()

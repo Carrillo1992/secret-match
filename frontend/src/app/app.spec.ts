@@ -80,7 +80,7 @@ describe('App routes', () => {
     await navigation;
 
     expect(TestBed.inject(Router).url).toBe('/home');
-    expect(document.title).toBe('Inicio · SecretMatch');
+    expect(document.title).toBe('Mis grupos · SecretMatch');
   });
 
   it('sends unknown URLs to the landing page', async () => {

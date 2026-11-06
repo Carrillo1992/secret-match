@@ -18,6 +18,14 @@ public class MutableClock extends Clock {
         this.now = start;
     }
 
+    /**
+     * Puts the clock at this instant. The clock is shared by every test class that runs in the same
+     * cached Spring context, so a test that depends on the date sets it rather than assume it.
+     */
+    public void set(Instant instant) {
+        now = instant;
+    }
+
     public void advance(Duration duration) {
         now = now.plus(duration);
     }

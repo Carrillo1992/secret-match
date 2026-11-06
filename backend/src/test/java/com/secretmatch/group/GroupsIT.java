@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.secretmatch.MutableClock;
 import com.secretmatch.RecordingEmailSender;
 import com.secretmatch.TestPostgres;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +28,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Ticket #20: create a Group, list my Groups, see a Group; a non-Member gets 404. The clock starts on
+ * Ticket #20: create a Group, list my Groups, see a Group; a non-Member gets 404. Every test runs on
  * 2026-12-01 at 10:00 UTC (11:00 in Madrid).
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -44,6 +46,14 @@ class GroupsIT {
 
     @Autowired
     RecordingEmailSender mail;
+
+    @Autowired
+    MutableClock clock;
+
+    @BeforeEach
+    void firstOfDecember() {
+        clock.set(Instant.parse("2026-12-01T10:00:00Z"));
+    }
 
     @Test
     @DisplayName("the creator of a Group is its Admin and a Member, and sees its details")

@@ -198,6 +198,11 @@ describe('SignUpPage on the way somewhere', () => {
     await new Promise((resolve) => setTimeout(resolve));
 
     expect(rememberedReturnPath()).toBe('/join/q8Xf3kL0');
+    expect(
+      [...page.querySelectorAll('a')]
+        .find((a) => a.textContent?.includes('Inicia sesión'))
+        ?.getAttribute('href'),
+    ).toBe('/sign-in?next=%2Fjoin%2Fq8Xf3kL0');
     http.verify();
   });
 });

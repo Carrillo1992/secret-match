@@ -7,7 +7,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideGift } from '@lucide/angular';
-import { rememberReturnPath } from '../../../../core/auth/return-path';
+import { rememberReturnPath, safeReturnPath } from '../../../../core/auth/return-path';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
@@ -27,7 +27,9 @@ export class SignUpPage {
   private readonly signUpApi = inject(SignUpApi);
   private readonly router = inject(Router);
   /** Where the User was going, e.g. an Invite Link: they get there when they sign in. */
-  private readonly next = inject(ActivatedRoute).snapshot.queryParamMap.get('next');
+  protected readonly next = safeReturnPath(
+    inject(ActivatedRoute).snapshot.queryParamMap.get('next'),
+  );
 
   protected readonly rules = SIGN_UP_RULES;
   protected readonly form = inject(NonNullableFormBuilder).group({

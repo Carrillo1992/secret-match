@@ -24,7 +24,7 @@ class GroupTest {
 
     private static final MemberId GUEST = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
 
-    private static final InviteCode FIRST_CODE = InviteCode.of("first-code");
+    private static final InviteCode FIRST_CODE = new InviteCode("first-code");
 
     @Test
     @DisplayName("the User who creates a Group is its Admin and its only Member")
@@ -121,9 +121,9 @@ class GroupTest {
     void adminRegeneratesInviteLink() {
         Group group = Group.create("Amigos", CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW);
 
-        Group regenerated = group.regenerateInviteLink(CREATOR, InviteCode.of("second-code"));
+        Group regenerated = group.regenerateInviteLink(CREATOR, new InviteCode("second-code"));
 
-        assertThat(regenerated.inviteCode()).isEqualTo(InviteCode.of("second-code"));
+        assertThat(regenerated.inviteCode()).isEqualTo(new InviteCode("second-code"));
         assertThat(regenerated.id()).isEqualTo(group.id());
         assertThat(regenerated.members()).containsExactly(CREATOR);
     }
@@ -141,7 +141,7 @@ class GroupTest {
                 FIRST_CODE,
                 NOW);
 
-        assertThatThrownBy(() -> group.regenerateInviteLink(GUEST, InviteCode.of("second-code")))
+        assertThatThrownBy(() -> group.regenerateInviteLink(GUEST, new InviteCode("second-code")))
                 .isInstanceOf(AdminOnlyException.class)
                 .extracting(e -> ((AdminOnlyException) e).code())
                 .isEqualTo("admin-only");

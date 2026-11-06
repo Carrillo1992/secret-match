@@ -39,6 +39,9 @@ export type JoinOutcome =
   | { readonly status: 'invalid' }
   | { readonly status: 'failed' };
 
+export type RegenerateOutcome =
+  { readonly status: 'regenerated'; readonly group: Group } | { readonly status: 'failed' };
+
 /** The signed-in User's Groups, with the API's errors turned into outcomes a page can show. */
 @Injectable({ providedIn: 'root' })
 export class GroupsApi {
@@ -82,12 +85,18 @@ export class GroupsApi {
     }
   }
 
-  /** The Group with its new Invite Link, or `null` when it could not be regenerated. */
-  async regenerateInviteLink(groupId: string): Promise<Group | null> {
+  /**
+   * Gives the Group a new Invite Link. `failed` covers every refusal too: the page only offers this
+   * to the Admin, so a refusal means the Group changed under them, and the current link still works.
+   */
+  async regenerateInviteLink(groupId: string): Promise<RegenerateOutcome> {
     try {
-      return await this.api.invoke(regenerateInviteLink, { groupId });
+      return {
+        status: 'regenerated',
+        group: await this.api.invoke(regenerateInviteLink, { groupId }),
+      };
     } catch {
-      return null;
+      return { status: 'failed' };
     }
   }
 }

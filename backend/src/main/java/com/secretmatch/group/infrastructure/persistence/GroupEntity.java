@@ -77,7 +77,7 @@ class GroupEntity {
                 budget == null ? null : new Budget(budget),
                 new MemberId(adminId),
                 members.stream().map(member -> new MemberId(member.userId)).toList(),
-                InviteCode.of(inviteCode),
+                new InviteCode(inviteCode),
                 createdAt);
     }
 

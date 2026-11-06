@@ -162,6 +162,7 @@ describe('GroupPage', () => {
       button('Generar uno nuevo')?.click();
       await settle();
       expect(text(inviteCard())).toContain('El enlace actual dejará de funcionar');
+      expect(document.activeElement).toBe(button('Sí, generar uno nuevo'));
       http.expectNone(REGENERATE_URL);
       button('Sí, generar uno nuevo')?.click();
       await settle();
@@ -187,6 +188,7 @@ describe('GroupPage', () => {
       button('Cancelar')?.click();
       await settle();
 
+      expect(document.activeElement).toBe(button('Generar uno nuevo'));
       http.expectNone(REGENERATE_URL);
       expect(button('Sí, generar uno nuevo')).toBeUndefined();
       expect(shownLink()).toBe(`${location.origin}/join/q8Xf3kL0`);

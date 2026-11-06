@@ -78,13 +78,11 @@ export class GroupPage {
 
   protected async regenerateInviteLink(): Promise<void> {
     this.regenerateStatus.set('regenerating');
-    const group = await this.groupsApi.regenerateInviteLink(this.groupId());
-    if (group) {
-      this.outcome.set({ status: 'found', group });
-      this.regenerateStatus.set('regenerated');
-    } else {
-      this.regenerateStatus.set('failed');
+    const outcome = await this.groupsApi.regenerateInviteLink(this.groupId());
+    if (outcome.status === 'regenerated') {
+      this.outcome.set({ status: 'found', group: outcome.group });
     }
+    this.regenerateStatus.set(outcome.status);
   }
 
   protected reload(): void {

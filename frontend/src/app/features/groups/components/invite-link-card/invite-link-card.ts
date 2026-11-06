@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  Injector,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { LucideCopy, LucideRefreshCw } from '@lucide/angular';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
@@ -60,30 +71,24 @@ type Notice = 'copied' | 'copy-failed' | null;
               El enlace actual dejará de funcionar. Quien ya está en el grupo sigue dentro.
             </p>
             <div class="mt-4 flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                appButton="secondary"
-                [disabled]="regenerateStatus() === 'regenerating'"
-                (click)="confirm()"
-              >
+              <button #confirmButton type="button" appButton="secondary" (click)="confirm()">
                 Sí, generar uno nuevo
               </button>
-              <button type="button" appLink standalone (click)="confirming.set(false)">
-                Cancelar
-              </button>
+              <button type="button" appLink standalone (click)="cancel()">Cancelar</button>
             </div>
           </div>
         } @else {
           <button
+            #regenerateButton
             type="button"
             appLink
             standalone
             class="mt-2 gap-1.5"
-            [disabled]="regenerateStatus() === 'regenerating'"
+            [disabled]="busy()"
             (click)="startConfirming()"
           >
             <svg lucideRefreshCw [size]="16"></svg>
-            {{ regenerateStatus() === 'regenerating' ? 'Generando…' : 'Generar uno nuevo' }}
+            {{ busy() ? 'Generando…' : 'Generar uno nuevo' }}
           </button>
         }
       }
@@ -101,6 +106,13 @@ export class InviteLinkCard {
 
   protected readonly confirming = signal(false);
   private readonly notice = signal<Notice>(null);
+  private readonly injector = inject(Injector);
+  private readonly confirmButton = viewChild<ElementRef<HTMLButtonElement>>('confirmButton');
+  private readonly regenerateButton = viewChild<ElementRef<HTMLButtonElement>>('regenerateButton');
+
+  protected busy(): boolean {
+    return this.regenerateStatus() === 'regenerating';
+  }
 
   protected statusText(): string {
     switch (this.notice()) {
@@ -125,13 +137,25 @@ export class InviteLinkCard {
     }
   }
 
+  /** The button that opened the confirmation disappears, so keyboard focus moves into it. */
   protected startConfirming(): void {
     this.notice.set(null);
     this.confirming.set(true);
+    this.focusAfterRender(() => this.confirmButton());
+  }
+
+  protected cancel(): void {
+    this.confirming.set(false);
+    this.focusAfterRender(() => this.regenerateButton());
   }
 
   protected confirm(): void {
     this.confirming.set(false);
     this.regenerate.emit();
+    this.focusAfterRender(() => this.regenerateButton());
+  }
+
+  private focusAfterRender(target: () => ElementRef<HTMLButtonElement> | undefined): void {
+    afterNextRender(() => target()?.nativeElement.focus(), { injector: this.injector });
   }
 }

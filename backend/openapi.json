@@ -133,6 +133,65 @@
         "tags" : [ "groups" ]
       }
     },
+    "/api/v1/groups/{groupId}/invite-link" : {
+      "post" : {
+        "description" : "Only the Admin can. The previous Invite Link stops working.",
+        "operationId" : "regenerateInviteLink",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Regenerate the Group's Invite Link",
+        "tags" : [ "groups" ]
+      }
+    },
+    "/api/v1/memberships" : {
+      "post" : {
+        "description" : "A User who is a Member already just gets the Group back. A code that matches no Group's current Invite Link is a 404 that says nothing about any Group.",
+        "operationId" : "join",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/JoinGroupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MembershipResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Join a Group through its Invite Link",
+        "tags" : [ "invite-links" ]
+      }
+    },
     "/api/v1/sessions" : {
       "post" : {
         "description" : "Sets the refresh token cookie. A wrong email or password gets the same answer.",
@@ -341,6 +400,10 @@
       "GroupResponse" : {
         "type" : "object",
         "properties" : {
+          "admin" : {
+            "type" : "boolean",
+            "description" : "Whether the signed-in User is its Admin."
+          },
           "budget" : {
             "type" : "number",
             "description" : "In euros; absent when the Group has no budget."
@@ -353,6 +416,10 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "inviteCode" : {
+            "type" : "string",
+            "description" : "The code of the Group's Invite Link: the SPA builds the link from it."
+          },
           "members" : {
             "type" : "array",
             "description" : "The Admin first.",
@@ -364,7 +431,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "exchangeDate", "id", "members", "name" ]
+        "required" : [ "admin", "exchangeDate", "id", "inviteCode", "members", "name" ]
       },
       "GroupSummaryResponse" : {
         "type" : "object",
@@ -406,6 +473,17 @@
         },
         "required" : [ "status" ]
       },
+      "JoinGroupRequest" : {
+        "type" : "object",
+        "properties" : {
+          "inviteCode" : {
+            "type" : "string",
+            "maxLength" : 64,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "inviteCode" ]
+      },
       "LinkTokenRequest" : {
         "type" : "object",
         "properties" : {
@@ -427,6 +505,16 @@
           }
         },
         "required" : [ "admin", "displayName" ]
+      },
+      "MembershipResponse" : {
+        "type" : "object",
+        "properties" : {
+          "groupId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "groupId" ]
       },
       "SignInRequest" : {
         "type" : "object",

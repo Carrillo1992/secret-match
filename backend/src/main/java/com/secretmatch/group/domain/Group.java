@@ -20,6 +20,7 @@ public final class Group {
     private final Budget budget;
     private final MemberId admin;
     private final List<MemberId> members;
+    private final InviteCode inviteCode;
     private final Instant createdAt;
 
     /** Rebuilds a stored Group; {@code budget} is {@code null} for a Group without one. */
@@ -30,6 +31,7 @@ public final class Group {
             Budget budget,
             MemberId admin,
             List<MemberId> members,
+            InviteCode inviteCode,
             Instant createdAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
@@ -37,6 +39,7 @@ public final class Group {
         this.budget = budget;
         this.admin = Objects.requireNonNull(admin, "admin");
         this.members = List.copyOf(members);
+        this.inviteCode = Objects.requireNonNull(inviteCode, "inviteCode");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
     }
 
@@ -44,10 +47,17 @@ public final class Group {
      * A new Group whose creator is its Admin and its first Member.
      *
      * @param budget in euros; {@code null} for a Group without a budget
+     * @param inviteCode the code of its first Invite Link
      * @throws InvalidGroupDetailsException if a detail breaks its rules, e.g. the Exchange Date is not after
      *     today in {@link #TIME_ZONE}
      */
-    public static Group create(String name, LocalDate exchangeDate, BigDecimal budget, MemberId creator, Instant now) {
+    public static Group create(
+            String name,
+            LocalDate exchangeDate,
+            BigDecimal budget,
+            MemberId creator,
+            InviteCode inviteCode,
+            Instant now) {
         if (exchangeDate == null || !exchangeDate.isAfter(LocalDate.ofInstant(now, TIME_ZONE))) {
             throw InvalidGroupDetailsException.exchangeDate();
         }
@@ -58,7 +68,20 @@ public final class Group {
                 budget == null ? null : new Budget(budget),
                 creator,
                 List.of(creator),
+                inviteCode,
                 now);
+    }
+
+    /**
+     * The same Group with a new Invite Link: the previous one stops working.
+     *
+     * @throws AdminOnlyException if {@code by} is not the Admin
+     */
+    public Group regenerateInviteLink(MemberId by, InviteCode newCode) {
+        if (!admin.equals(by)) {
+            throw new AdminOnlyException();
+        }
+        return new Group(id, name, exchangeDate, budget, admin, members, newCode, createdAt);
     }
 
     public GroupId id() {
@@ -87,6 +110,10 @@ public final class Group {
 
     public boolean hasMember(MemberId user) {
         return members.contains(user);
+    }
+
+    public InviteCode inviteCode() {
+        return inviteCode;
     }
 
     public Instant createdAt() {

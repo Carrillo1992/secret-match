@@ -4,9 +4,12 @@ import com.secretmatch.group.domain.Budget;
 import com.secretmatch.group.domain.Group;
 import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.GroupNotFoundException;
+import com.secretmatch.group.domain.InviteCode;
 import com.secretmatch.group.domain.MemberId;
 import com.secretmatch.identity.application.UserDirectory;
+import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,11 +22,13 @@ public class MyGroups {
 
     private final Groups groups;
     private final UserDirectory users;
+    private final SecureRandom random;
     private final Clock clock;
 
-    MyGroups(Groups groups, UserDirectory users, Clock clock) {
+    MyGroups(Groups groups, UserDirectory users, SecureRandom random, Clock clock) {
         this.groups = groups;
         this.users = users;
+        this.random = random;
         this.clock = clock;
     }
 
@@ -34,9 +39,15 @@ public class MyGroups {
      */
     @Transactional
     public GroupDetails create(MemberId creator, CreateGroupCommand command) {
-        Group group = Group.create(command.name(), command.exchangeDate(), command.budget(), creator, clock.instant());
+        Group group = Group.create(
+                command.name(),
+                command.exchangeDate(),
+                command.budget(),
+                creator,
+                InviteCode.generate(random),
+                clock.instant());
         groups.add(group);
-        return detailsOf(group);
+        return detailsOf(group, creator);
     }
 
     /** The Groups this User is a Member of, soonest Exchange Date first. */
@@ -60,7 +71,21 @@ public class MyGroups {
      */
     @Transactional(readOnly = true)
     public GroupDetails group(GroupId id, MemberId viewer) {
-        return detailsOf(memberView(id, viewer));
+        return detailsOf(memberView(id, viewer), viewer);
+    }
+
+    /**
+     * Gives the Group a new Invite Link; the previous one stops working.
+     *
+     * @return the Group with its new Invite Link
+     * @throws GroupNotFoundException if there is no such Group or the User is not one of its Members
+     * @throws com.secretmatch.group.domain.AdminOnlyException if the User is not its Admin
+     */
+    @Transactional
+    public GroupDetails regenerateInviteLink(GroupId id, MemberId by) {
+        Group group = memberView(id, by).regenerateInviteLink(by, InviteCode.generate(random));
+        groups.saveInviteCode(group);
+        return detailsOf(group, by);
     }
 
     /** The Group, only if the User is one of its Members. Every use case on one Group goes through here. */
@@ -68,7 +93,7 @@ public class MyGroups {
         return groups.findById(id).filter(group -> group.hasMember(user)).orElseThrow(GroupNotFoundException::new);
     }
 
-    private GroupDetails detailsOf(Group group) {
+    private GroupDetails detailsOf(Group group, MemberId viewer) {
         Map<UUID, String> names = users.displayNamesOf(
                 group.members().stream().map(MemberId::value).toList());
         return new GroupDetails(
@@ -77,7 +102,11 @@ public class MyGroups {
                 group.exchangeDate(),
                 group.budget().map(Budget::euros).orElse(null),
                 group.members().stream()
+                        // Stable: the Admin first, the rest keep the order they joined in.
+                        .sorted(Comparator.comparing(member -> !member.equals(group.admin())))
                         .map(member -> new GroupDetails.Member(names.get(member.value()), member.equals(group.admin())))
-                        .toList());
+                        .toList(),
+                group.inviteCode().value(),
+                group.admin().equals(viewer));
     }
 }

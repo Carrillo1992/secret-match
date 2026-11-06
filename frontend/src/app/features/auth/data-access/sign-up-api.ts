@@ -1,13 +1,22 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
-import { sendVerificationEmail, signUp, verifyEmail } from '../../../core/api/generated/functions';
+import {
+  sendNewLinkForSignUp,
+  sendNewLinkInPlaceOf,
+  signUp,
+  verifyEmail,
+} from '../../../core/api/generated/functions';
 import { SignUpRequest } from '../../../core/api/generated/models';
 
-export type SignUpDetails = SignUpRequest;
-
-/** `accepted` also covers an email that already has an account: the API answers both the same. */
-export type SignUpOutcome = 'accepted' | 'invalid' | 'failed';
+/**
+ * `accepted` also covers an email that already has an account: the API answers both the same, with a
+ * `signUpId` that then matches nothing.
+ */
+export type SignUpOutcome =
+  | { readonly status: 'accepted'; readonly signUpId: string }
+  | { readonly status: 'invalid' }
+  | { readonly status: 'failed' };
 
 export type VerifyEmailOutcome = 'verified' | 'expired' | 'used' | 'invalid' | 'failed';
 
@@ -24,12 +33,12 @@ const VERIFICATION_PROBLEMS: Readonly<Record<string, VerifyEmailOutcome>> = {
 export class SignUpApi {
   private readonly api = inject(Api);
 
-  async signUp(details: SignUpDetails): Promise<SignUpOutcome> {
+  async signUp(details: SignUpRequest): Promise<SignUpOutcome> {
     try {
-      await this.api.invoke(signUp, { body: details });
-      return 'accepted';
+      const { signUpId } = await this.api.invoke(signUp, { body: details });
+      return { status: 'accepted', signUpId };
     } catch (error) {
-      return isClientError(error) ? 'invalid' : 'failed';
+      return { status: isClientError(error) ? 'invalid' : 'failed' };
     }
   }
 
@@ -43,9 +52,18 @@ export class SignUpApi {
   }
 
   /** Resolves `true` once the API has taken the request, whether or not it sends anything. */
-  async sendVerificationEmail(email: string): Promise<boolean> {
+  newLinkForSignUp(signUpId: string): Promise<boolean> {
+    return this.accepted(this.api.invoke(sendNewLinkForSignUp, { signUpId }));
+  }
+
+  /** Resolves `true` once the API has taken the request, whether or not it sends anything. */
+  newLinkInPlaceOf(token: string): Promise<boolean> {
+    return this.accepted(this.api.invoke(sendNewLinkInPlaceOf, { body: { token } }));
+  }
+
+  private async accepted(request: Promise<void>): Promise<boolean> {
     try {
-      await this.api.invoke(sendVerificationEmail, { body: { email } });
+      await request;
       return true;
     } catch {
       return false;

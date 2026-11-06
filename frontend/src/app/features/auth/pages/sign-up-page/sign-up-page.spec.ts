@@ -82,7 +82,7 @@ describe('SignUpPage', () => {
   });
 
   it('rejects a malformed email, a blank name and a short password', async () => {
-    type('Correo electrónico', 'ana-at-example');
+    type('Correo electrónico', 'ana@example');
     type('Nombre', '   ');
     type('Contraseña', 'corta');
     await submit();
@@ -115,10 +115,11 @@ describe('SignUpPage', () => {
       displayName: 'Ana',
       password: 'turrón-y-polvorones',
     });
-    request.flush(null, { status: 202, statusText: 'Accepted' });
+    request.flush({ signUpId: 'id-1' }, { status: 202, statusText: 'Accepted' });
     await settle();
 
     expect(navigate).toHaveBeenCalledWith(['/check-email'], {
+      queryParams: { signUp: 'id-1' },
       state: { email: 'ana@example.com' },
     });
   });
@@ -128,7 +129,9 @@ describe('SignUpPage', () => {
     await submit();
 
     expect(page.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
-    http.expectOne(SIGN_UP_URL).flush(null, { status: 202, statusText: 'Accepted' });
+    http
+      .expectOne(SIGN_UP_URL)
+      .flush({ signUpId: 'id-1' }, { status: 202, statusText: 'Accepted' });
   });
 
   it('says the details were rejected when the API refuses them', async () => {

@@ -44,9 +44,9 @@ describe('SignUpApi', () => {
       displayName: 'Ana',
       password: 'secreto123',
     });
-    request.flush(null, { status: 202, statusText: 'Accepted' });
+    request.flush({ signUpId: 'id-1' }, { status: 202, statusText: 'Accepted' });
 
-    await expect(done).resolves.toBe('accepted');
+    await expect(done).resolves.toEqual({ status: 'accepted', signUpId: 'id-1' });
   });
 
   it('reports invalid details when the API answers 400', async () => {
@@ -59,7 +59,7 @@ describe('SignUpApi', () => {
       .expectOne(`${API}/sign-ups`)
       .flush({ status: 400 }, { status: 400, statusText: 'Bad Request' });
 
-    await expect(done).resolves.toBe('invalid');
+    await expect(done).resolves.toEqual({ status: 'invalid' });
   });
 
   it('reports invalid details when the domain rejects them with a 422', async () => {
@@ -68,12 +68,12 @@ describe('SignUpApi', () => {
       displayName: 'Ana',
       password: 'secreto123',
     });
-    http.expectOne(`${API}/sign-ups`).flush(JSON.stringify(problem('invalid-email')), {
+    http.expectOne(`${API}/sign-ups`).flush(problem('invalid-password'), {
       status: 422,
       statusText: 'Unprocessable Content',
     });
 
-    await expect(done).resolves.toBe('invalid');
+    await expect(done).resolves.toEqual({ status: 'invalid' });
   });
 
   it('reports a failure when the API cannot be reached', async () => {
@@ -84,7 +84,7 @@ describe('SignUpApi', () => {
     });
     http.expectOne(`${API}/sign-ups`).error(new ProgressEvent('error'), { status: 0 });
 
-    await expect(done).resolves.toBe('failed');
+    await expect(done).resolves.toEqual({ status: 'failed' });
   });
 
   it('verifies an email with the token from the link', async () => {
@@ -117,18 +117,28 @@ describe('SignUpApi', () => {
     await expect(done).resolves.toBe('failed');
   });
 
-  it('asks for a new verification email', async () => {
-    const done = signUpApi.sendVerificationEmail('ana@example.com');
+  it('asks for a new link for a sign-up', async () => {
+    const done = signUpApi.newLinkForSignUp('id-1');
 
-    const request = http.expectOne(`${API}/verification-emails`);
-    expect(request.request.body).toEqual({ email: 'ana@example.com' });
+    const request = http.expectOne(`${API}/sign-ups/id-1/verification-emails`);
+    expect(request.request.method).toBe('POST');
     request.flush(null, { status: 202, statusText: 'Accepted' });
 
     await expect(done).resolves.toBe(true);
   });
 
-  it('reports a failed request for a new verification email', async () => {
-    const done = signUpApi.sendVerificationEmail('ana@example.com');
+  it('asks for a new link in place of an old one', async () => {
+    const done = signUpApi.newLinkInPlaceOf('tok-123');
+
+    const request = http.expectOne(`${API}/verification-emails`);
+    expect(request.request.body).toEqual({ token: 'tok-123' });
+    request.flush(null, { status: 202, statusText: 'Accepted' });
+
+    await expect(done).resolves.toBe(true);
+  });
+
+  it('reports a failed request for a new link', async () => {
+    const done = signUpApi.newLinkInPlaceOf('tok-123');
     http.expectOne(`${API}/verification-emails`).error(new ProgressEvent('error'), { status: 0 });
 
     await expect(done).resolves.toBe(false);

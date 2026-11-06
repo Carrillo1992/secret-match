@@ -7,16 +7,15 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { VerificationEmailRequest } from '../../models/verification-email-request';
 
-export interface SendVerificationEmail$Params {
-      body: VerificationEmailRequest
+export interface SendNewLinkForSignUp$Params {
+  signUpId: string;
 }
 
-export function sendVerificationEmail(http: HttpClient, rootUrl: string, params: SendVerificationEmail$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
-  const rb = new RequestBuilder(rootUrl, sendVerificationEmail.PATH, 'post');
+export function sendNewLinkForSignUp(http: HttpClient, rootUrl: string, params: SendNewLinkForSignUp$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+  const rb = new RequestBuilder(rootUrl, sendNewLinkForSignUp.PATH, 'post');
   if (params) {
-    rb.body(params.body, 'application/json');
+    rb.path('signUpId', params.signUpId, {});
   }
 
   return http.request(
@@ -29,4 +28,4 @@ export function sendVerificationEmail(http: HttpClient, rootUrl: string, params:
   );
 }
 
-sendVerificationEmail.PATH = '/api/v1/verification-emails';
+sendNewLinkForSignUp.PATH = '/api/v1/sign-ups/{signUpId}/verification-emails';

@@ -3,5 +3,6 @@
 
 export type { EmailVerificationRequest } from './models/email-verification-request';
 export type { Health } from './models/health';
+export type { NewLinkRequest } from './models/new-link-request';
 export type { SignUpRequest } from './models/sign-up-request';
-export type { VerificationEmailRequest } from './models/verification-email-request';
+export type { SignUpResponse } from './models/sign-up-response';

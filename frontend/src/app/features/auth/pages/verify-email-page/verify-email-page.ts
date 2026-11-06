@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ResendVerificationForm } from '../../components/resend-verification-form/resend-verification-form';
-import { ResendVerification } from '../../data-access/resend-verification';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { NewLinkButton } from '../../components/new-link-button/new-link-button';
+import { NewVerificationLink } from '../../data-access/new-verification-link';
 import { SignUpApi, VerifyEmailOutcome } from '../../data-access/sign-up-api';
+import { SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 
 type VerifyEmailStatus = 'verifying' | VerifyEmailOutcome;
 
@@ -10,18 +11,23 @@ type VerifyEmailStatus = 'verifying' | VerifyEmailOutcome;
 @Component({
   selector: 'app-verify-email-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ResendVerificationForm, RouterLink],
+  imports: [NewLinkButton, RouterLink],
   templateUrl: './verify-email-page.html',
-  providers: [ResendVerification],
+  providers: [NewVerificationLink],
 })
 export class VerifyEmailPage {
   private readonly signUpApi = inject(SignUpApi);
-  private readonly token = inject(ActivatedRoute).snapshot.queryParamMap.get('token') ?? '';
+  private readonly token: string;
 
-  protected readonly resend = inject(ResendVerification);
+  protected readonly newLink = inject(NewVerificationLink);
+  protected readonly rules = SIGN_UP_RULES;
   protected readonly status = signal<VerifyEmailStatus>('verifying');
 
   constructor() {
+    const route = inject(ActivatedRoute);
+    this.token = route.snapshot.queryParamMap.get('token') ?? '';
+    // The page keeps the token in memory; the address bar and the history do not need it.
+    void inject(Router).navigate([], { relativeTo: route, queryParams: {}, replaceUrl: true });
     void this.verify();
   }
 
@@ -32,5 +38,9 @@ export class VerifyEmailPage {
     }
     this.status.set('verifying');
     this.status.set(await this.signUpApi.verifyEmail(this.token));
+  }
+
+  protected askNewLink(): Promise<void> {
+    return this.newLink.inPlaceOf(this.token);
   }
 }

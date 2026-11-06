@@ -1,20 +1,23 @@
 import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { ResendVerificationForm } from '../../components/resend-verification-form/resend-verification-form';
-import { ResendVerification } from '../../data-access/resend-verification';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { NewLinkButton } from '../../components/new-link-button/new-link-button';
+import { NewVerificationLink } from '../../data-access/new-verification-link';
+import { SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 
-/** After a sign-up: "check your email", with a way to ask for the link again. */
+/** After a sign-up, `/check-email?signUp=<id>`: "check your email", and a way to get a new link. */
 @Component({
   selector: 'app-check-email-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ResendVerificationForm, RouterLink],
+  imports: [NewLinkButton, RouterLink],
   templateUrl: './check-email-page.html',
-  providers: [ResendVerification],
+  providers: [NewVerificationLink],
 })
 export class CheckEmailPage {
-  protected readonly resend = inject(ResendVerification);
-  /** Handed over by the sign-up page; gone after a reload, when the page asks for it instead. */
+  protected readonly newLink = inject(NewVerificationLink);
+  protected readonly rules = SIGN_UP_RULES;
+  protected readonly signUpId = inject(ActivatedRoute).snapshot.queryParamMap.get('signUp') ?? '';
+  /** Handed over by the sign-up page in the navigation state, so it is gone after a reload. */
   protected readonly email = emailFrom(inject(Location).getState());
 }
 

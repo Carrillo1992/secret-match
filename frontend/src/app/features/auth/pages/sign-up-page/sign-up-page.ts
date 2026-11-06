@@ -7,7 +7,7 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { SignUpApi } from '../../data-access/sign-up-api';
-import { maxUtf8Bytes, notBlank, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
+import { emailShape, maxUtf8Bytes, notBlank, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 
 type SubmitError = 'invalid' | 'failed';
 
@@ -25,7 +25,7 @@ export class SignUpPage {
   protected readonly form = inject(NonNullableFormBuilder).group({
     email: [
       '',
-      [Validators.required, Validators.email, Validators.maxLength(SIGN_UP_RULES.emailMaxLength)],
+      [Validators.required, emailShape, Validators.maxLength(SIGN_UP_RULES.emailMaxLength)],
     ],
     displayName: ['', [notBlank, Validators.maxLength(SIGN_UP_RULES.displayNameMaxLength)]],
     password: [
@@ -60,10 +60,15 @@ export class SignUpPage {
       password,
     });
     this.sending.set(false);
-    if (outcome === 'accepted') {
-      await this.router.navigate(['/check-email'], { state: { email: email.trim() } });
+    if (outcome.status === 'accepted') {
+      // The id may go in the URL: it only lets someone ask for a new link to the same inbox.
+      // The email stays out of it, so it never lands in history or server logs.
+      await this.router.navigate(['/check-email'], {
+        queryParams: { signUp: outcome.signUpId },
+        state: { email: email.trim() },
+      });
     } else {
-      this.submitError.set(outcome);
+      this.submitError.set(outcome.status);
     }
   }
 }

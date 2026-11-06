@@ -6,7 +6,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { CheckEmailPage } from './check-email-page';
 
-const RESEND_URL = 'http://api.test/api/v1/verification-emails';
+const NEW_LINK_URL = 'http://api.test/api/v1/sign-ups/id-1/verification-emails';
 
 describe('CheckEmailPage', () => {
   let http: HttpTestingController;
@@ -29,36 +29,49 @@ describe('CheckEmailPage', () => {
 
   const page = () => harness.routeNativeElement as HTMLElement;
   // What the sign-up page does once the API has accepted the sign-up.
-  const arriveFromSignUp = async (email: string) => {
-    await TestBed.inject(Router).navigate(['/check-email'], { state: { email } });
+  const arriveFromSignUp = async () => {
+    await TestBed.inject(Router).navigate(['/check-email'], {
+      queryParams: { signUp: 'id-1' },
+      state: { email: 'ana@example.com' },
+    });
     harness.detectChanges();
   };
 
-  it('says where the link was sent, as handed over by the sign-up', async () => {
-    await arriveFromSignUp('ana@example.com');
+  it('says where the link was sent and how long it lasts', async () => {
+    await arriveFromSignUp();
 
     expect(page().querySelector('h1')?.textContent).toContain('Revisa tu correo');
     expect(page().textContent).toContain('ana@example.com');
-    expect(page().querySelector<HTMLInputElement>('#resend-email')?.value).toBe('ana@example.com');
+    expect(page().textContent).toContain('Caduca en 24 horas');
   });
 
-  it('still explains itself when opened directly, without the email', async () => {
-    await harness.navigateByUrl('/check-email');
+  it('asks for a new link for this sign-up and confirms it', async () => {
+    await arriveFromSignUp();
 
-    expect(page().textContent).toContain('Te hemos enviado un enlace para confirmar tu cuenta');
-    expect(page().querySelector<HTMLInputElement>('#resend-email')?.value).toBe('');
-  });
-
-  it('asks for a new link and confirms it', async () => {
-    await arriveFromSignUp('ana@example.com');
-
-    page().querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
-    const request = http.expectOne(RESEND_URL);
-    expect(request.request.body).toEqual({ email: 'ana@example.com' });
+    page().querySelector('button')?.click();
+    const request = http.expectOne(NEW_LINK_URL);
+    expect(request.request.method).toBe('POST');
     request.flush(null, { status: 202, statusText: 'Accepted' });
     await new Promise((resolve) => setTimeout(resolve));
     harness.detectChanges();
 
-    expect(page().querySelector('[role="status"]')?.textContent).toContain('te hemos enviado');
+    expect(page().querySelector('[role="status"]')?.textContent).toContain('enlace nuevo');
+  });
+
+  it('keeps the new-link button after a reload, without the email', async () => {
+    await harness.navigateByUrl('/check-email?signUp=id-1');
+
+    expect(page().textContent).toContain('Te hemos enviado un enlace para confirmar tu cuenta');
+    expect(page().textContent).not.toContain('@');
+    expect(page().querySelector('button')).not.toBeNull();
+  });
+
+  it('sends the visitor back to the sign-up when it knows no sign-up', async () => {
+    await harness.navigateByUrl('/check-email');
+
+    expect(page().querySelector('button')).toBeNull();
+    expect(page().querySelector('a[href="/sign-up"]')?.textContent).toContain(
+      'vuelve a registrarte',
+    );
   });
 });

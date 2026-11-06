@@ -1,6 +1,7 @@
 package com.secretmatch.identity.infrastructure.persistence;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -9,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     boolean existsByEmail(String email);
+
+    Optional<UserEntity> findByEmail(String email);
 
     /**
      * Inserts the User unless the email is taken. A clash is a normal outcome (two sign-ups verified at

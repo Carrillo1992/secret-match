@@ -39,6 +39,12 @@ describe('LandingPage', () => {
     api.expectOne(HEALTH_URL);
   });
 
+  it('links to the sign-in page', () => {
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a[href="/sign-in"]');
+    expect(link?.textContent).toContain('Iniciar sesión');
+    api.expectOne(HEALTH_URL);
+  });
+
   it('says it is checking the API while the health request is in flight', () => {
     expect(statusText()).toContain('Comprobando');
     api.expectOne(HEALTH_URL);

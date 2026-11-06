@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
+import { problemCode } from '../../../core/api/problem';
 import {
   sendNewLinkForSignUp,
   sendNewLinkInPlaceOf,
@@ -19,8 +20,6 @@ export type SignUpOutcome =
   | { readonly status: 'failed' };
 
 export type VerifyEmailOutcome = 'verified' | 'expired' | 'used' | 'invalid' | 'failed';
-
-const PROBLEM_TYPE_PREFIX = 'urn:secretmatch:problem:';
 
 const VERIFICATION_PROBLEMS: Readonly<Record<string, VerifyEmailOutcome>> = {
   'verification-link-expired': 'expired',
@@ -73,26 +72,4 @@ export class SignUpApi {
 
 function isClientError(error: unknown): boolean {
   return error instanceof HttpErrorResponse && (error.status === 400 || error.status === 422);
-}
-
-function problemCode(error: unknown): string {
-  if (!(error instanceof HttpErrorResponse)) {
-    return '';
-  }
-  const type = problemBody(error.error)?.type;
-  return typeof type === 'string' && type.startsWith(PROBLEM_TYPE_PREFIX)
-    ? type.slice(PROBLEM_TYPE_PREFIX.length)
-    : '';
-}
-
-/** Endpoints without a response body are read as text, so their problems arrive as JSON text. */
-function problemBody(body: unknown): { type?: unknown } | null {
-  if (typeof body !== 'string') {
-    return typeof body === 'object' ? (body as { type?: unknown } | null) : null;
-  }
-  try {
-    return JSON.parse(body) as { type?: unknown } | null;
-  } catch {
-    return null;
-  }
 }

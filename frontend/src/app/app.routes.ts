@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
   {
@@ -29,6 +30,19 @@ export const routes: Routes = [
       import('./features/auth/pages/verify-email-page/verify-email-page').then(
         (m) => m.VerifyEmailPage,
       ),
+  },
+  {
+    path: 'sign-in',
+    title: 'Iniciar sesión · SecretMatch',
+    loadComponent: () =>
+      import('./features/auth/pages/sign-in-page/sign-in-page').then((m) => m.SignInPage),
+  },
+  {
+    path: 'home',
+    title: 'Inicio · SecretMatch',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/home/pages/home-page/home-page').then((m) => m.HomePage),
   },
   { path: '**', redirectTo: '' },
 ];

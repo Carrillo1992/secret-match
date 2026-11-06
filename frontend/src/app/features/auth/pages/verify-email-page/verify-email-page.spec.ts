@@ -53,6 +53,7 @@ describe('VerifyEmailPage', () => {
     await settle();
 
     expect(heading()).toContain('¡Correo confirmado!');
+    expect(page().querySelector('a[href="/sign-in"]')?.textContent).toContain('Iniciar sesión');
   });
 
   it('takes the token out of the address bar', async () => {

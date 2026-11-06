@@ -1,9 +1,11 @@
 package com.secretmatch.identity.infrastructure.persistence;
 
 import com.secretmatch.identity.application.SignUpVerifications;
+import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.SignUpId;
 import com.secretmatch.identity.domain.SignUpVerification;
 import com.secretmatch.identity.domain.TokenHash;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
@@ -24,6 +26,13 @@ class JpaSignUpVerifications implements SignUpVerifications {
     @Override
     public Optional<SignUpVerification> findByTokenHash(TokenHash tokenHash) {
         return repository.findLockedByTokenHash(tokenHash.value()).map(SignUpVerificationEntity::toDomain);
+    }
+
+    @Override
+    public List<SignUpVerification> findWaitingFor(EmailAddress email) {
+        return repository.findByEmailAndUsedAtIsNull(email.value()).stream()
+                .map(SignUpVerificationEntity::toDomain)
+                .toList();
     }
 
     @Override

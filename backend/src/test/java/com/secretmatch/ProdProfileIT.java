@@ -21,7 +21,8 @@ import org.springframework.test.web.servlet.client.RestTestClient;
             "CORS_ALLOWED_ORIGIN=http://spa.test",
             "MAIL_FROM_ADDRESS=no-reply@secretmatch.test",
             "APP_BASE_URL=http://spa.test",
-            "RESEND_API_KEY=re_placeholder"
+            "RESEND_API_KEY=re_placeholder",
+            "JWT_SIGNING_KEY=cHJvZC1wcm9maWxlLXRlc3Qta2V5LW5vdC1hLXNlY3JldC0xMjM0"
         })
 @AutoConfigureRestTestClient
 @ActiveProfiles("prod")

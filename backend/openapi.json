@@ -54,6 +54,69 @@
         "tags" : [ "sign-up" ]
       }
     },
+    "/api/v1/sessions" : {
+      "post" : {
+        "description" : "Sets the refresh token cookie. A wrong email or password gets the same answer.",
+        "operationId" : "signIn",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SignInRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Sign in with email and password",
+        "tags" : [ "sessions" ]
+      }
+    },
+    "/api/v1/sessions/current" : {
+      "delete" : {
+        "description" : "Ends the session of the refresh token cookie and clears it.",
+        "operationId" : "signOut",
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Sign out",
+        "tags" : [ "sessions" ]
+      }
+    },
+    "/api/v1/sessions/refresh" : {
+      "post" : {
+        "description" : "Rotates the cookie. Reusing an old cookie ends the whole session.",
+        "operationId" : "refresh",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Swap the refresh token cookie for a new access token",
+        "tags" : [ "sessions" ]
+      }
+    },
     "/api/v1/sign-ups" : {
       "post" : {
         "description" : "Emails a verification link. Answers the same whether or not the email has an account.",
@@ -106,6 +169,25 @@
         "tags" : [ "sign-up" ]
       }
     },
+    "/api/v1/users/me" : {
+      "get" : {
+        "operationId" : "currentUser",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CurrentUserResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The signed-in User",
+        "tags" : [ "sessions" ]
+      }
+    },
     "/api/v1/verification-emails" : {
       "post" : {
         "description" : "Sent only while the link's sign-up waits for verification. Answers the same either way.",
@@ -132,6 +214,31 @@
   },
   "components" : {
     "schemas" : {
+      "AccessTokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "accessToken", "expiresAt" ]
+      },
+      "CurrentUserResponse" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "displayName", "email" ]
+      },
       "Health" : {
         "type" : "object",
         "description" : "Overall API health as reported by Actuator. Only status is part of the contract.",
@@ -152,6 +259,19 @@
           }
         },
         "required" : [ "token" ]
+      },
+      "SignInRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "password" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "password" ]
       },
       "SignUpRequest" : {
         "type" : "object",

@@ -73,6 +73,7 @@ The controls below are attribute directives in `shared/ui` that put the recipe o
 ## Layout patterns
 
 - **Sheet screen** (`app-sheet-layout` in `shared/ui`): the gift illustration on top and the content in a sheet rising over it; a centred card on wide screens. It is the doorway into the app: sign-up, sign-in, confirmations, invite landing.
+- **App shell** (`app-shell` in `shared/ui`): the frame for screens inside the app, once someone has signed in. A top bar on `surface` with the wordmark (linking home) and the screen's bar actions (`shellActions`, e.g. a secondary "Cerrar sesión" button), then the page on `canvas` in a `max-w-2xl` column, without illustration. Cards inside it are `rounded-card bg-surface p-5 shadow-card`. Chosen in #15.
 - **Status screen** (`app-status-header` in `shared/ui`): an icon badge (`tone="good"` on `sage-soft`, `neutral` on `subtle`, 30 px icon) above the page title, then the explanation and one action. For outcomes: email sent, link verified or expired, something failed.
 - One primary action per screen, at the bottom of the content on mobile.
 

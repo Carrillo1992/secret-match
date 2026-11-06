@@ -8,6 +8,10 @@ management:
 secretmatch:
   web:
     allowed-origin: http://spa.test
+  security:
+    jwt:
+      # A test-only key, not a secret.
+      signing-key: dGVzdC1vbmx5LWp3dC1zaWduaW5nLWtleS1ub3QtYS1zZWNyZXQ=
   mail:
     from-address: no-reply@secretmatch.test
     app-base-url: http://spa.test

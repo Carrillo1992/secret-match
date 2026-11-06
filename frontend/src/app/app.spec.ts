@@ -44,7 +44,8 @@ describe('App routes', () => {
     ['/sign-up', 'Crear cuenta · SecretMatch', 'Crea tu cuenta'],
     ['/check-email', 'Revisa tu correo · SecretMatch', 'Revisa tu correo'],
     ['/verify-email', 'Confirmar correo · SecretMatch', 'no es válido'],
-  ])('routes %s to its sign-up page', async (url, title, heading) => {
+    ['/sign-in', 'Iniciar sesión · SecretMatch', 'Inicia sesión'],
+  ])('routes %s to its auth page', async (url, title, heading) => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url);
     await new Promise((resolve) => setTimeout(resolve));
@@ -52,6 +53,34 @@ describe('App routes', () => {
 
     expect(document.title).toBe(title);
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain(heading);
+  });
+
+  it('sends a visitor without a session from /home to the sign-in page', async () => {
+    const harness = await RouterTestingHarness.create();
+    const navigation = harness.navigateByUrl('/home');
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.inject(HttpTestingController)
+      .expectOne('http://api.test/api/v1/sessions/refresh')
+      .flush(
+        { type: 'urn:secretmatch:problem:session-expired', status: 422 },
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
+    await navigation;
+
+    expect(TestBed.inject(Router).url).toBe('/sign-in?next=%2Fhome');
+  });
+
+  it('opens /home for a User whose session comes back after a reload', async () => {
+    const harness = await RouterTestingHarness.create();
+    const navigation = harness.navigateByUrl('/home');
+    await new Promise((resolve) => setTimeout(resolve));
+    TestBed.inject(HttpTestingController)
+      .expectOne('http://api.test/api/v1/sessions/refresh')
+      .flush({ accessToken: 'access-1', expiresAt: '2026-12-01T10:15:00Z' });
+    await navigation;
+
+    expect(TestBed.inject(Router).url).toBe('/home');
+    expect(document.title).toBe('Inicio · SecretMatch');
   });
 
   it('sends unknown URLs to the landing page', async () => {

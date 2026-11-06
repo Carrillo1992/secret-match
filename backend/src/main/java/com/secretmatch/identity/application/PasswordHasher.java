@@ -7,4 +7,7 @@ import com.secretmatch.identity.domain.PasswordHash;
 public interface PasswordHasher {
 
     PasswordHash hash(NewPassword password);
+
+    /** Whether this password, as typed at sign-in, is the one the hash was made from. */
+    boolean matches(String password, PasswordHash hash);
 }

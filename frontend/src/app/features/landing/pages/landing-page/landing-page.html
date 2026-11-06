@@ -1,34 +1,36 @@
-<main
-  class="flex min-h-dvh flex-col items-center justify-center gap-6 bg-slate-50 px-4 text-center"
->
-  <h1 class="text-4xl font-bold text-slate-900">SecretMatch</h1>
-  <p class="max-w-md text-slate-600">Tu amigo invisible, sin papelitos.</p>
-  <a
-    routerLink="/sign-up"
-    class="rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-    >Crear cuenta</a
-  >
+<app-sheet-layout>
+  <div class="flex flex-col items-center gap-6 text-center">
+    <div class="flex flex-col gap-2">
+      <h1 class="font-display text-4xl font-bold tracking-tight">SecretMatch</h1>
+      <p class="text-lg text-ink-muted">Tu amigo invisible, sin papelitos.</p>
+    </div>
+    <a
+      routerLink="/sign-up"
+      class="inline-flex h-14 w-full items-center justify-center rounded-full bg-primary px-6 font-display text-lg font-semibold text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-primary"
+      >Crear cuenta</a
+    >
 
-  <div role="status" aria-live="polite" class="flex flex-col items-center gap-3">
-    @switch (health.status()) {
-      @case ('checking') {
-        <p class="text-slate-500">Comprobando la API…</p>
+    <div role="status" aria-live="polite" class="flex flex-col items-center gap-3">
+      @switch (health.status()) {
+        @case ('checking') {
+          <p class="text-ink-muted">Comprobando la API…</p>
+        }
+        @case ('up') {
+          <p class="rounded-full bg-success-soft px-4 py-1 font-semibold text-success">API OK</p>
+        }
+        @case ('down') {
+          <p class="rounded-full bg-danger-soft px-4 py-1 font-semibold text-danger">
+            No se puede conectar con la API
+          </p>
+          <button
+            type="button"
+            class="inline-flex h-12 items-center justify-center rounded-full border-2 border-primary px-6 font-display font-semibold text-primary transition-colors duration-200 hover:bg-primary hover:text-on-primary focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-primary"
+            (click)="health.recheck()"
+          >
+            Reintentar
+          </button>
+        }
       }
-      @case ('up') {
-        <p class="rounded-full bg-green-100 px-4 py-1 font-semibold text-green-800">API OK</p>
-      }
-      @case ('down') {
-        <p class="rounded-full bg-red-100 px-4 py-1 font-semibold text-red-800">
-          No se puede conectar con la API
-        </p>
-        <button
-          type="button"
-          class="rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-          (click)="health.recheck()"
-        >
-          Reintentar
-        </button>
-      }
-    }
+    </div>
   </div>
-</main>
+</app-sheet-layout>

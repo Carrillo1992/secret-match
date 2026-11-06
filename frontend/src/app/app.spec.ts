@@ -8,6 +8,11 @@ import { App } from './app';
 import { routes } from './app.routes';
 
 describe('App routes', () => {
+  // The routed pages are lazy-loaded inside each test, and @lucide/angular ships every icon in
+  // one large module that takes several seconds to load the first time under the test runner.
+  // Load it once up front so that cost doesn't eat into a single test's timeout.
+  beforeAll(() => import('@lucide/angular'), 30_000);
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [

@@ -21,20 +21,12 @@
     } @else {
       <p class="mt-1 text-sm text-ink-muted">
         Mira en la carpeta de spam o
-        <a
-          routerLink="/sign-up"
-          class="font-semibold text-primary underline underline-offset-4 hover:text-primary-hover focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >vuelve a registrarte</a
-        >.
+        <a routerLink="/sign-up" appLink>vuelve a registrarte</a>.
       </p>
     }
   </section>
 
   <p class="mt-6 text-center">
-    <a
-      routerLink="/"
-      class="inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 hover:text-primary-hover focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      >Volver al inicio</a
-    >
+    <a routerLink="/" appLink standalone>Volver al inicio</a>
   </p>
 </app-sheet-layout>

@@ -6,6 +6,8 @@ management:
         allowed-origins: http://spa.test
 
 secretmatch:
+  web:
+    allowed-origin: http://spa.test
   mail:
     from-address: no-reply@secretmatch.test
     app-base-url: http://spa.test

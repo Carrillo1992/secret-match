@@ -10,7 +10,7 @@
         type="email"
         formControlName="email"
         autocomplete="email"
-        class="h-13 rounded-field border border-line bg-field px-4 text-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary aria-invalid:border-2 aria-invalid:border-danger"
+        appField
         [attr.aria-invalid]="showsError(form.controls.email) || null"
         [attr.aria-describedby]="showsError(form.controls.email) ? 'sign-up-email-error' : null"
       />
@@ -35,7 +35,7 @@
         formControlName="displayName"
         autocomplete="name"
         aria-describedby="sign-up-display-name-hint"
-        class="h-13 rounded-field border border-line bg-field px-4 text-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary aria-invalid:border-2 aria-invalid:border-danger"
+        appField
         [attr.aria-invalid]="showsError(form.controls.displayName) || null"
         [attr.aria-describedby]="
           showsError(form.controls.displayName)
@@ -65,7 +65,7 @@
         type="password"
         formControlName="password"
         autocomplete="new-password"
-        class="h-13 rounded-field border border-line bg-field px-4 text-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary aria-invalid:border-2 aria-invalid:border-danger"
+        appField
         [attr.aria-invalid]="showsError(form.controls.password) || null"
         [attr.aria-describedby]="
           showsError(form.controls.password) ? 'sign-up-password-error' : 'sign-up-password-hint'
@@ -101,21 +101,13 @@
       </p>
     }
 
-    <button
-      type="submit"
-      class="mt-2 inline-flex h-14 items-center justify-center gap-2 rounded-full bg-primary px-6 font-display text-lg font-semibold text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
-      [disabled]="sending()"
-    >
+    <button type="submit" appButton class="mt-2" [disabled]="sending()">
       <svg lucideGift [size]="20"></svg>
       {{ sending() ? 'Creando cuenta…' : 'Crear cuenta' }}
     </button>
   </form>
 
   <p class="mt-6 text-center">
-    <a
-      routerLink="/"
-      class="inline-flex min-h-11 items-center font-semibold text-primary underline underline-offset-4 hover:text-primary-hover focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      >Volver al inicio</a
-    >
+    <a routerLink="/" appLink standalone>Volver al inicio</a>
   </p>
 </app-sheet-layout>

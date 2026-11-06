@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Button } from '../../../../shared/ui/button/button';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { ApiHealth } from '../../data-access/api-health';
 
 @Component({
   selector: 'app-landing-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, SheetLayout],
+  imports: [Button, RouterLink, SheetLayout],
   templateUrl: './landing-page.html',
   providers: [ApiHealth],
 })

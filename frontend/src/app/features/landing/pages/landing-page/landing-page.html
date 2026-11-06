@@ -4,11 +4,7 @@
       <h1 class="font-display text-4xl font-bold tracking-tight">SecretMatch</h1>
       <p class="text-lg text-ink-muted">Tu amigo invisible, sin papelitos.</p>
     </div>
-    <a
-      routerLink="/sign-up"
-      class="inline-flex h-14 w-full items-center justify-center rounded-full bg-primary px-6 font-display text-lg font-semibold text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-primary"
-      >Crear cuenta</a
-    >
+    <a routerLink="/sign-up" appButton class="w-full">Crear cuenta</a>
 
     <div role="status" aria-live="polite" class="flex flex-col items-center gap-3">
       @switch (health.status()) {
@@ -22,13 +18,7 @@
           <p class="rounded-full bg-danger-soft px-4 py-1 font-semibold text-danger">
             No se puede conectar con la API
           </p>
-          <button
-            type="button"
-            class="inline-flex h-12 items-center justify-center rounded-full border-2 border-primary px-6 font-display font-semibold text-primary transition-colors duration-200 hover:bg-primary hover:text-on-primary focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-primary"
-            (click)="health.recheck()"
-          >
-            Reintentar
-          </button>
+          <button type="button" appButton="secondary" (click)="health.recheck()">Reintentar</button>
         }
       }
     </div>

@@ -7,8 +7,10 @@ import {
   LucideUnlink,
   LucideWifiOff,
 } from '@lucide/angular';
+import { Button } from '../../../../shared/ui/button/button';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
+import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { NewLinkButton } from '../../components/new-link-button/new-link-button';
 import { NewVerificationLink } from '../../data-access/new-verification-link';
 import { SignUpApi, VerifyEmailOutcome } from '../../data-access/sign-up-api';
@@ -25,6 +27,8 @@ type VerifyEmailStatus = 'verifying' | VerifyEmailOutcome;
     RouterLink,
     SheetLayout,
     StatusHeader,
+    Button,
+    TextLink,
     LucideCircleCheck,
     LucideClock,
     LucideLoaderCircle,

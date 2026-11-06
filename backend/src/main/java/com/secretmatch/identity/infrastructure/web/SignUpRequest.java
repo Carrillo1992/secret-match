@@ -3,14 +3,17 @@ package com.secretmatch.identity.infrastructure.web;
 import com.secretmatch.identity.domain.DisplayName;
 import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.NewPassword;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/** The password must also fit in 72 bytes of UTF-8; the domain checks that. */
+/**
+ * Mirrors the domain rules so a mistake is a 400. A password over 72 characters is always over 72 bytes;
+ * one with fewer characters but over 72 bytes (accents, emoji) is left to the domain, which answers 422.
+ */
 record SignUpRequest(
-        @NotBlank @Email @Size(max = EmailAddress.MAX_LENGTH)
+        @NotBlank @Size(max = EmailAddress.MAX_LENGTH) @Pattern(regexp = EmailAddress.SHAPE)
         String email,
 
         @NotBlank @Size(max = DisplayName.MAX_LENGTH) String displayName,

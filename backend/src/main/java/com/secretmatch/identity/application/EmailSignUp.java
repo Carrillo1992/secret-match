@@ -2,16 +2,17 @@ package com.secretmatch.identity.application;
 
 import com.secretmatch.identity.domain.DisplayName;
 import com.secretmatch.identity.domain.EmailAddress;
-import com.secretmatch.identity.domain.EmailVerification;
+import com.secretmatch.identity.domain.EmailLinkToken;
 import com.secretmatch.identity.domain.NewPassword;
 import com.secretmatch.identity.domain.PasswordHash;
+import com.secretmatch.identity.domain.SignUpId;
+import com.secretmatch.identity.domain.SignUpVerification;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.VerificationLinkInvalidException;
-import com.secretmatch.identity.domain.VerificationToken;
+import com.secretmatch.identity.domain.VerificationLinkUsedException;
 import com.secretmatch.notification.application.EmailRequested;
 import java.security.SecureRandom;
 import java.time.Clock;
-import java.time.Instant;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Sign-up with email and password, and the verification of that email.
  *
- * <p>Every call that takes an email answers the same way whether or not a User has it, so the API never
- * tells a visitor which emails have accounts.
+ * <p>Nothing here tells a caller whether an email has an account: a sign-up with a registered email gets
+ * an id that matches nothing, and asking for a new link answers the same whether or not one is sent.
  */
 @Service
 public class EmailSignUp {
@@ -28,7 +29,7 @@ public class EmailSignUp {
     static final String SUBJECT = "Confirma tu correo en SecretMatch";
 
     private final Users users;
-    private final EmailVerifications verifications;
+    private final SignUpVerifications signUps;
     private final PasswordHasher passwordHasher;
     private final ApplicationEventPublisher events;
     private final SecureRandom random;
@@ -36,13 +37,13 @@ public class EmailSignUp {
 
     EmailSignUp(
             Users users,
-            EmailVerifications verifications,
+            SignUpVerifications signUps,
             PasswordHasher passwordHasher,
             ApplicationEventPublisher events,
             SecureRandom random,
             Clock clock) {
         this.users = users;
-        this.verifications = verifications;
+        this.signUps = signUps;
         this.passwordHasher = passwordHasher;
         this.events = events;
         this.random = random;
@@ -50,71 +51,75 @@ public class EmailSignUp {
     }
 
     /**
-     * Creates an unverified User and emails them a verification link. If the email belongs to an
-     * unverified User, the new details replace theirs and a new link is sent; if it belongs to a verified
-     * User, nothing happens.
+     * Keeps the sign-up and emails its verification link. If the email already has a User, nothing is
+     * kept or sent, and the id returned matches no sign-up.
      */
     @Transactional
-    public void signUp(SignUpCommand command) {
+    public SignUpId signUp(SignUpCommand command) {
         EmailAddress email = new EmailAddress(command.email());
         DisplayName displayName = new DisplayName(command.displayName());
+        // Hashed before the lookup, so a registered email does not answer measurably faster here.
         PasswordHash passwordHash = passwordHasher.hash(new NewPassword(command.password()));
-        Instant now = clock.instant();
-
-        User user = users.findByEmail(email).orElse(null);
-        if (user == null) {
-            user = User.signUpWithPassword(email, displayName, passwordHash, now);
-        } else if (user.isEmailVerified()) {
-            return;
-        } else {
-            user.signUpAgain(displayName, passwordHash);
+        if (users.existsWithEmail(email)) {
+            return SignUpId.newId();
         }
-        users.save(user);
-        sendVerificationLink(user, now);
+        EmailLinkToken token = EmailLinkToken.generate(random);
+        SignUpVerification signUp = SignUpVerification.start(email, displayName, passwordHash, token, clock.instant());
+        signUps.save(signUp);
+        sendLink(signUp, token);
+        return signUp.id();
     }
 
     /**
-     * Marks the email of the link's User as verified.
+     * Creates the User of the sign-up whose link holds this token.
      *
-     * @throws VerificationLinkInvalidException if no link has this token
+     * @throws VerificationLinkInvalidException if no sign-up has this token
      * @throws com.secretmatch.identity.domain.VerificationLinkExpiredException if the link is too old
-     * @throws com.secretmatch.identity.domain.VerificationLinkUsedException if the link, or the email, was
-     *     already verified
+     * @throws VerificationLinkUsedException if the link was already opened, or the email got a User since
      */
     @Transactional
-    public void verifyEmail(String token) {
-        EmailVerification verification = verifications
-                .findByTokenHash(VerificationToken.of(token).hash())
-                .orElseThrow(VerificationLinkInvalidException::new);
-        Instant now = clock.instant();
-        verification.use(now);
-        User user = users.findById(verification.userId())
-                .orElseThrow(() -> new IllegalStateException("a verification link outlived its User"));
-        user.verifyEmail(now);
-        verifications.save(verification);
-        users.save(user);
+    public void verifyEmail(EmailLinkToken token) {
+        SignUpVerification signUp =
+                signUps.findByTokenHash(token.hash()).orElseThrow(VerificationLinkInvalidException::new);
+        User user = signUp.verify(clock.instant());
+        if (!users.add(user)) {
+            throw new VerificationLinkUsedException();
+        }
+        signUps.save(signUp);
     }
 
-    /** Sends a new link if the email belongs to a User who has not verified it yet. */
+    /** Sends a new link for this sign-up, if it is still waiting for one. */
     @Transactional
-    public void sendVerificationEmail(String email) {
-        users.findByEmail(new EmailAddress(email))
-                .filter(user -> !user.isEmailVerified())
-                .ifPresent(user -> sendVerificationLink(user, clock.instant()));
+    public void sendNewLink(SignUpId id) {
+        signUps.findById(id).ifPresent(this::replaceLink);
     }
 
-    private void sendVerificationLink(User user, Instant now) {
-        VerificationToken token = VerificationToken.generate(random);
-        verifications.save(EmailVerification.issue(token, user.id(), now));
+    /** Sends a new link in place of this one, typically an expired one, if its sign-up is still waiting. */
+    @Transactional
+    public void sendNewLink(EmailLinkToken previous) {
+        signUps.findByTokenHash(previous.hash()).ifPresent(this::replaceLink);
+    }
+
+    private void replaceLink(SignUpVerification signUp) {
+        if (signUp.isUsed() || users.existsWithEmail(signUp.email())) {
+            return;
+        }
+        EmailLinkToken token = EmailLinkToken.generate(random);
+        signUp.reissue(token, clock.instant());
+        signUps.save(signUp);
+        sendLink(signUp, token);
+    }
+
+    private void sendLink(SignUpVerification signUp, EmailLinkToken token) {
         events.publishEvent(new EmailRequested(
-                user.email().value(),
+                signUp.email().value(),
                 SUBJECT,
                 """
                 Hola, %s:
 
                 Para terminar de crear tu cuenta en SecretMatch, confirma que este correo es tuyo con el enlace de abajo. Caduca en %d horas y solo se puede usar una vez.
 
-                Si no has sido tú, ignora este mensaje: nadie podrá usar la cuenta sin confirmar el correo.""".formatted(user.displayName().value(), EmailVerification.VALIDITY.toHours()),
+                Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(signUp.displayName().value(), SignUpVerification.VALIDITY.toHours()),
                 "/verify-email?token=" + token.value()));
     }
 }

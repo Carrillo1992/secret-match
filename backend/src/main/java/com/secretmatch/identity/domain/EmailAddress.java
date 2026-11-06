@@ -8,11 +8,14 @@ public record EmailAddress(String value) {
 
     public static final int MAX_LENGTH = 254;
 
-    private static final Pattern SHAPE = Pattern.compile("[^@\\s]+@[^@\\s]+\\.[^@\\s]+");
+    /** Something before an {@code @}, and a domain with a dot after it. */
+    public static final String SHAPE = "\\s*[^@\\s]+@[^@\\s]+\\.[^@\\s]+\\s*";
+
+    private static final Pattern SHAPE_PATTERN = Pattern.compile(SHAPE);
 
     public EmailAddress {
         value = value == null ? "" : value.strip().toLowerCase(Locale.ROOT);
-        if (value.length() > MAX_LENGTH || !SHAPE.matcher(value).matches()) {
+        if (value.length() > MAX_LENGTH || !SHAPE_PATTERN.matcher(value).matches()) {
             throw InvalidUserDetailsException.email();
         }
     }

@@ -2,9 +2,8 @@ package com.secretmatch.identity.infrastructure.persistence;
 
 import com.secretmatch.identity.application.Users;
 import com.secretmatch.identity.domain.EmailAddress;
+import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.User;
-import com.secretmatch.identity.domain.UserId;
-import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -17,17 +16,18 @@ class JpaUsers implements Users {
     }
 
     @Override
-    public Optional<User> findById(UserId id) {
-        return repository.findById(id.value()).map(UserEntity::toDomain);
+    public boolean existsWithEmail(EmailAddress email) {
+        return repository.existsByEmail(email.value());
     }
 
     @Override
-    public Optional<User> findByEmail(EmailAddress email) {
-        return repository.findByEmail(email.value()).map(UserEntity::toDomain);
-    }
-
-    @Override
-    public void save(User user) {
-        repository.save(UserEntity.from(user));
+    public boolean add(User user) {
+        return repository.insertIfEmailFree(
+                        user.id().value(),
+                        user.email().value(),
+                        user.displayName().value(),
+                        user.passwordHash().map(PasswordHash::value).orElse(null),
+                        user.createdAt())
+                == 1;
     }
 }

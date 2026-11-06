@@ -8,43 +8,42 @@ import java.util.Base64;
 import java.util.HexFormat;
 
 /**
- * The secret in a verification link. Only the User's inbox ever sees it; the database keeps its
- * {@link #hash()}, so a leaked table cannot be turned into working links.
+ * The secret in a link emailed to a User, such as a sign-up verification link. Only the inbox ever sees
+ * it; what is stored is its {@link #hash()}, so a leaked table cannot be turned into working links.
  */
-public final class VerificationToken {
+public final class EmailLinkToken {
 
     private static final int BYTES = 32;
 
     private final String value;
 
-    private VerificationToken(String value) {
+    private EmailLinkToken(String value) {
         this.value = value;
     }
 
-    /** A new token from a cryptographically strong random source. */
-    public static VerificationToken generate(SecureRandom random) {
+    /** A new token of 256 random bits. */
+    public static EmailLinkToken generate(SecureRandom random) {
         byte[] bytes = new byte[BYTES];
         random.nextBytes(bytes);
-        return new VerificationToken(Base64.getUrlEncoder().withoutPadding().encodeToString(bytes));
+        return new EmailLinkToken(Base64.getUrlEncoder().withoutPadding().encodeToString(bytes));
     }
 
     /** The token as it came back in a link. */
-    public static VerificationToken of(String value) {
+    public static EmailLinkToken of(String value) {
         if (value == null || value.isBlank()) {
-            throw new VerificationLinkInvalidException();
+            throw new IllegalArgumentException("a token must not be blank");
         }
-        return new VerificationToken(value);
+        return new EmailLinkToken(value);
     }
 
     public String value() {
         return value;
     }
 
-    /** SHA-256 as lower-case hex: what is stored and looked up. */
-    public String hash() {
+    public TokenHash hash() {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
+            return new TokenHash(HexFormat.of().formatHex(digest));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("every JDK provides SHA-256", e);
         }
@@ -52,6 +51,6 @@ public final class VerificationToken {
 
     @Override
     public String toString() {
-        return "VerificationToken[redacted]";
+        return "EmailLinkToken[redacted]";
     }
 }

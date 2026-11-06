@@ -10,6 +10,14 @@ Secret Santa / gift exchanges for families and groups of friends: people join a 
 A person's account in SecretMatch, identified by their email and shown to others by their display name. One User can be a Member of many Groups.
 _Avoid_: Account holder, player
 
+**Display Name**:
+How a User is shown to the other Members of their Groups. Chosen at sign-up; not unique.
+_Avoid_: Username, nickname, alias
+
+**Sign-up Verification**:
+A password sign-up waiting for its owner to open the link emailed to them. The link is single-use and expires after 24 hours; opening it creates the User with that sign-up's details. Several may wait for the same email, and the first one opened wins.
+_Avoid_: Pending user, unverified account, activation, email verification token
+
 **Group**:
 A single gift exchange: a set of Members who take part in one Draw. Next year's exchange is a new Group.
 _Avoid_: Exchange, event, room, edition

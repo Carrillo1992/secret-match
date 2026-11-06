@@ -28,10 +28,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.client.RestTestClient;
+import tools.jackson.databind.json.JsonMapper;
 
-/** Ticket #14: sign up with a password, verify the email through the link, ask for it again. */
+/** Ticket #14: sign up with a password, verify the email through the link, ask for a new link. */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 @ActiveProfiles("test")
@@ -41,6 +43,7 @@ class EmailSignUpIT {
 
     private static final String PASSWORD = "turrón-y-polvorones";
     private static final Pattern LINK = Pattern.compile("http://spa\\.test/verify-email\\?token=([A-Za-z0-9_-]+)");
+    private static final JsonMapper JSON = JsonMapper.builder().build();
 
     @Autowired
     RestTestClient http;
@@ -63,19 +66,21 @@ class EmailSignUpIT {
     }
 
     @Test
-    @DisplayName("sign-up sends a verification email whose link verifies the User")
+    @DisplayName("sign-up sends a verification email whose link creates the User")
     void signUpThenVerify() {
         signUp(email, "Abuela Carmen", PASSWORD).expectStatus().isAccepted();
 
         OutgoingEmail sent = onlyEmailTo(email);
         assertThat(sent.subject()).isEqualTo("Confirma tu correo en SecretMatch");
         assertThat(sent.text()).contains("Abuela Carmen").contains("24 horas");
+        assertThat(userPasswordHash(email))
+                .as("no User before the link is opened")
+                .isNull();
 
         verify(tokenIn(sent)).expectStatus().isNoContent();
 
-        // A verified User gets no more links.
-        requestVerificationEmail(email).expectStatus().isAccepted();
-        assertThat(mail.sentTo(email)).hasSize(1);
+        assertThat(new BCryptPasswordEncoder().matches(PASSWORD, userPasswordHash(email)))
+                .isTrue();
     }
 
     @Test
@@ -89,56 +94,88 @@ class EmailSignUpIT {
     }
 
     @Test
-    @DisplayName("an expired link is rejected, and a new one can be asked for and works")
-    void expiredLinkThenResend() {
+    @DisplayName("a later sign-up by someone else cannot change the password the owner's link sets")
+    void laterSignUpCannotTakeOverTheAccount() {
+        signUp(email, "Ana", PASSWORD);
+        signUp(email, "Impostor", "the-attackers-password").expectStatus().isAccepted();
+        String ownersLink = tokenIn(mail.sentTo(email).get(0));
+        String attackersLink = tokenIn(mail.sentTo(email).get(1));
+
+        verify(ownersLink).expectStatus().isNoContent();
+
+        BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
+        assertThat(bcrypt.matches(PASSWORD, userPasswordHash(email))).isTrue();
+        assertThat(bcrypt.matches("the-attackers-password", userPasswordHash(email)))
+                .isFalse();
+        expectProblem(verify(attackersLink), "verification-link-used");
+    }
+
+    @Test
+    @DisplayName("an expired link is rejected, and a new link can be asked for in its place")
+    void expiredLinkThenNewLink() {
         signUp(email, "Ana", PASSWORD);
         String expired = tokenIn(onlyEmailTo(email));
         clock.advance(Duration.ofHours(24));
 
         expectProblem(verify(expired), "verification-link-expired");
 
-        requestVerificationEmail(email).expectStatus().isAccepted();
+        askNewLinkInPlaceOf(expired).expectStatus().isAccepted();
         assertThat(mail.sentTo(email)).hasSize(2);
         verify(tokenIn(mail.sentTo(email).get(1))).expectStatus().isNoContent();
+        expectProblem(verify(expired), "verification-link-invalid");
     }
 
     @Test
-    @DisplayName("a link with an unknown token is rejected as invalid")
-    void unknownTokenIsInvalid() {
-        expectProblem(verify("not-a-token-we-ever-sent"), "verification-link-invalid");
+    @DisplayName("a new link can be asked for with the sign-up id, and replaces the previous one")
+    void newLinkForSignUp() {
+        String signUpId = signUpId(signUp(email, "Ana", PASSWORD));
+        String first = tokenIn(onlyEmailTo(email));
+
+        askNewLinkForSignUp(signUpId).expectStatus().isAccepted();
+
+        assertThat(mail.sentTo(email)).hasSize(2);
+        expectProblem(verify(first), "verification-link-invalid");
+        verify(tokenIn(mail.sentTo(email).get(1))).expectStatus().isNoContent();
+
+        askNewLinkForSignUp(signUpId).expectStatus().isAccepted();
+        assertThat(mail.sentTo(email)).as("no link once verified").hasSize(2);
     }
 
     @Test
-    @DisplayName("signing up with an email that already has a verified User looks the same and sends nothing")
-    void duplicateVerifiedEmail() {
-        String firstBody = body(signUp(email, "Ana", PASSWORD).expectStatus().isAccepted());
+    @DisplayName("signing up with an email that already has a User looks the same and sends nothing")
+    void duplicateEmail() {
+        signUp(email, "Ana", PASSWORD);
         verify(tokenIn(onlyEmailTo(email)));
         mail.clear();
 
-        String secondBody = body(signUp(email.toUpperCase(), "Impostor", "another-password")
+        String decoyId = signUpId(signUp(email.toUpperCase(), "Impostor", "another-password")
                 .expectStatus()
                 .isAccepted());
+        askNewLinkForSignUp(decoyId).expectStatus().isAccepted();
 
-        assertThat(secondBody).isEqualTo(firstBody);
         assertThat(mail.sent()).isEmpty();
     }
 
     @Test
-    @DisplayName("signing up again before verifying sends a new link that verifies the latest sign-up")
-    void duplicateUnverifiedEmail() {
+    @DisplayName("a second sign-up for the same email cannot be verified once the first one was")
+    void secondPendingSignUpAfterVerification(CapturedOutput output) {
         signUp(email, "Ana", PASSWORD);
-        signUp(email, "Ana García", "a-newer-password").expectStatus().isAccepted();
+        signUp(email, "Ana", "another-password");
+        String first = tokenIn(mail.sentTo(email).get(0));
+        String second = tokenIn(mail.sentTo(email).get(1));
 
-        assertThat(mail.sentTo(email)).hasSize(2);
-        OutgoingEmail latest = mail.sentTo(email).get(1);
-        assertThat(latest.text()).contains("Ana García");
-        verify(tokenIn(latest)).expectStatus().isNoContent();
+        verify(first).expectStatus().isNoContent();
+        expectProblem(verify(second), "verification-link-used");
+
+        assertThat(output.getAll()).doesNotContain(email);
     }
 
     @Test
-    @DisplayName("asking for a link for an unknown email looks the same and sends nothing")
-    void resendToUnknownEmail() {
-        requestVerificationEmail(email).expectStatus().isAccepted();
+    @DisplayName("unknown ids and tokens are answered like any other, and send nothing")
+    void unknownIdsAndTokens() {
+        expectProblem(verify("not-a-token-we-ever-sent"), "verification-link-invalid");
+        askNewLinkInPlaceOf("not-a-token-we-ever-sent").expectStatus().isAccepted();
+        askNewLinkForSignUp(UUID.randomUUID().toString()).expectStatus().isAccepted();
 
         assertThat(mail.sent()).isEmpty();
     }
@@ -147,11 +184,12 @@ class EmailSignUpIT {
     @CsvSource(
             delimiter = '|',
             value = {
-                "not-an-email     | Ana | long-enough-password",
-                "''               | Ana | long-enough-password",
-                "ana@example.com  | ''  | long-enough-password",
+                "not-an-email     | Ana   | long-enough-password",
+                "ana@example      | Ana   | long-enough-password",
+                "''               | Ana   | long-enough-password",
+                "ana@example.com  | ''    | long-enough-password",
                 "ana@example.com  | '   ' | long-enough-password",
-                "ana@example.com  | Ana | short"
+                "ana@example.com  | Ana   | short"
             })
     @DisplayName("rejects invalid sign-up details with a 400 problem and sends nothing")
     void rejectsInvalidDetails(String address, String displayName, String password) {
@@ -168,19 +206,10 @@ class EmailSignUpIT {
     @DisplayName("rejects a display name over 50 characters and a password over 72 bytes")
     void rejectsTooLongDetails() {
         signUp(email, "x".repeat(51), PASSWORD).expectStatus().isBadRequest();
-        // 40 characters, 80 bytes of UTF-8.
-        signUp(email, "Ana", "ñ".repeat(40)).expectStatus().is4xxClientError();
+        // 40 characters, 80 bytes of UTF-8: the domain rejects it.
+        expectProblem(signUp(email, "Ana", "ñ".repeat(40)), "invalid-password");
 
         assertThat(mail.sent()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("the password is stored only as a BCrypt hash")
-    void storesOnlyPasswordHash() {
-        signUp(email, "Ana", PASSWORD);
-
-        String stored = jdbc.queryForObject("SELECT password_hash FROM users WHERE email = ?", String.class, email);
-        assertThat(stored).startsWith("$2").doesNotContain(PASSWORD);
     }
 
     @Test
@@ -190,12 +219,19 @@ class EmailSignUpIT {
         String token = tokenIn(onlyEmailTo(email));
         String verifyBody = body(verify(token));
         String reusedBody = body(verify(token));
-        String resendBody = body(requestVerificationEmail(email));
+        String newLinkBody = body(askNewLinkInPlaceOf(token));
 
-        assertThat(String.join("\n", signUpBody, verifyBody, reusedBody, resendBody, output.getAll()))
+        assertThat(String.join("\n", signUpBody, verifyBody, reusedBody, newLinkBody, output.getAll()))
                 .doesNotContain(PASSWORD)
                 .doesNotContain(token)
                 .doesNotContain(email);
+        assertThat(jdbc.queryForObject(
+                        "SELECT count(*) FROM sign_up_verifications WHERE password_hash LIKE ? OR token_hash = ?",
+                        Integer.class,
+                        "%" + PASSWORD + "%",
+                        token))
+                .as("only hashes are stored")
+                .isZero();
     }
 
     @Test
@@ -221,8 +257,12 @@ class EmailSignUpIT {
         return post("/api/v1/email-verifications", Map.of("token", token));
     }
 
-    private RestTestClient.ResponseSpec requestVerificationEmail(String address) {
-        return post("/api/v1/verification-emails", Map.of("email", address));
+    private RestTestClient.ResponseSpec askNewLinkInPlaceOf(String token) {
+        return post("/api/v1/verification-emails", Map.of("token", token));
+    }
+
+    private RestTestClient.ResponseSpec askNewLinkForSignUp(String signUpId) {
+        return post("/api/v1/sign-ups/" + signUpId + "/verification-emails", Map.of());
     }
 
     private RestTestClient.ResponseSpec post(String path, Map<String, String> body) {
@@ -231,6 +271,16 @@ class EmailSignUpIT {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .exchange();
+    }
+
+    private String userPasswordHash(String address) {
+        return jdbc.queryForList("SELECT password_hash FROM users WHERE email = ?", String.class, address).stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String signUpId(RestTestClient.ResponseSpec response) {
+        return JSON.readTree(body(response)).get("signUpId").asString();
     }
 
     private static String body(RestTestClient.ResponseSpec response) {

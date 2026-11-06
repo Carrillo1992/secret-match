@@ -5,63 +5,29 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A person's account. A User who signed up with a password cannot use it until their email is verified,
- * so nobody can claim someone else's inbox.
+ * A person's account. A User only exists once their email is verified: a password sign-up waits as a
+ * {@link SignUpVerification} until then.
  */
 public final class User {
 
     private final UserId id;
     private final EmailAddress email;
+    private final DisplayName displayName;
+    private final PasswordHash passwordHash;
     private final Instant createdAt;
-    private DisplayName displayName;
-    private PasswordHash passwordHash;
-    private Instant emailVerifiedAt;
 
-    /** Rebuilds a stored User; {@code passwordHash} and {@code emailVerifiedAt} may be {@code null}. */
-    public User(
-            UserId id,
-            EmailAddress email,
-            DisplayName displayName,
-            PasswordHash passwordHash,
-            Instant emailVerifiedAt,
-            Instant createdAt) {
+    /** Rebuilds a stored User; {@code passwordHash} is {@code null} for a User without a password. */
+    public User(UserId id, EmailAddress email, DisplayName displayName, PasswordHash passwordHash, Instant createdAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.email = Objects.requireNonNull(email, "email");
         this.displayName = Objects.requireNonNull(displayName, "displayName");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.passwordHash = passwordHash;
-        this.emailVerifiedAt = emailVerifiedAt;
     }
 
-    public static User signUpWithPassword(
-            EmailAddress email, DisplayName displayName, PasswordHash passwordHash, Instant now) {
-        return new User(UserId.newId(), email, displayName, passwordHash, null, now);
-    }
-
-    /**
-     * Someone signed up again with this email before it was verified. The newest details win: only the
-     * inbox owner can verify them, and an earlier sign-up by someone else must not keep its password.
-     */
-    public void signUpAgain(DisplayName newDisplayName, PasswordHash newPasswordHash) {
-        if (isEmailVerified()) {
-            throw new IllegalStateException("a verified User cannot sign up again");
-        }
-        this.displayName = Objects.requireNonNull(newDisplayName, "newDisplayName");
-        this.passwordHash = Objects.requireNonNull(newPasswordHash, "newPasswordHash");
-    }
-
-    /**
-     * @throws VerificationLinkUsedException if the email was already verified, through another link
-     */
-    public void verifyEmail(Instant now) {
-        if (isEmailVerified()) {
-            throw new VerificationLinkUsedException();
-        }
-        emailVerifiedAt = now;
-    }
-
-    public boolean isEmailVerified() {
-        return emailVerifiedAt != null;
+    static User withPassword(
+            UserId id, EmailAddress email, DisplayName displayName, PasswordHash passwordHash, Instant now) {
+        return new User(id, email, displayName, Objects.requireNonNull(passwordHash, "passwordHash"), now);
     }
 
     public UserId id() {
@@ -78,10 +44,6 @@ public final class User {
 
     public Optional<PasswordHash> passwordHash() {
         return Optional.ofNullable(passwordHash);
-    }
-
-    public Optional<Instant> emailVerifiedAt() {
-        return Optional.ofNullable(emailVerifiedAt);
     }
 
     public Instant createdAt() {

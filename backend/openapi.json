@@ -50,7 +50,7 @@
             "description" : "No Content"
           }
         },
-        "summary" : "Verify an email with the token from its verification link",
+        "summary" : "Verify an email with the token from its verification link, creating the User",
         "tags" : [ "sign-up" ]
       }
     },
@@ -70,6 +70,13 @@
         },
         "responses" : {
           "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SignUpResponse"
+                }
+              }
+            },
             "description" : "Accepted"
           }
         },
@@ -77,15 +84,37 @@
         "tags" : [ "sign-up" ]
       }
     },
+    "/api/v1/sign-ups/{signUpId}/verification-emails" : {
+      "post" : {
+        "description" : "Sent only while the sign-up waits for verification. Answers the same either way.",
+        "operationId" : "sendNewLinkForSignUp",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "signUpId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
+          }
+        },
+        "summary" : "Send a new verification link for a sign-up",
+        "tags" : [ "sign-up" ]
+      }
+    },
     "/api/v1/verification-emails" : {
       "post" : {
-        "description" : "Sent only to a User who has not verified their email yet. Answers the same either way.",
-        "operationId" : "sendVerificationEmail",
+        "description" : "Sent only while the link's sign-up waits for verification. Answers the same either way.",
+        "operationId" : "sendNewLinkInPlaceOf",
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/VerificationEmailRequest"
+                "$ref" : "#/components/schemas/NewLinkRequest"
               }
             }
           },
@@ -96,7 +125,7 @@
             "description" : "Accepted"
           }
         },
-        "summary" : "Send a new verification link",
+        "summary" : "Send a new verification link in place of an old one",
         "tags" : [ "sign-up" ]
       }
     }
@@ -124,6 +153,16 @@
         },
         "required" : [ "status" ]
       },
+      "NewLinkRequest" : {
+        "type" : "object",
+        "properties" : {
+          "token" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "token" ]
+      },
       "SignUpRequest" : {
         "type" : "object",
         "properties" : {
@@ -134,9 +173,9 @@
           },
           "email" : {
             "type" : "string",
-            "format" : "email",
             "maxLength" : 254,
-            "minLength" : 0
+            "minLength" : 0,
+            "pattern" : "\\s*[^@\\s]+@[^@\\s]+\\.[^@\\s]+\\s*"
           },
           "password" : {
             "type" : "string",
@@ -146,17 +185,15 @@
         },
         "required" : [ "displayName", "email", "password" ]
       },
-      "VerificationEmailRequest" : {
+      "SignUpResponse" : {
         "type" : "object",
         "properties" : {
-          "email" : {
+          "signUpId" : {
             "type" : "string",
-            "format" : "email",
-            "maxLength" : 254,
-            "minLength" : 0
+            "format" : "uuid"
           }
         },
-        "required" : [ "email" ]
+        "required" : [ "signUpId" ]
       }
     }
   }

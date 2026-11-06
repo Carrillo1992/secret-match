@@ -35,6 +35,20 @@ describe('App routes', () => {
     expect(document.title).toBe('SecretMatch');
   });
 
+  it.each([
+    ['/sign-up', 'Crear cuenta · SecretMatch', 'Crea tu cuenta'],
+    ['/check-email', 'Revisa tu correo · SecretMatch', 'Revisa tu correo'],
+    ['/verify-email', 'Confirmar correo · SecretMatch', 'no es válido'],
+  ])('routes %s to its sign-up page', async (url, title, heading) => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url);
+    await new Promise((resolve) => setTimeout(resolve));
+    harness.detectChanges();
+
+    expect(document.title).toBe(title);
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain(heading);
+  });
+
   it('sends unknown URLs to the landing page', async () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/no-such-page');

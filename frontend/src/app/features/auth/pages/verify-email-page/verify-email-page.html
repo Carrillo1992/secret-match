@@ -1,0 +1,65 @@
+<main class="flex min-h-dvh flex-col items-center justify-center bg-slate-50 px-4 py-10">
+  <div class="w-full max-w-sm text-center">
+    <div aria-live="polite">
+      @switch (status()) {
+        @case ('verifying') {
+          <h1 class="text-3xl font-bold text-slate-900">Confirmando tu correo…</h1>
+        }
+        @case ('verified') {
+          <h1 class="text-3xl font-bold text-slate-900">¡Correo confirmado!</h1>
+          <p class="mt-4 text-slate-700">Tu cuenta ya está lista.</p>
+          <a
+            routerLink="/"
+            class="mt-6 inline-block rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+            >Ir al inicio</a
+          >
+        }
+        @case ('expired') {
+          <h1 class="text-3xl font-bold text-slate-900">Este enlace ha caducado</h1>
+          <p class="mt-4 text-slate-700">
+            Los enlaces duran 24 horas. Pide uno nuevo y ábrelo desde el último correo.
+          </p>
+        }
+        @case ('used') {
+          <h1 class="text-3xl font-bold text-slate-900">Este enlace ya se ha usado</h1>
+          <p class="mt-4 text-slate-700">
+            Si ya confirmaste tu correo, no tienes que hacer nada más. Si no, pide un enlace nuevo.
+          </p>
+        }
+        @case ('invalid') {
+          <h1 class="text-3xl font-bold text-slate-900">Este enlace no es válido</h1>
+          <p class="mt-4 text-slate-700">
+            Comprueba que has abierto el enlace completo del correo, o pide uno nuevo.
+          </p>
+        }
+        @case ('failed') {
+          <h1 class="text-3xl font-bold text-slate-900">No hemos podido confirmar tu correo</h1>
+          <p class="mt-4 text-slate-700">Puede ser un problema de conexión.</p>
+          <button
+            type="button"
+            class="mt-6 rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+            (click)="verify()"
+          >
+            Reintentar
+          </button>
+        }
+      }
+    </div>
+
+    @if (status() === 'expired' || status() === 'used' || status() === 'invalid') {
+      <section
+        aria-labelledby="resend-heading"
+        class="mt-8 rounded-lg bg-white p-6 text-left shadow-sm ring-1 ring-slate-200"
+      >
+        <h2 id="resend-heading" class="font-semibold text-slate-900">Pide un enlace nuevo</h2>
+        <p class="mt-1 mb-4 text-sm text-slate-600">
+          Escribe el correo con el que creaste la cuenta.
+        </p>
+        <app-resend-verification-form
+          [status]="resend.status()"
+          (requested)="resend.send($event)"
+        />
+      </section>
+    }
+  </div>
+</main>

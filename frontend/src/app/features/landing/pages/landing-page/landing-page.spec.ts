@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { LandingPage } from './landing-page';
 
@@ -13,6 +14,7 @@ describe('LandingPage', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         provideApiConfiguration('http://api.test'),
@@ -30,6 +32,12 @@ describe('LandingPage', () => {
     (fixture.nativeElement as HTMLElement).querySelector('[role="status"]')?.textContent ?? '';
   const retryButton = () =>
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button');
+
+  it('links to the sign-up page', () => {
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a[href="/sign-up"]');
+    expect(link?.textContent).toContain('Crear cuenta');
+    api.expectOne(HEALTH_URL);
+  });
 
   it('says it is checking the API while the health request is in flight', () => {
     expect(statusText()).toContain('Comprobando');

@@ -3,3 +3,9 @@
 
 export type { Health$Params as Health$Params } from './fn/actuator/health';
 export { health as health } from './fn/actuator/health';
+export type { VerifyEmail$Params as VerifyEmail$Params } from './fn/sign-up/verify-email';
+export { verifyEmail as verifyEmail } from './fn/sign-up/verify-email';
+export type { SignUp$Params as SignUp$Params } from './fn/sign-up/sign-up';
+export { signUp as signUp } from './fn/sign-up/sign-up';
+export type { SendVerificationEmail$Params as SendVerificationEmail$Params } from './fn/sign-up/send-verification-email';
+export { sendVerificationEmail as sendVerificationEmail } from './fn/sign-up/send-verification-email';

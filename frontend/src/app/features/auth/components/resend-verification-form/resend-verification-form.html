@@ -1,0 +1,44 @@
+<form class="flex flex-col gap-3" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="flex flex-col gap-1">
+    <label for="resend-email" class="font-medium text-slate-900">Correo electrónico</label>
+    <input
+      id="resend-email"
+      type="email"
+      autocomplete="email"
+      class="rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-slate-900 aria-invalid:border-red-600"
+      formControlName="email"
+      [attr.aria-invalid]="showsError() || null"
+      [attr.aria-describedby]="showsError() ? 'resend-email-error' : null"
+    />
+    @if (showsError()) {
+      <p id="resend-email-error" class="text-sm text-red-700">
+        @if (email.hasError('required')) {
+          Escribe tu correo electrónico.
+        } @else {
+          Esto no parece un correo electrónico.
+        }
+      </p>
+    }
+  </div>
+
+  <button
+    type="submit"
+    class="rounded-md border border-slate-900 px-4 py-2 font-medium text-slate-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+    [disabled]="status() === 'sending'"
+  >
+    {{ status() === 'sending' ? 'Enviando…' : 'Enviar otro enlace' }}
+  </button>
+
+  <div role="status" aria-live="polite" class="text-sm">
+    @switch (status()) {
+      @case ('sent') {
+        <p class="text-green-800">
+          Si ese correo tiene una cuenta pendiente de confirmar, te hemos enviado un enlace nuevo.
+        </p>
+      }
+      @case ('failed') {
+        <p class="text-red-800">No hemos podido enviar el enlace. Inténtalo de nuevo.</p>
+      }
+    }
+  </div>
+</form>

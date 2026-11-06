@@ -1,0 +1,126 @@
+<main class="flex min-h-dvh flex-col items-center justify-center bg-slate-50 px-4 py-10">
+  <div class="w-full max-w-sm">
+    <h1 class="text-center text-3xl font-bold text-slate-900">Crea tu cuenta</h1>
+    <p class="mt-2 text-center text-slate-600">
+      Te enviaremos un correo para confirmar que es tuyo.
+    </p>
+
+    <form
+      class="mt-8 flex flex-col gap-5 rounded-lg bg-white p-6 shadow-sm ring-1 ring-slate-200"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      novalidate
+    >
+      <div class="flex flex-col gap-1">
+        <label for="sign-up-email" class="font-medium text-slate-900">Correo electrónico</label>
+        <input
+          id="sign-up-email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          class="rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-slate-900 aria-invalid:border-red-600"
+          [attr.aria-invalid]="showsError(form.controls.email) || null"
+          [attr.aria-describedby]="showsError(form.controls.email) ? 'sign-up-email-error' : null"
+        />
+        @if (showsError(form.controls.email)) {
+          <p id="sign-up-email-error" class="text-sm text-red-700">
+            @if (form.controls.email.hasError('required')) {
+              Escribe tu correo electrónico.
+            } @else if (form.controls.email.hasError('maxlength')) {
+              El correo puede tener como máximo {{ rules.emailMaxLength }} caracteres.
+            } @else {
+              Esto no parece un correo electrónico.
+            }
+          </p>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="sign-up-display-name" class="font-medium text-slate-900">Nombre</label>
+        <input
+          id="sign-up-display-name"
+          type="text"
+          formControlName="displayName"
+          autocomplete="name"
+          aria-describedby="sign-up-display-name-hint"
+          class="rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-slate-900 aria-invalid:border-red-600"
+          [attr.aria-invalid]="showsError(form.controls.displayName) || null"
+          [attr.aria-describedby]="
+            showsError(form.controls.displayName)
+              ? 'sign-up-display-name-error'
+              : 'sign-up-display-name-hint'
+          "
+        />
+        @if (showsError(form.controls.displayName)) {
+          <p id="sign-up-display-name-error" class="text-sm text-red-700">
+            @if (form.controls.displayName.hasError('required')) {
+              Escribe tu nombre.
+            } @else {
+              El nombre puede tener como máximo {{ rules.displayNameMaxLength }} caracteres.
+            }
+          </p>
+        } @else {
+          <p id="sign-up-display-name-hint" class="text-sm text-slate-500">
+            Así te verán en tus grupos.
+          </p>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="sign-up-password" class="font-medium text-slate-900">Contraseña</label>
+        <input
+          id="sign-up-password"
+          type="password"
+          formControlName="password"
+          autocomplete="new-password"
+          class="rounded-md border border-slate-300 px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-slate-900 aria-invalid:border-red-600"
+          [attr.aria-invalid]="showsError(form.controls.password) || null"
+          [attr.aria-describedby]="
+            showsError(form.controls.password) ? 'sign-up-password-error' : 'sign-up-password-hint'
+          "
+        />
+        @if (showsError(form.controls.password)) {
+          <p id="sign-up-password-error" class="text-sm text-red-700">
+            @if (form.controls.password.hasError('required')) {
+              Escribe una contraseña.
+            } @else if (form.controls.password.hasError('minlength')) {
+              La contraseña debe tener al menos {{ rules.passwordMinLength }} caracteres.
+            } @else {
+              La contraseña es demasiado larga.
+            }
+          </p>
+        } @else {
+          <p id="sign-up-password-hint" class="text-sm text-slate-500">
+            Al menos {{ rules.passwordMinLength }} caracteres.
+          </p>
+        }
+      </div>
+
+      @if (submitError(); as error) {
+        <p role="alert" class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+          @if (error === 'invalid') {
+            Revisa los datos: alguno no es válido.
+          } @else {
+            No hemos podido crear la cuenta. Inténtalo de nuevo en un momento.
+          }
+        </p>
+      }
+
+      <button
+        type="submit"
+        class="rounded-md bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="sending()"
+      >
+        {{ sending() ? 'Creando cuenta…' : 'Crear cuenta' }}
+      </button>
+    </form>
+
+    <p class="mt-6 text-center">
+      <a
+        routerLink="/"
+        class="text-slate-700 underline hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+        >Volver al inicio</a
+      >
+    </p>
+  </div>
+</main>

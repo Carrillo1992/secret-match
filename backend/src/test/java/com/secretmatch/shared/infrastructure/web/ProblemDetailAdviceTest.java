@@ -3,6 +3,7 @@ package com.secretmatch.shared.infrastructure.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.secretmatch.shared.domain.DomainException;
+import com.secretmatch.shared.domain.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,16 @@ class ProblemDetailAdviceTest {
     }
 
     @Test
+    @DisplayName("answers something the caller may not know about with a 404 problem")
+    void answersNotFoundWith404() {
+        MvcTestResult result = mvc.get().uri("/hidden").exchange();
+
+        assertThat(result).hasStatus(404).hasContentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(result).bodyJson().extractingPath("$.type").isEqualTo("urn:secretmatch:problem:example-not-found");
+        assertThat(result).bodyJson().extractingPath("$.detail").isEqualTo("The example does not exist.");
+    }
+
+    @Test
     @DisplayName("answers an unexpected error with a 500 problem that hides the exception message")
     void answersUnexpectedErrorWithOpaqueProblem() throws Exception {
         MvcTestResult result = mvc.get().uri("/crash").exchange();
@@ -55,6 +66,11 @@ class ProblemDetailAdviceTest {
             throw new IllegalStateException("internal secret");
         }
 
+        @GetMapping("/hidden")
+        String hidden() {
+            throw new ExampleNotFound();
+        }
+
         @GetMapping("/rule-breaker")
         String breakRule() {
             throw new ExampleRuleBroken();
@@ -65,6 +81,13 @@ class ProblemDetailAdviceTest {
 
         ExampleRuleBroken() {
             super("example-rule-broken", "The example rule was broken.");
+        }
+    }
+
+    static class ExampleNotFound extends NotFoundException {
+
+        ExampleNotFound() {
+            super("example-not-found", "The example does not exist.");
         }
     }
 }

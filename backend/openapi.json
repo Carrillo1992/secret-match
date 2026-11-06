@@ -39,7 +39,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/EmailVerificationRequest"
+                "$ref" : "#/components/schemas/LinkTokenRequest"
               }
             }
           },
@@ -114,7 +114,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/NewLinkRequest"
+                "$ref" : "#/components/schemas/LinkTokenRequest"
               }
             }
           },
@@ -132,16 +132,6 @@
   },
   "components" : {
     "schemas" : {
-      "EmailVerificationRequest" : {
-        "type" : "object",
-        "properties" : {
-          "token" : {
-            "type" : "string",
-            "minLength" : 1
-          }
-        },
-        "required" : [ "token" ]
-      },
       "Health" : {
         "type" : "object",
         "description" : "Overall API health as reported by Actuator. Only status is part of the contract.",
@@ -153,7 +143,7 @@
         },
         "required" : [ "status" ]
       },
-      "NewLinkRequest" : {
+      "LinkTokenRequest" : {
         "type" : "object",
         "properties" : {
           "token" : {

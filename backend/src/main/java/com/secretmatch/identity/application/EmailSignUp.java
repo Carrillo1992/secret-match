@@ -65,8 +65,7 @@ public class EmailSignUp {
         }
         EmailLinkToken token = EmailLinkToken.generate(random);
         SignUpVerification signUp = SignUpVerification.start(email, displayName, passwordHash, token, clock.instant());
-        signUps.save(signUp);
-        sendLink(signUp, token);
+        saveAndSendLink(signUp, token);
         return signUp.id();
     }
 
@@ -106,20 +105,24 @@ public class EmailSignUp {
         }
         EmailLinkToken token = EmailLinkToken.generate(random);
         signUp.reissue(token, clock.instant());
-        signUps.save(signUp);
-        sendLink(signUp, token);
+        saveAndSendLink(signUp, token);
     }
 
-    private void sendLink(SignUpVerification signUp, EmailLinkToken token) {
+    /**
+     * The email names nobody: whoever signs up chooses the display name, so it must not reach an inbox
+     * that may belong to someone else.
+     */
+    private void saveAndSendLink(SignUpVerification signUp, EmailLinkToken token) {
+        signUps.save(signUp);
         events.publishEvent(new EmailRequested(
                 signUp.email().value(),
                 SUBJECT,
                 """
-                Hola, %s:
+                Hola:
 
                 Para terminar de crear tu cuenta en SecretMatch, confirma que este correo es tuyo con el enlace de abajo. Caduca en %d horas y solo se puede usar una vez.
 
-                Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(signUp.displayName().value(), SignUpVerification.VALIDITY.toHours()),
+                Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(SignUpVerification.VALIDITY.toHours()),
                 "/verify-email?token=" + token.value()));
     }
 }

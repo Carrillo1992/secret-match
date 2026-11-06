@@ -18,12 +18,12 @@ class JpaSignUpVerifications implements SignUpVerifications {
 
     @Override
     public Optional<SignUpVerification> findById(SignUpId id) {
-        return repository.findById(id.value()).map(SignUpVerificationEntity::toDomain);
+        return repository.findLockedById(id.value()).map(SignUpVerificationEntity::toDomain);
     }
 
     @Override
     public Optional<SignUpVerification> findByTokenHash(TokenHash tokenHash) {
-        return repository.findByTokenHash(tokenHash.value()).map(SignUpVerificationEntity::toDomain);
+        return repository.findLockedByTokenHash(tokenHash.value()).map(SignUpVerificationEntity::toDomain);
     }
 
     @Override

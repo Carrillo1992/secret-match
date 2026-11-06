@@ -72,7 +72,10 @@ class EmailSignUpIT {
 
         OutgoingEmail sent = onlyEmailTo(email);
         assertThat(sent.subject()).isEqualTo("Confirma tu correo en SecretMatch");
-        assertThat(sent.text()).contains("Abuela Carmen").contains("24 horas");
+        assertThat(sent.text()).contains("24 horas");
+        assertThat(sent.subject() + sent.text())
+                .as("the sender chose the display name, so the email does not repeat it")
+                .doesNotContain("Abuela Carmen");
         assertThat(userPasswordHash(email))
                 .as("no User before the link is opened")
                 .isNull();

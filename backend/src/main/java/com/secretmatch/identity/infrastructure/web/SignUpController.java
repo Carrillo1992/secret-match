@@ -52,14 +52,14 @@ class SignUpController {
     @Operation(
             summary = "Send a new verification link in place of an old one",
             description = "Sent only while the link's sign-up waits for verification. Answers the same either way.")
-    void sendNewLinkInPlaceOf(@Valid @RequestBody NewLinkRequest request) {
+    void sendNewLinkInPlaceOf(@Valid @RequestBody LinkTokenRequest request) {
         emailSignUp.sendNewLink(EmailLinkToken.of(request.token()));
     }
 
     @PostMapping("/email-verifications")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Verify an email with the token from its verification link, creating the User")
-    void verifyEmail(@Valid @RequestBody EmailVerificationRequest request) {
+    void verifyEmail(@Valid @RequestBody LinkTokenRequest request) {
         emailSignUp.verifyEmail(EmailLinkToken.of(request.token()));
     }
 }

@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -79,6 +80,20 @@ public class MyGroups {
     @Transactional(readOnly = true)
     public GroupDetails group(GroupId id, MemberId viewer) {
         return detailsOf(memberView(id, viewer), viewer);
+    }
+
+    /**
+     * The Group as one of its Members sees it, for other modules that keep data in a Group: they check
+     * membership and the Admin role through it.
+     *
+     * @return empty if there is no such Group or the viewer is not one of its Members
+     */
+    @Transactional(readOnly = true)
+    public Optional<GroupDetails> findGroup(UUID groupId, UUID viewer) {
+        MemberId member = new MemberId(viewer);
+        return groups.findById(new GroupId(groupId))
+                .filter(group -> group.hasMember(member))
+                .map(group -> detailsOf(group, member));
     }
 
     /**

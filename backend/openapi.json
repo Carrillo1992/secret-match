@@ -190,6 +190,105 @@
         "tags" : [ "groups" ]
       }
     },
+    "/api/v1/groups/{groupId}/exclusions" : {
+      "get" : {
+        "description" : "Only the Admin can see them, oldest first. Anyone else gets a 404.",
+        "operationId" : "groupExclusions",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ExclusionResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The Group's Exclusions",
+        "tags" : [ "exclusions" ]
+      },
+      "post" : {
+        "description" : "Only the Admin can; anyone else gets a 404. If the two Members already have an Exclusion, in either order, nothing changes and that one comes back.",
+        "operationId" : "createExclusion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateExclusionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExclusionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Set an Exclusion between two Members of the Group",
+        "tags" : [ "exclusions" ]
+      }
+    },
+    "/api/v1/groups/{groupId}/exclusions/{exclusionId}" : {
+      "delete" : {
+        "description" : "Only the Admin can.",
+        "operationId" : "deleteExclusion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "exclusionId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Delete one of the Group's Exclusions",
+        "tags" : [ "exclusions" ]
+      }
+    },
     "/api/v1/groups/{groupId}/invite-link" : {
       "post" : {
         "description" : "Only the Admin can. The previous Invite Link stops working.",
@@ -548,6 +647,22 @@
         },
         "required" : [ "newPassword" ]
       },
+      "CreateExclusionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "memberIds" : {
+            "type" : "array",
+            "description" : "The ids of the two Members, in any order.",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 2,
+            "minItems" : 2
+          }
+        },
+        "required" : [ "memberIds" ]
+      },
       "CreateGroupRequest" : {
         "type" : "object",
         "properties" : {
@@ -613,6 +728,39 @@
           }
         },
         "required" : [ "exchangeDate", "name" ]
+      },
+      "ExcludedMemberResponse" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "displayName", "id" ]
+      },
+      "ExclusionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Identifies the Exclusion, to delete it."
+          },
+          "members" : {
+            "type" : "array",
+            "description" : "Its two Members.",
+            "items" : {
+              "$ref" : "#/components/schemas/ExcludedMemberResponse"
+            },
+            "maxItems" : 2,
+            "minItems" : 2
+          }
+        },
+        "required" : [ "id", "members" ]
       },
       "GoogleSignInRequest" : {
         "type" : "object",

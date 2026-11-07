@@ -146,7 +146,10 @@ public class MyGroups {
                         // Stable: the Admin first, the rest keep the order they joined in.
                         .sorted(Comparator.comparing(member -> !member.equals(group.admin())))
                         .map(member -> new GroupDetails.Member(
-                                member.value(), names.get(member.value()), member.equals(group.admin())))
+                                member.value(),
+                                names.get(member.value()),
+                                member.equals(group.admin()),
+                                member.equals(viewer)))
                         .toList(),
                 group.inviteCode().value(),
                 group.admin().equals(viewer));

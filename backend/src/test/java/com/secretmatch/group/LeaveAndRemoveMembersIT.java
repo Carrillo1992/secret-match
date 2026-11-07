@@ -99,6 +99,10 @@ class LeaveAndRemoveMembersIT {
         String groupId = createGroup(carmen, "Navidad");
         joinGroup(luis, carmen, groupId);
         mail.clear();
+        get(luis, "/api/v1/groups/" + groupId)
+                .expectBody()
+                .jsonPath("$.members[*].you")
+                .isEqualTo(List.of(false, true));
 
         removeMember(luis, groupId, memberIdOf(luis, groupId, "Luis"))
                 .expectStatus()

@@ -537,9 +537,13 @@
             "type" : "string",
             "format" : "uuid",
             "description" : "Identifies the Member in the Group, e.g. to remove them."
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "Whether this is the signed-in User."
           }
         },
-        "required" : [ "admin", "displayName", "id" ]
+        "required" : [ "admin", "displayName", "id", "you" ]
       },
       "MembershipResponse" : {
         "type" : "object",

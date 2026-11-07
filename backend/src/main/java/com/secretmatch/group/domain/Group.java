@@ -73,14 +73,34 @@ public final class Group {
     }
 
     /**
+     * Whether the Group is finished at {@code now}: from 00:00 in {@link #TIME_ZONE} on the day after its
+     * Exchange Date it is read-only, and only its deletion is still allowed. Other modules reuse this rule for
+     * their own read-only behaviour.
+     */
+    public boolean isFinished(Instant now) {
+        return !now.isBefore(exchangeDate.plusDays(1).atStartOfDay(TIME_ZONE).toInstant());
+    }
+
+    /**
+     * Checks that a User may join the Group through its Invite Link at {@code now}.
+     *
+     * @throws GroupFinishedException if the Group is finished
+     */
+    public void authoriseJoin(Instant now) {
+        requireNotFinished(now);
+    }
+
+    /**
      * The same Group with a new Invite Link: the previous one stops working.
      *
      * @throws AdminOnlyException if {@code by} is not the Admin
+     * @throws GroupFinishedException if the Group is finished
      */
-    public Group regenerateInviteLink(MemberId by, InviteCode newCode) {
+    public Group regenerateInviteLink(MemberId by, InviteCode newCode, Instant now) {
         if (!admin.equals(by)) {
             throw new AdminOnlyException();
         }
+        requireNotFinished(now);
         return new Group(id, name, exchangeDate, budget, admin, members, newCode, createdAt);
     }
 
@@ -89,6 +109,7 @@ public final class Group {
      *
      * @param newBudget in euros; {@code null} to leave the Group without a budget
      * @throws AdminOnlyException if {@code by} is not the Admin
+     * @throws GroupFinishedException if the Group is finished
      * @throws InvalidGroupDetailsException if a detail breaks its rules, e.g. a changed Exchange Date is not
      *     after today in {@link #TIME_ZONE}. An unchanged one is kept as it is, so on the Exchange Date itself
      *     the Admin can still rename the Group.
@@ -97,6 +118,7 @@ public final class Group {
         if (!admin.equals(by)) {
             throw new AdminOnlyException();
         }
+        requireNotFinished(now);
         if (!exchangeDate.equals(newExchangeDate) && !isInTheFuture(newExchangeDate, now)) {
             throw InvalidGroupDetailsException.exchangeDate();
         }
@@ -118,8 +140,9 @@ public final class Group {
      * @throws AdminCannotLeaveException if the Admin tries to leave
      * @throws AdminOnlyException if {@code by} removes someone else and is not the Admin
      * @throws MemberNotFoundException if {@code member} is not a Member
+     * @throws GroupFinishedException if the Group is finished
      */
-    public Group removeMember(MemberId by, MemberId member) {
+    public Group removeMember(MemberId by, MemberId member, Instant now) {
         if (admin.equals(member) && admin.equals(by)) {
             throw new AdminCannotLeaveException();
         }
@@ -129,13 +152,14 @@ public final class Group {
         if (!hasMember(member)) {
             throw new MemberNotFoundException();
         }
+        requireNotFinished(now);
         List<MemberId> remaining =
                 members.stream().filter(other -> !other.equals(member)).toList();
         return new Group(id, name, exchangeDate, budget, admin, remaining, inviteCode, createdAt);
     }
 
     /**
-     * Checks that {@code by} may delete the Group, in any state.
+     * Checks that {@code by} may delete the Group, in any state, finished included.
      *
      * @return the Members to tell it is gone: everyone but the Admin, who deletes it
      * @throws AdminOnlyException if {@code by} is not the Admin
@@ -181,6 +205,12 @@ public final class Group {
 
     public Instant createdAt() {
         return createdAt;
+    }
+
+    private void requireNotFinished(Instant now) {
+        if (isFinished(now)) {
+            throw new GroupFinishedException();
+        }
     }
 
     private static boolean isInTheFuture(LocalDate date, Instant now) {

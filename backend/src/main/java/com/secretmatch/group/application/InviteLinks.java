@@ -35,13 +35,18 @@ public class InviteLinks {
      *
      * @return the id of the Group
      * @throws InviteLinkInvalidException if no Group's current Invite Link has this code
+     * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
      */
     @Transactional
     public GroupId join(String inviteCode, MemberId user) {
         Group group = InviteCode.parse(inviteCode)
                 .flatMap(groups::findByInviteCode)
                 .orElseThrow(InviteLinkInvalidException::new);
-        if (!group.hasMember(user) && groups.addMember(group.id(), user, clock.instant())) {
+        if (group.hasMember(user)) {
+            return group.id();
+        }
+        group.authoriseJoin(clock.instant());
+        if (groups.addMember(group.id(), user, clock.instant())) {
             emailAdmin(group, user);
         }
         return group.id();

@@ -14,6 +14,7 @@ import { LucideCopy, LucideRefreshCw } from '@lucide/angular';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
+import { Alert } from '../../../../shared/ui/alert/alert';
 
 /** Where the Admin's last regeneration stands, as the page tells it. */
 export type RegenerateStatus = 'idle' | 'regenerating' | 'regenerated' | 'failed';
@@ -27,7 +28,7 @@ type Notice = 'copied' | 'copy-failed' | null;
 @Component({
   selector: 'app-invite-link-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, Field, TextLink, LucideCopy, LucideRefreshCw],
+  imports: [Alert, Button, Field, TextLink, LucideCopy, LucideRefreshCw],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-invite" class="rounded-card bg-surface p-5 shadow-card">
@@ -55,10 +56,7 @@ type Notice = 'copied' | 'copy-failed' | null;
       <p role="status" class="mt-2 text-sm text-ink-muted">{{ statusText() }}</p>
 
       @if (regenerateStatus() === 'failed') {
-        <p
-          role="alert"
-          class="mt-2 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
-        >
+        <p appAlert class="mt-2">
           No hemos podido generar un enlace nuevo. El actual sigue funcionando.
         </p>
       }

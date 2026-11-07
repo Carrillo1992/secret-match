@@ -23,12 +23,14 @@ import { Member, MembersCard, Removal } from '../../components/members-card/memb
 import { LeaveStatus, MembershipCard } from '../../components/membership-card/membership-card';
 import { euros, longExchangeDate } from '../../data-access/group-format';
 import { GroupsApi } from '../../data-access/groups-api';
+import { Alert } from '../../../../shared/ui/alert/alert';
 
 /** A Group as its Members see it: its details and who is in it. */
 @Component({
   selector: 'app-group-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Alert,
     RouterLink,
     AppShell,
     Button,

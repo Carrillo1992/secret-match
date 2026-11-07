@@ -15,12 +15,22 @@ import { Button } from '../../../../shared/ui/button/button';
 import { GiftIllustration } from '../../../../shared/ui/gift-illustration/gift-illustration';
 import { GroupCard } from '../../components/group-card/group-card';
 import { GroupsApi } from '../../data-access/groups-api';
+import { Alert } from '../../../../shared/ui/alert/alert';
 
 /** "Mis grupos": the first page behind sign-in, listing every Group the User is a Member of. */
 @Component({
   selector: 'app-my-groups-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppShell, Button, GiftIllustration, GroupCard, RouterLink, LucideLogOut, LucidePlus],
+  imports: [
+    Alert,
+    AppShell,
+    Button,
+    GiftIllustration,
+    GroupCard,
+    RouterLink,
+    LucideLogOut,
+    LucidePlus,
+  ],
   templateUrl: './my-groups-page.html',
   providers: [CurrentUser],
 })

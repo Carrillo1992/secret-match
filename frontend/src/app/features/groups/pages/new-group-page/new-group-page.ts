@@ -15,6 +15,7 @@ import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { earliestExchangeDate } from '../../data-access/group-format';
 import { GroupsApi, NewGroup } from '../../data-access/groups-api';
+import { Alert } from '../../../../shared/ui/alert/alert';
 
 /** Mirrors the API's rules: the name's length and the budget's shape (euros, to the cent, < 1 M). */
 const NAME_MAX_LENGTH = 80;
@@ -26,6 +27,7 @@ type SubmitError = 'exchange-date-not-in-future' | 'failed';
   selector: 'app-new-group-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Alert,
     ReactiveFormsModule,
     RouterLink,
     AppShell,

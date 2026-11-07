@@ -14,13 +14,23 @@ import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { SignUpApi } from '../../data-access/sign-up-api';
 import { emailShape, maxUtf8Bytes, notBlank, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
+import { Alert } from '../../../../shared/ui/alert/alert';
 
 type SubmitError = 'invalid' | 'failed';
 
 @Component({
   selector: 'app-sign-up-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, SheetLayout, Button, Field, TextLink, LucideGift],
+  imports: [
+    Alert,
+    ReactiveFormsModule,
+    RouterLink,
+    SheetLayout,
+    Button,
+    Field,
+    TextLink,
+    LucideGift,
+  ],
   templateUrl: './sign-up-page.html',
 })
 export class SignUpPage {

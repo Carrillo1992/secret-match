@@ -13,6 +13,7 @@ import {
 import { LucideLogOut } from '@lucide/angular';
 import { Button } from '../../../../shared/ui/button/button';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
+import { Alert } from '../../../../shared/ui/alert/alert';
 
 /** Where the Member's request to leave stands, as the page tells it. */
 export type LeaveStatus = 'idle' | 'leaving' | 'failed';
@@ -24,7 +25,7 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
 @Component({
   selector: 'app-membership-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, TextLink, LucideLogOut],
+  imports: [Alert, Button, TextLink, LucideLogOut],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-membership" class="rounded-card bg-surface p-5 shadow-card">
@@ -39,12 +40,7 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
         <p class="mt-1.5 text-ink-muted">Si sales, dejarás de ver este grupo.</p>
 
         @if (status() === 'failed') {
-          <p
-            role="alert"
-            class="mt-4 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
-          >
-            No hemos podido sacarte del grupo. Inténtalo de nuevo.
-          </p>
+          <p appAlert class="mt-4">No hemos podido sacarte del grupo. Inténtalo de nuevo.</p>
         }
 
         @if (confirming()) {

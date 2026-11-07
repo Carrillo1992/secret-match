@@ -13,13 +13,23 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
+import { Alert } from '../../../../shared/ui/alert/alert';
 
 type SubmitError = Exclude<SignInOutcome, 'signed-in'>;
 
 @Component({
   selector: 'app-sign-in-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, SheetLayout, Button, Field, TextLink, LucideLogIn],
+  imports: [
+    Alert,
+    ReactiveFormsModule,
+    RouterLink,
+    SheetLayout,
+    Button,
+    Field,
+    TextLink,
+    LucideLogIn,
+  ],
   templateUrl: './sign-in-page.html',
 })
 export class SignInPage {

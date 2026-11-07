@@ -69,12 +69,7 @@
       </p>
     </div>
   } @else {
-    <p
-      role="alert"
-      class="mt-6 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
-    >
-      No hemos podido cargar el grupo. Inténtalo de nuevo.
-    </p>
+    <p appAlert class="mt-6">No hemos podido cargar el grupo. Inténtalo de nuevo.</p>
     <button type="button" appButton="secondary" class="mt-4" (click)="reload()">Reintentar</button>
   }
 </app-shell>

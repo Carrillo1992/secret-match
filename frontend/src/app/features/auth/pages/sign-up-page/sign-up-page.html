@@ -89,10 +89,7 @@
     </div>
 
     @if (submitError(); as error) {
-      <p
-        role="alert"
-        class="rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
-      >
+      <p appAlert>
         @if (error === 'invalid') {
           Revisa los datos: alguno no es válido.
         } @else {

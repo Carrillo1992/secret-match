@@ -15,6 +15,7 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { Group } from '../../data-access/groups-api';
+import { Alert } from '../../../../shared/ui/alert/alert';
 
 export type Member = Group['members'][number];
 
@@ -31,7 +32,7 @@ export interface Removal {
 @Component({
   selector: 'app-members-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Button, Chip, TextLink],
+  imports: [Alert, Button, Chip, TextLink],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-members" class="rounded-card bg-surface p-5 shadow-card">
@@ -48,10 +49,7 @@ export interface Removal {
 
       @if (removal(); as removal) {
         @if (removal.status === 'failed') {
-          <p
-            role="alert"
-            class="mt-3 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
-          >
+          <p appAlert class="mt-3">
             No hemos podido quitar a {{ removal.member.displayName }}. Inténtalo de nuevo.
           </p>
         }

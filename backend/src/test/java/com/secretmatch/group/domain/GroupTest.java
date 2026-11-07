@@ -286,4 +286,16 @@ class GroupTest {
         assertThatThrownBy(() -> withBudget.edit(CREATOR, "Amigos", CHRISTMAS_EVE, new BigDecimal("-1"), NOW))
                 .isInstanceOf(InvalidGroupDetailsException.class);
     }
+
+    @Test
+    @DisplayName("the Admin deletes the Group, and every other Member is to be told")
+    void adminDeletes() {
+        assertThat(withGuests().authoriseDeletion(CREATOR)).containsExactly(GUEST, OTHER_GUEST);
+    }
+
+    @Test
+    @DisplayName("a Member who is not the Admin cannot delete the Group")
+    void onlyTheAdminDeletes() {
+        assertThatThrownBy(() -> withGuests().authoriseDeletion(GUEST)).isInstanceOf(AdminOnlyException.class);
+    }
 }

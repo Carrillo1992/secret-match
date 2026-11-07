@@ -134,6 +134,19 @@ public final class Group {
         return new Group(id, name, exchangeDate, budget, admin, remaining, inviteCode, createdAt);
     }
 
+    /**
+     * Checks that {@code by} may delete the Group, in any state.
+     *
+     * @return the Members to tell it is gone: everyone but the Admin, who deletes it
+     * @throws AdminOnlyException if {@code by} is not the Admin
+     */
+    public List<MemberId> authoriseDeletion(MemberId by) {
+        if (!admin.equals(by)) {
+            throw new AdminOnlyException();
+        }
+        return members.stream().filter(member -> !member.equals(admin)).toList();
+    }
+
     public GroupId id() {
         return id;
     }

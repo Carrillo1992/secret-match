@@ -48,6 +48,22 @@ interface GroupRepository extends JpaRepository<GroupEntity, UUID> {
     @Query(value = "DELETE FROM group_members WHERE group_id = :groupId AND user_id = :userId", nativeQuery = true)
     int removeMember(UUID groupId, UUID userId);
 
+    /**
+     * {@code FOR UPDATE}, not {@code FOR NO KEY UPDATE}: only this lock also holds back a new Member's row, whose
+     * foreign key check takes a key-share lock on the Group.
+     */
+    @Query(value = "SELECT id FROM groups WHERE id = :groupId FOR UPDATE", nativeQuery = true)
+    Optional<UUID> lock(UUID groupId);
+
+    /**
+     * Its Members go with it ({@code ON DELETE CASCADE}).
+     *
+     * @return 1 if the Group was deleted, 0 if there was none
+     */
+    @Modifying
+    @Query(value = "DELETE FROM groups WHERE id = :groupId", nativeQuery = true)
+    int deleteGroup(UUID groupId);
+
     @Modifying
     @Query("""
             UPDATE GroupEntity g SET g.name = :name, g.exchangeDate = :exchangeDate, g.budget = :budget

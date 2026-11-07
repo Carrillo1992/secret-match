@@ -40,6 +40,15 @@ public interface Groups {
     /** Stores the Group's name, Exchange Date and budget. */
     void saveDetails(Group group);
 
+    /**
+     * Locks the Group until the transaction ends: nobody joins it, and nobody else deletes it, meanwhile. Does
+     * nothing if there is no such Group.
+     */
+    void lock(GroupId group);
+
+    /** Deletes the Group and its Members. */
+    void delete(GroupId group);
+
     /** Stores the Group's current Invite Link code; the previous one stops matching. */
     void saveInviteCode(Group group);
 }

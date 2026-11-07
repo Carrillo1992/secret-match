@@ -14,17 +14,17 @@ References: Airbnb for warmth and clarity in everyday screens; Spotify Wrapped f
 
 Every colour is a semantic role. The default Tailwind palette is switched off (`--color-*: initial`), so `bg-slate-50` or `text-red-700` simply do not exist: pick the role.
 
-| Role                                                | Use                                                                     |
-| --------------------------------------------------- | ----------------------------------------------------------------------- |
-| `canvas`                                            | Page background; also the inset well for a quiet section inside a sheet |
-| `surface`                                           | Sheets and cards that sit on the canvas                                 |
-| `field`                                             | Input backgrounds                                                       |
-| `subtle`                                            | Quiet fills: icon badges, neutral chips                                 |
-| `ink` / `ink-muted`                                 | Body text / secondary text, hints, captions                             |
-| `line`                                              | Input borders and dividers (meets 3:1 against `surface` and `canvas`)   |
-| `primary` / `primary-hover` / `on-primary`          | The one main action per screen, links, focus rings                      |
-| `success`, `success-soft` / `danger`, `danger-soft` | Feedback text / its tinted background                                   |
-| `mustard`, `sage`, `sage-soft`, `clay`              | **Decoration only**: illustration, confetti, celebratory badges         |
+| Role | Use |
+|---|---|
+| `canvas` | Page background; also the inset well for a quiet section inside a sheet |
+| `surface` | Sheets and cards that sit on the canvas |
+| `field` | Input backgrounds |
+| `subtle` | Quiet fills: icon badges, neutral chips |
+| `ink` / `ink-muted` | Body text / secondary text, hints, captions |
+| `line` | Input borders and dividers (meets 3:1 against `surface` and `canvas`) |
+| `primary` / `primary-hover` / `on-primary` | The one main action per screen, links, focus rings |
+| `success`, `success-soft` / `danger`, `danger-soft` | Feedback text / its tinted background |
+| `mustard`, `sage`, `sage-soft`, `clay` | **Decoration only**: illustration, confetti, celebratory badges |
 
 Dark mode follows `prefers-color-scheme` automatically: the same role names switch values in `styles.css`, so markup never carries `dark:` colour variants.
 
@@ -35,14 +35,14 @@ Contrast pitfall: `primary` text on `subtle` is 4.06:1 in light mode, below AA. 
 - **Display**: Outfit (`font-display`), bold, `tracking-tight`. Headings, button labels, the wordmark.
 - **Body**: Nunito Sans (`font-sans`, the default). Everything else. Base size 16 px; hints and captions `text-sm`, never smaller.
 
-| Level                          | Classes                                               |
-| ------------------------------ | ----------------------------------------------------- |
-| Hero (landing, reveal name)    | `font-display text-4xl font-bold tracking-tight`      |
-| Page title (`h1`)              | `font-display text-3xl font-bold tracking-tight`      |
-| Section title (`h2`)           | `font-display text-lg font-semibold`                  |
-| Lead / intro paragraph         | `text-base text-ink-muted` (`text-lg` on the landing) |
-| Label                          | `font-bold`                                           |
-| Hint, caption, inline feedback | `text-sm`                                             |
+| Level | Classes |
+|---|---|
+| Hero (landing, reveal name) | `font-display text-4xl font-bold tracking-tight` |
+| Page title (`h1`) | `font-display text-3xl font-bold tracking-tight` |
+| Section title (`h2`) | `font-display text-lg font-semibold` |
+| Lead / intro paragraph | `text-base text-ink-muted` (`text-lg` on the landing) |
+| Label | `font-bold` |
+| Hint, caption, inline feedback | `text-sm` |
 
 ## Spacing
 
@@ -102,7 +102,7 @@ No sound, anywhere.
 
 ## Voice and tone (written copy)
 
-Spanish, _tuteo_, warm. Winks are welcome in key moments ("¡Ya tienes a tu persona secreta! 🤫") and absent from forms and errors, where copy is plain and says how to fix the problem. Never reveal or hint at who someone's giver is (see the anonymity invariant in `CLAUDE.md`).
+Spanish, *tuteo*, warm. Winks are welcome in key moments ("¡Ya tienes a tu persona secreta! 🤫") and absent from forms and errors, where copy is plain and says how to fix the problem. Never reveal or hint at who someone's giver is (see the anonymity invariant in `CLAUDE.md`).
 
 ## Accessibility
 

@@ -3,10 +3,13 @@
 
 export type { AccessTokenResponse } from './models/access-token-response';
 export type { ChangePasswordRequest } from './models/change-password-request';
+export type { CreateExclusionRequest } from './models/create-exclusion-request';
 export type { CreateGroupRequest } from './models/create-group-request';
 export type { CurrentUserResponse } from './models/current-user-response';
 export type { DisplayNameRequest } from './models/display-name-request';
 export type { EditGroupRequest } from './models/edit-group-request';
+export type { ExcludedMemberResponse } from './models/excluded-member-response';
+export type { ExclusionResponse } from './models/exclusion-response';
 export type { GoogleSignInRequest } from './models/google-sign-in-request';
 export type { GroupResponse } from './models/group-response';
 export type { GroupSummaryResponse } from './models/group-summary-response';

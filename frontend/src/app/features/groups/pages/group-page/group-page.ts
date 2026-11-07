@@ -29,6 +29,14 @@ import {
   EditStatus,
   GroupDetailsCard,
 } from '../../components/group-details-card/group-details-card';
+import {
+  Addition,
+  ExclusionRemoval,
+  ExclusionsCard,
+  ExclusionsListing,
+  NewExclusion,
+} from '../../components/exclusions-card/exclusions-card';
+import { Exclusion, ExclusionsApi } from '../../data-access/exclusions-api';
 import { longExchangeDate } from '../../data-access/group-format';
 import { GroupEdit, GroupsApi } from '../../data-access/groups-api';
 import { Alert } from '../../../../shared/ui/alert/alert';
@@ -46,6 +54,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
     TextLink,
     InviteLinkCard,
     MembersCard,
+    ExclusionsCard,
     MembershipCard,
     GroupDetailsCard,
     LucideChevronLeft,
@@ -56,6 +65,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
 })
 export class GroupPage {
   private readonly groupsApi = inject(GroupsApi);
+  private readonly exclusionsApi = inject(ExclusionsApi);
   private readonly router = inject(Router);
   private readonly origin = inject(DOCUMENT).location.origin;
   private readonly groupId = toSignal(
@@ -91,6 +101,62 @@ export class GroupPage {
   protected readonly removal = signal<Removal | null>(null);
 
   protected readonly editStatus = signal<EditStatus>('idle');
+
+  /** Only the Admin's page asks for the Exclusions: nobody else may know anything about them. */
+  private readonly exclusionsOutcome = resource({
+    params: () => (this.group()?.admin ? this.groupId() : undefined),
+    loader: ({ params }) => this.exclusionsApi.exclusions(params),
+  });
+  protected readonly exclusionsListing = computed<ExclusionsListing>(() => {
+    if (this.exclusionsOutcome.isLoading() || !this.exclusionsOutcome.hasValue()) {
+      return { status: 'loading' };
+    }
+    return this.exclusionsOutcome.value();
+  });
+  protected readonly addition = signal<Addition | null>(null);
+  protected readonly exclusionRemoval = signal<ExclusionRemoval | null>(null);
+
+  /** Once the API agrees, the new pair joins the list, unless the Group already had it. */
+  protected async addExclusion(memberIds: NewExclusion): Promise<void> {
+    this.exclusionRemoval.set(null);
+    this.addition.set({ status: 'adding' });
+    const outcome = await this.exclusionsApi.add(this.groupId(), memberIds);
+    if (outcome.status === 'added') {
+      const { exclusion } = outcome;
+      this.updateExclusions((exclusions) =>
+        exclusions.some((other) => other.id === exclusion.id)
+          ? exclusions
+          : [...exclusions, exclusion],
+      );
+    }
+    this.addition.set(outcome);
+  }
+
+  /** Removed at once, without asking: adding it again takes two taps. */
+  protected async removeExclusion(exclusion: Exclusion): Promise<void> {
+    this.addition.set(null);
+    this.exclusionRemoval.set({ exclusion, status: 'removing' });
+    const outcome = await this.exclusionsApi.remove(this.groupId(), exclusion.id);
+    if (outcome.status === 'removed') {
+      this.updateExclusions((exclusions) =>
+        exclusions.filter((other) => other.id !== exclusion.id),
+      );
+    }
+    this.exclusionRemoval.set({ exclusion, status: outcome.status });
+  }
+
+  protected reloadExclusions(): void {
+    this.exclusionsOutcome.reload();
+  }
+
+  private updateExclusions(
+    change: (exclusions: readonly Exclusion[]) => readonly Exclusion[],
+  ): void {
+    const listing = this.exclusionsListing();
+    if (listing.status === 'loaded') {
+      this.exclusionsOutcome.set({ status: 'loaded', exclusions: change(listing.exclusions) });
+    }
+  }
 
   /** The Admin's new details: once the API agrees, every part of the page shows them. */
   protected async edit(details: GroupEdit): Promise<void> {
@@ -139,7 +205,10 @@ export class GroupPage {
     this.deleteStatus.set('failed');
   }
 
-  /** The Admin removes another Member: once the API agrees, they leave the list. */
+  /**
+   * The Admin removes another Member: once the API agrees, they leave the list, and so do their
+   * Exclusions, which the API deleted with them.
+   */
   protected async removeMember(member: Member): Promise<void> {
     this.removal.set({ member, status: 'removing' });
     const outcome = await this.groupsApi.removeMember(this.groupId(), member.id);
@@ -149,6 +218,9 @@ export class GroupPage {
         status: 'found',
         group: { ...group, members: group.members.filter((other) => other.id !== member.id) },
       });
+      this.updateExclusions((exclusions) =>
+        exclusions.filter((exclusion) => !exclusion.members.some((one) => one.id === member.id)),
+      );
     }
     this.removal.set({ member, status: outcome.status });
   }

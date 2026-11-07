@@ -25,6 +25,12 @@ export type { RegenerateInviteLink$Params as RegenerateInviteLink$Params } from 
 export { regenerateInviteLink as regenerateInviteLink } from './fn/groups/regenerate-invite-link';
 export type { RemoveMember$Params as RemoveMember$Params } from './fn/groups/remove-member';
 export { removeMember as removeMember } from './fn/groups/remove-member';
+export type { GroupExclusions$Params as GroupExclusions$Params } from './fn/exclusions/group-exclusions';
+export { groupExclusions as groupExclusions } from './fn/exclusions/group-exclusions';
+export type { CreateExclusion$Params as CreateExclusion$Params } from './fn/exclusions/create-exclusion';
+export { createExclusion as createExclusion } from './fn/exclusions/create-exclusion';
+export type { DeleteExclusion$Params as DeleteExclusion$Params } from './fn/exclusions/delete-exclusion';
+export { deleteExclusion as deleteExclusion } from './fn/exclusions/delete-exclusion';
 export type { Join$Params as Join$Params } from './fn/invite-links/join';
 export { join as join } from './fn/invite-links/join';
 export type { SignIn$Params as SignIn$Params } from './fn/sessions/sign-in';

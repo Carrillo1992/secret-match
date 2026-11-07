@@ -32,3 +32,24 @@ describe('Field', () => {
     expect(input?.classList).toContain('w-full');
   });
 });
+
+@Component({
+  imports: [Field],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<label for="who">Quién</label
+    ><select id="who" appField>
+      <option>Luis</option>
+    </select>`,
+})
+class SelectHost {}
+
+describe('Field on a select', () => {
+  it('looks like a text input', async () => {
+    const fixture = TestBed.createComponent(SelectHost);
+    await fixture.whenStable();
+    const select = (fixture.nativeElement as HTMLElement).querySelector('select');
+
+    expect(select?.classList).toContain('bg-field');
+    expect(select?.classList).toContain('rounded-field');
+  });
+});

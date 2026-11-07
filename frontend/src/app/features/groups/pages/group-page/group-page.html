@@ -56,6 +56,20 @@
       (remove)="removeMember($event)"
     />
 
+    @if (group.admin) {
+      <app-exclusions-card
+        class="mt-6"
+        [members]="group.members"
+        [listing]="exclusionsListing()"
+        [finished]="group.finished"
+        [addition]="addition()"
+        [removal]="exclusionRemoval()"
+        (add)="addExclusion($event)"
+        (remove)="removeExclusion($event)"
+        (retry)="reloadExclusions()"
+      />
+    }
+
     <app-membership-card
       class="mt-6"
       [admin]="group.admin"

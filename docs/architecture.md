@@ -48,6 +48,7 @@ infrastructure ──▶ application ──▶ domain
 
 - `domain` depends on nothing outside the JDK.
 - A module uses another module only through that module's `application` API, never its repositories or JPA entities. The one exception is `shared.domain` (e.g. `DomainException`), which any module may use.
+- **Reading another module through a port of your own.** When a module's use cases need another module's data, it may declare a port in its own `application` package, in its own language, with an adapter in its `infrastructure` that calls the other module's `application` API. Example: `draw.application.Rosters` returns a Group's Roster (its Admin and Members), and `draw.infrastructure.GroupRosters` reads it through `group.application.MyGroups.findGroup`. The port keeps the other module's types out of the use cases and lets them be unit-tested with an in-memory fake. Like ports to external systems, it is a deliberate exception to "no interface with a single implementation". Chosen in #27.
 
 ### 2.2 Modules (initial cut)
 

@@ -84,6 +84,10 @@ _Avoid_: Recipient, giftee, target
 A rule set by the group admin that two specific members may never be assigned to each other, in either direction.
 _Avoid_: Restriction, block, constraint
 
+**Roster**:
+A Group's Admin and Members as the Draw module reads them from the Groups module. The same people as the Group's Members, seen from the Draw, not a separate list anyone keeps.
+_Avoid_: Participants, member list
+
 **Reveal**:
 The moment a Giver discovers who their Receiver is, available to each Giver as soon as the Draw is made. Givers are never revealed to Receivers.
 _Avoid_: Unveiling, unmasking, opening

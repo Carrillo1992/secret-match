@@ -26,7 +26,8 @@ type GoogleError = Exclude<GoogleSignInOutcome, 'signed-in'>;
   imports: [Alert],
   template: `
     <div [hidden]="!available()" class="mt-6">
-      <div #button class="flex min-h-11 justify-center"></div>
+      <!-- Google's button is a light iframe: a dark page around it would paint it a white box. -->
+      <div #button class="flex min-h-11 justify-center [color-scheme:light]"></div>
       @if (error(); as error) {
         <p appAlert class="mt-3">
           @if (error === 'rejected') {

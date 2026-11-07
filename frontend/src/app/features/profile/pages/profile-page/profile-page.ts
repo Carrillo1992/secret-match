@@ -26,7 +26,8 @@ import { maxUtf8Bytes, notBlank } from '../../../../shared/forms/validators';
 import { Me, ProfileApi } from '../../data-access/profile-api';
 
 type FormState = 'idle' | 'sending' | 'saved' | 'failed';
-type PasswordState = FormState | 'wrong-password';
+/** `created`: a User who had no password (Google only) set their first one. */
+type PasswordState = FormState | 'wrong-password' | 'created';
 
 /** "Tu perfil": the signed-in User changes their display name and their password. */
 @Component({
@@ -125,19 +126,22 @@ export class ProfilePage {
       return;
     }
     this.passwordState.set('sending');
+    const hadPassword = this.hasPassword();
     const { currentPassword, newPassword } = this.passwordForm.getRawValue();
     const outcome = await this.profileApi.changePassword(
       newPassword,
-      this.hasPassword() ? currentPassword : undefined,
+      hadPassword ? currentPassword : undefined,
     );
-    if (outcome.status === 'changed') {
-      this.passwordForm.reset();
-      this.passwordSubmitted.set(false);
-      const me = this.me();
-      if (me) {
-        this.saved.set({ ...me, hasPassword: true });
-      }
+    if (outcome.status !== 'changed') {
+      this.passwordState.set(outcome.status);
+      return;
     }
-    this.passwordState.set(outcome.status === 'changed' ? 'saved' : outcome.status);
+    this.passwordForm.reset();
+    this.passwordSubmitted.set(false);
+    const me = this.me();
+    if (me) {
+      this.saved.set({ ...me, hasPassword: true });
+    }
+    this.passwordState.set(hadPassword ? 'saved' : 'created');
   }
 }

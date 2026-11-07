@@ -170,7 +170,7 @@ describe('ProfilePage', () => {
     request.flush(null, { status: 204, statusText: 'No Content' });
     await settle();
 
-    expect(status()).toContain('Contraseña cambiada');
+    expect(status()).toContain('Contraseña creada');
     expect(field('Contraseña actual')).toBeTruthy();
     expect(button('Cambiar contraseña')).toBeTruthy();
   });

@@ -23,7 +23,8 @@
         novalidate
       >
         <div class="flex flex-col gap-1.5">
-          <label for="profile-display-name" class="font-bold">Tu nombre</label>
+          <!-- The card's title already says it; the label stays for screen readers. -->
+          <label for="profile-display-name" class="sr-only">Tu nombre</label>
           <input
             id="profile-display-name"
             type="text"
@@ -165,6 +166,10 @@
           <div aria-live="polite" class="w-full">
             @if (passwordState() === 'saved') {
               <p appAlert="success">Contraseña cambiada. Las demás sesiones se han cerrado.</p>
+            } @else if (passwordState() === 'created') {
+              <p appAlert="success">
+                Contraseña creada. Ya puedes entrar también con tu correo y esta contraseña.
+              </p>
             }
           </div>
         </div>

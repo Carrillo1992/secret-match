@@ -2,6 +2,7 @@ package com.secretmatch.identity.infrastructure.security;
 
 import com.secretmatch.identity.application.AccessToken;
 import com.secretmatch.identity.application.AccessTokens;
+import com.secretmatch.identity.domain.SessionId;
 import com.secretmatch.identity.domain.UserId;
 import java.time.Clock;
 import java.time.Duration;
@@ -13,7 +14,10 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Component;
 
-/** Access tokens as JWTs signed with HS256: the subject is the User's id, and nothing else about them. */
+/**
+ * Access tokens as JWTs signed with HS256: the subject is the User's id, and nothing else about them; the
+ * {@code sid} claim is the Session the token belongs to.
+ */
 @Component
 class JwtAccessTokens implements AccessTokens {
 
@@ -29,12 +33,13 @@ class JwtAccessTokens implements AccessTokens {
     }
 
     @Override
-    public AccessToken issueFor(UserId userId) {
+    public AccessToken issueFor(UserId userId, SessionId sessionId) {
         Instant now = clock.instant();
         Instant expiresAt = now.plus(VALIDITY);
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(ISSUER)
                 .subject(userId.value().toString())
+                .claim(AccessTokenClaims.SESSION, sessionId.value().toString())
                 .issuedAt(now)
                 .expiresAt(expiresAt)
                 .build();

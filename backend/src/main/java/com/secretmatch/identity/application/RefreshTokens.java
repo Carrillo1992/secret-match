@@ -3,6 +3,7 @@ package com.secretmatch.identity.application;
 import com.secretmatch.identity.domain.RefreshToken;
 import com.secretmatch.identity.domain.SessionId;
 import com.secretmatch.identity.domain.TokenHash;
+import com.secretmatch.identity.domain.UserId;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -18,4 +19,7 @@ public interface RefreshTokens {
 
     /** Ends the session: none of its tokens works any more. */
     void revokeSession(SessionId sessionId, Instant now);
+
+    /** Ends every session of the User except {@code kept}. */
+    void revokeOtherSessions(UserId userId, SessionId kept, Instant now);
 }

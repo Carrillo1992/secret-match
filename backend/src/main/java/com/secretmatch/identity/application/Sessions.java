@@ -102,7 +102,8 @@ public class Sessions {
         RefreshToken token = refreshTokens.findByTokenHash(presented.hash()).orElseThrow(SessionExpiredException::new);
         return switch (token.stateAt(now)) {
             case ACTIVE -> new RefreshOutcome.Rotated(rotate(token, now));
-            case JUST_ROTATED -> new RefreshOutcome.AlreadyRotated(accessTokens.issueFor(token.userId()));
+            case JUST_ROTATED ->
+                new RefreshOutcome.AlreadyRotated(accessTokens.issueFor(token.userId(), token.sessionId()));
             case ROTATED -> {
                 refreshTokens.revokeSession(token.sessionId(), now);
                 throw new SessionExpiredException();
@@ -130,7 +131,7 @@ public class Sessions {
     @Transactional(readOnly = true)
     public CurrentUser currentUser(UserId id) {
         User user = users.findById(id).orElseThrow(SessionExpiredException::new);
-        return new CurrentUser(user.email().value(), user.displayName().value());
+        return CurrentUser.of(user);
     }
 
     private SignedIn rotate(RefreshToken token, Instant now) {
@@ -138,13 +139,14 @@ public class Sessions {
         RefreshToken successor = token.rotate(next, now);
         refreshTokens.save(token);
         refreshTokens.save(successor);
-        return new SignedIn(accessTokens.issueFor(token.userId()), next);
+        return new SignedIn(accessTokens.issueFor(token.userId(), token.sessionId()), next);
     }
 
     private SignedIn startSession(UserId userId) {
         RefreshTokenValue value = RefreshTokenValue.generate(random);
-        refreshTokens.save(RefreshToken.startSession(userId, value, clock.instant()));
-        return new SignedIn(accessTokens.issueFor(userId), value);
+        RefreshToken token = RefreshToken.startSession(userId, value, clock.instant());
+        refreshTokens.save(token);
+        return new SignedIn(accessTokens.issueFor(userId, token.sessionId()), value);
     }
 
     private static Optional<RefreshTokenValue> presentedToken(String cookieValue) {

@@ -13,7 +13,8 @@ import { Field } from '../../../../shared/ui/field/field';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { SignUpApi } from '../../data-access/sign-up-api';
-import { emailShape, maxUtf8Bytes, notBlank, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
+import { maxUtf8Bytes, notBlank } from '../../../../shared/forms/validators';
+import { emailShape, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 import { Alert } from '../../../../shared/ui/alert/alert';
 
 type SubmitError = 'invalid' | 'failed';

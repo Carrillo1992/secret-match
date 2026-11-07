@@ -16,8 +16,8 @@ import {
   groupDetailsInput,
   NAME_MAX_LENGTH,
   notBefore,
-  notBlank,
 } from '../../data-access/group-details-form';
+import { notBlank } from '../../../../shared/forms/validators';
 import { earliestExchangeDate } from '../../data-access/group-format';
 import { GroupsApi } from '../../data-access/groups-api';
 import { Alert } from '../../../../shared/ui/alert/alert';

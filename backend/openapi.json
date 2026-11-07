@@ -413,6 +413,58 @@
         "tags" : [ "sessions" ]
       }
     },
+    "/api/v1/users/me/display-name" : {
+      "put" : {
+        "operationId" : "changeDisplayName",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DisplayNameRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CurrentUserResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Change the signed-in User's display name",
+        "tags" : [ "profile" ]
+      }
+    },
+    "/api/v1/users/me/password" : {
+      "put" : {
+        "description" : "Needs the current password, if the User has one. Ends the User's Sessions on every other device.",
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Change the signed-in User's password, or set a first one",
+        "tags" : [ "profile" ]
+      }
+    },
     "/api/v1/verification-emails" : {
       "post" : {
         "description" : "Sent only while the link's sign-up waits for verification. Answers the same either way.",
@@ -452,6 +504,20 @@
         },
         "required" : [ "accessToken", "expiresAt" ]
       },
+      "ChangePasswordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "currentPassword" : {
+            "type" : "string"
+          },
+          "newPassword" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 8
+          }
+        },
+        "required" : [ "newPassword" ]
+      },
       "CreateGroupRequest" : {
         "type" : "object",
         "properties" : {
@@ -480,9 +546,23 @@
           },
           "email" : {
             "type" : "string"
+          },
+          "hasPassword" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "displayName", "email" ]
+        "required" : [ "displayName", "email", "hasPassword" ]
+      },
+      "DisplayNameRequest" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "displayName" ]
       },
       "EditGroupRequest" : {
         "type" : "object",

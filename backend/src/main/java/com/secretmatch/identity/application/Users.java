@@ -26,4 +26,7 @@ public interface Users {
      * @return {@code false} if the email already had a User, in which case nothing was stored
      */
     boolean add(User user);
+
+    /** Stores the changes to an existing User. */
+    void save(User user);
 }

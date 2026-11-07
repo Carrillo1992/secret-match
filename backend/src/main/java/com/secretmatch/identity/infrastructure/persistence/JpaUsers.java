@@ -51,4 +51,9 @@ class JpaUsers implements Users {
                         user.createdAt())
                 == 1;
     }
+
+    @Override
+    public void save(User user) {
+        repository.save(UserEntity.from(user));
+    }
 }

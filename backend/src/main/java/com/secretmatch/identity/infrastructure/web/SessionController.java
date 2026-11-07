@@ -7,13 +7,12 @@ import com.secretmatch.identity.application.Sessions;
 import com.secretmatch.identity.application.SignInCommand;
 import com.secretmatch.identity.application.SignedIn;
 import com.secretmatch.identity.domain.RefreshToken;
-import com.secretmatch.identity.domain.UserId;
+import com.secretmatch.identity.infrastructure.security.AccessTokenClaims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Duration;
-import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -80,8 +79,8 @@ class SessionController {
     @GetMapping(value = "/users/me", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "The signed-in User")
     CurrentUserResponse currentUser(@AuthenticationPrincipal Jwt accessToken) {
-        CurrentUser user = sessions.currentUser(new UserId(UUID.fromString(accessToken.getSubject())));
-        return new CurrentUserResponse(user.email(), user.displayName());
+        CurrentUser user = sessions.currentUser(AccessTokenClaims.userId(accessToken));
+        return CurrentUserResponse.of(user);
     }
 
     private static ResponseEntity<AccessTokenResponse> signedIn(SignedIn signedIn) {

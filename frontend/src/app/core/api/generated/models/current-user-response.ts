@@ -4,4 +4,5 @@
 export interface CurrentUserResponse {
   displayName: string;
   email: string;
+  hasPassword: boolean;
 }

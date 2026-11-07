@@ -11,7 +11,7 @@ A person's account in SecretMatch, identified by their email and shown to others
 _Avoid_: Account holder, player
 
 **Display Name**:
-How a User is shown to the other Members of their Groups. Chosen at sign-up; not unique.
+How a User is shown to the other Members of their Groups. Chosen at sign-up and changeable from their Profile; not unique.
 _Avoid_: Username, nickname, alias
 
 **Sign-up Verification**:
@@ -23,8 +23,12 @@ The link in the email that verifies a Sign-up Verification. Asking for a new one
 _Avoid_: Activation link, confirmation code, magic link
 
 **Session**:
-A User being signed in on one device. It starts when they sign in with their email and password, survives page reloads, and ends when they sign out, after 30 days without use, or as soon as a stolen copy of it is detected. Signing out ends only that Session, not the User's others.
+A User being signed in on one device. It starts when they sign in with their email and password, survives page reloads, and ends when they sign out, after 30 days without use, or as soon as a stolen copy of it is detected. Signing out ends only that Session, not the User's others; changing or setting the password ends all the others, keeping only the one it was done from.
 _Avoid_: Login, connection
+
+**Profile**:
+What a User manages about their own account: their Display Name and their password. Not what they tell their Giver: that is their Preferences.
+_Avoid_: Account settings, my account
 
 **Group**:
 A single gift exchange: a set of Members who take part in one Draw. Next year's exchange is a new Group.

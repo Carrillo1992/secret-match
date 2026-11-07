@@ -28,8 +28,8 @@ import {
   groupDetailsInput,
   NAME_MAX_LENGTH,
   notBefore,
-  notBlank,
 } from '../../data-access/group-details-form';
+import { notBlank } from '../../../../shared/forms/validators';
 import { earliestExchangeDate, euros, longExchangeDate } from '../../data-access/group-format';
 import { Group, GroupEdit } from '../../data-access/groups-api';
 

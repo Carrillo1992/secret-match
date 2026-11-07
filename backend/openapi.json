@@ -131,6 +131,43 @@
         },
         "summary" : "A Group the signed-in User is a Member of",
         "tags" : [ "groups" ]
+      },
+      "put" : {
+        "description" : "Only the Admin can, also after the Draw. The details replace the current ones; a changed Exchange Date must be after today. Nobody is emailed.",
+        "operationId" : "edit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EditGroupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GroupResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Edit the Group's name, budget and Exchange Date",
+        "tags" : [ "groups" ]
       }
     },
     "/api/v1/groups/{groupId}/invite-link" : {
@@ -426,6 +463,26 @@
           }
         },
         "required" : [ "displayName", "email" ]
+      },
+      "EditGroupRequest" : {
+        "type" : "object",
+        "properties" : {
+          "budget" : {
+            "type" : "number",
+            "description" : "In euros, to the cent. Leave it out to take the budget away.",
+            "minimum" : 0
+          },
+          "exchangeDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "name" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "exchangeDate", "name" ]
       },
       "GroupResponse" : {
         "type" : "object",

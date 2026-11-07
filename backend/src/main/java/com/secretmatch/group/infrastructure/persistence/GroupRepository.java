@@ -1,6 +1,8 @@
 package com.secretmatch.group.infrastructure.persistence;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,6 +47,13 @@ interface GroupRepository extends JpaRepository<GroupEntity, UUID> {
     @Modifying
     @Query(value = "DELETE FROM group_members WHERE group_id = :groupId AND user_id = :userId", nativeQuery = true)
     int removeMember(UUID groupId, UUID userId);
+
+    @Modifying
+    @Query("""
+            UPDATE GroupEntity g SET g.name = :name, g.exchangeDate = :exchangeDate, g.budget = :budget
+            WHERE g.id = :groupId
+            """)
+    int updateDetails(UUID groupId, String name, LocalDate exchangeDate, BigDecimal budget);
 
     @Modifying
     @Query("UPDATE GroupEntity g SET g.inviteCode = :inviteCode WHERE g.id = :groupId")

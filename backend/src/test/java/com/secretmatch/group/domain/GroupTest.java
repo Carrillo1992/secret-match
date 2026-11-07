@@ -222,4 +222,68 @@ class GroupTest {
                 .isInstanceOf(MemberNotFoundException.class)
                 .isInstanceOf(com.secretmatch.shared.domain.NotFoundException.class);
     }
+
+    @Test
+    @DisplayName("the Admin changes the name, the budget and the Exchange Date")
+    void adminEditsTheDetails() {
+        Group group = withGuests();
+
+        Group edited = group.edit(CREATOR, "  Reyes  ", LocalDate.of(2027, 1, 6), new BigDecimal("30"), NOW);
+
+        assertThat(edited.name().value()).isEqualTo("Reyes");
+        assertThat(edited.exchangeDate()).isEqualTo(LocalDate.of(2027, 1, 6));
+        assertThat(edited.budget()).contains(new Budget(new BigDecimal("30.00")));
+        assertThat(edited.id()).isEqualTo(group.id());
+        assertThat(edited.members()).containsExactly(CREATOR, GUEST, OTHER_GUEST);
+        assertThat(edited.inviteCode()).isEqualTo(FIRST_CODE);
+    }
+
+    @Test
+    @DisplayName("a Member who is not the Admin cannot edit the Group")
+    void onlyTheAdminEdits() {
+        assertThatThrownBy(() -> withGuests().edit(GUEST, "Reyes", CHRISTMAS_EVE, null, NOW))
+                .isInstanceOf(AdminOnlyException.class);
+    }
+
+    @Test
+    @DisplayName("a new Exchange Date must be after today in Madrid")
+    void newExchangeDateMustBeInTheFuture() {
+        assertThat(withGuests()
+                        .edit(CREATOR, "Amigos", LocalDate.of(2026, 12, 3), null, NOW)
+                        .exchangeDate())
+                .isEqualTo(LocalDate.of(2026, 12, 3));
+        for (LocalDate notInTheFuture : new LocalDate[] {LocalDate.of(2026, 12, 2), LocalDate.of(2026, 11, 30)}) {
+            assertThatThrownBy(() -> withGuests().edit(CREATOR, "Amigos", notInTheFuture, null, NOW))
+                    .as(notInTheFuture.toString())
+                    .isInstanceOf(InvalidGroupDetailsException.class)
+                    .extracting(e -> ((InvalidGroupDetailsException) e).code())
+                    .isEqualTo("exchange-date-not-in-future");
+        }
+        assertThatThrownBy(() -> withGuests().edit(CREATOR, "Amigos", null, null, NOW))
+                .isInstanceOf(InvalidGroupDetailsException.class);
+    }
+
+    @Test
+    @DisplayName("on the Exchange Date itself the Admin can still rename the Group, keeping that date")
+    void keepingTodaysExchangeDate() {
+        Instant onTheDay = Instant.parse("2026-12-24T18:00:00Z");
+
+        Group edited = withGuests().edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, onTheDay);
+
+        assertThat(edited.name().value()).isEqualTo("Nochebuena");
+        assertThat(edited.exchangeDate()).isEqualTo(CHRISTMAS_EVE);
+    }
+
+    @Test
+    @DisplayName("the Admin can take the budget away, and an invalid name or budget is refused")
+    void budgetAndNameOnEdit() {
+        Group withBudget = withGuests().edit(CREATOR, "Amigos", CHRISTMAS_EVE, new BigDecimal("20"), NOW);
+
+        assertThat(withBudget.edit(CREATOR, "Amigos", CHRISTMAS_EVE, null, NOW).budget())
+                .isEmpty();
+        assertThatThrownBy(() -> withBudget.edit(CREATOR, " ", CHRISTMAS_EVE, null, NOW))
+                .isInstanceOf(InvalidGroupDetailsException.class);
+        assertThatThrownBy(() -> withBudget.edit(CREATOR, "Amigos", CHRISTMAS_EVE, new BigDecimal("-1"), NOW))
+                .isInstanceOf(InvalidGroupDetailsException.class);
+    }
 }

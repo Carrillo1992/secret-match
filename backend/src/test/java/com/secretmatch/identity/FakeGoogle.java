@@ -25,9 +25,9 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
  * Stands in for Google in tests: signs ID tokens with an RSA key generated on the spot and serves its public
  * half as a JWK set on localhost, so no test ever talks to real Google.
  */
-final class FakeGoogle {
+public final class FakeGoogle {
 
-    static final String CLIENT_ID = "secretmatch-test.apps.googleusercontent.com";
+    public static final String CLIENT_ID = "secretmatch-test.apps.googleusercontent.com";
     private static final String KEY_ID = "fake-google-key";
 
     private static final FakeGoogle INSTANCE = new FakeGoogle();
@@ -56,11 +56,11 @@ final class FakeGoogle {
         server.start();
     }
 
-    static FakeGoogle instance() {
+    public static FakeGoogle instance() {
         return INSTANCE;
     }
 
-    String jwkSetUri() {
+    public String jwkSetUri() {
         return "http://" + server.getAddress().getHostString() + ":"
                 + server.getAddress().getPort() + "/oauth2/v3/certs";
     }
@@ -69,16 +69,17 @@ final class FakeGoogle {
      * An ID token as Google issues it for our client, valid from {@code now} for an hour, with whatever the
      * test changes on top.
      */
-    String idToken(Instant now, String subject, String email, String name, Consumer<JwtClaimsSet.Builder> changes) {
+    public String idToken(
+            Instant now, String subject, String email, String name, Consumer<JwtClaimsSet.Builder> changes) {
         return sign(key, claims(now, subject, email, name, changes));
     }
 
-    String idToken(Instant now, String subject, String email, String name) {
+    public String idToken(Instant now, String subject, String email, String name) {
         return idToken(now, subject, email, name, claims -> {});
     }
 
     /** A token that looks like Google's but is signed with a key Google never published. */
-    String idTokenSignedByStranger(Instant now, String subject, String email, String name) {
+    public String idTokenSignedByStranger(Instant now, String subject, String email, String name) {
         return sign(strangerKey, claims(now, subject, email, name, claims -> {}));
     }
 

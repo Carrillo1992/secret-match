@@ -49,7 +49,7 @@ class JpaUsers implements Users {
 
     @Override
     public boolean add(User user) {
-        return repository.insertIfEmailFree(
+        return repository.insertUnlessTaken(
                         user.id().value(),
                         user.email().value(),
                         user.displayName().value(),

@@ -28,6 +28,6 @@ interface UserRepository extends JpaRepository<UserEntity, UUID> {
                     VALUES (:id, :email, :displayName, :passwordHash, :googleSubject, :createdAt)
                     ON CONFLICT DO NOTHING
                     """, nativeQuery = true)
-    int insertIfEmailFree(
+    int insertUnlessTaken(
             UUID id, String email, String displayName, String passwordHash, String googleSubject, Instant createdAt);
 }

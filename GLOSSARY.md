@@ -7,7 +7,7 @@ Secret Santa / gift exchanges for families and groups of friends: people join a 
 ### Groups
 
 **User**:
-A person's account in SecretMatch, identified by their email and shown to others by their display name. One User can be a Member of many Groups.
+A person's account in SecretMatch, identified by their email and shown to others by their display name. They sign in with a password, a Google Link, or both. One User can be a Member of many Groups.
 _Avoid_: Account holder, player
 
 **Display Name**:
@@ -23,8 +23,12 @@ The link in the email that verifies a Sign-up Verification. Asking for a new one
 _Avoid_: Activation link, confirmation code, magic link
 
 **Session**:
-A User being signed in on one device. It starts when they sign in with their email and password, survives page reloads, and ends when they sign out, after 30 days without use, or as soon as a stolen copy of it is detected. Signing out ends only that Session, not the User's others; changing or setting the password ends all the others, keeping only the one it was done from.
+A User being signed in on one device. It starts when they sign in with their email and password or with Google, survives page reloads, and ends when they sign out, after 30 days without use, or as soon as a stolen copy of it is detected. Signing out ends only that Session, not the User's others; changing or setting the password ends all the others, keeping only the one it was done from.
 _Avoid_: Login, connection
+
+**Google Link**:
+The tie between a User and one Google account, made the first time they continue with Google. A new email gets a new User named as in Google; an email that already has a User is linked to it. It remembers the Google account itself, not its email, so a later change of Google email keeps the same User, and another Google account cannot take over a User already linked.
+_Avoid_: Google login, social account, OAuth connection
 
 **Profile**:
 What a User manages about their own account: their Display Name and their password. Not what they tell their Giver: that is their Preferences.

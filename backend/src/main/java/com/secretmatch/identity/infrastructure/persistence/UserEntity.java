@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * The {@code users} table. New rows go in through {@link UserRepository#insertIfEmailFree}; changes to an
+ * The {@code users} table. New rows go in through {@link UserRepository#insertUnlessTaken}; changes to an
  * existing row through {@code save}.
  */
 @Entity

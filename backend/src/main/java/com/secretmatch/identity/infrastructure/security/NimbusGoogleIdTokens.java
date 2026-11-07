@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtAudienceValidator;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
@@ -49,8 +50,12 @@ class NimbusGoogleIdTokens implements GoogleIdTokens {
                     new GoogleSubject(jwt.getSubject()),
                     new EmailAddress(jwt.getClaimAsString("email")),
                     jwt.getClaimAsString("name"));
-        } catch (JwtException | InvalidUserDetailsException e) {
+        } catch (BadJwtException | InvalidUserDetailsException e) {
             throw new GoogleSignInRejectedException();
+        } catch (JwtException e) {
+            // Not the token's fault: Google's keys could not be fetched. Answered as a 500, so the SPA
+            // asks to try again instead of saying Google could not confirm who they are.
+            throw new IllegalStateException("Google's signing keys are unavailable", e);
         }
     }
 

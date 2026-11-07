@@ -121,7 +121,13 @@ public final class User {
         String name = googleName == null || googleName.isBlank()
                 ? email.value().substring(0, email.value().indexOf('@'))
                 : googleName.strip();
-        return new DisplayName(
-                name.length() > DisplayName.MAX_LENGTH ? name.substring(0, DisplayName.MAX_LENGTH) : name);
+        if (name.length() <= DisplayName.MAX_LENGTH) {
+            return new DisplayName(name);
+        }
+        // Never split a character outside the BMP (an emoji) in half.
+        int end = Character.isHighSurrogate(name.charAt(DisplayName.MAX_LENGTH - 1))
+                ? DisplayName.MAX_LENGTH - 1
+                : DisplayName.MAX_LENGTH;
+        return new DisplayName(name.substring(0, end));
     }
 }

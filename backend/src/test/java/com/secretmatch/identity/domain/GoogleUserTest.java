@@ -30,6 +30,15 @@ class GoogleUserTest {
     }
 
     @Test
+    void cuttingAGoogleNameNeverSplitsAnEmoji() {
+        String name = "x".repeat(49) + "🎁🎁";
+
+        User user = User.fromGoogle(UserId.newId(), EMAIL, name, SUBJECT, NOW);
+
+        assertThat(user.displayName().value()).isEqualTo("x".repeat(49));
+    }
+
+    @Test
     void withoutAGoogleNameTheUserIsNamedAfterTheirEmail() {
         User nameless = User.fromGoogle(UserId.newId(), EMAIL, null, SUBJECT, NOW);
         User blank = User.fromGoogle(UserId.newId(), EMAIL, "   ", SUBJECT, NOW);

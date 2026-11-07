@@ -10,8 +10,12 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -172,6 +176,24 @@ class PasswordResetIT {
         resetPassword(resetToken(email), NEW_PASSWORD).expectStatus().isNoContent();
 
         signIn(email, NEW_PASSWORD).expectStatus().isOk();
+    }
+
+    @Test
+    @DisplayName("asking for a reset several times at once answers every request the same, and one link works")
+    void simultaneousRequestsAllSucceed() throws Exception {
+        verifiedUser(email, PASSWORD);
+
+        try (ExecutorService pool = Executors.newFixedThreadPool(8)) {
+            List<Future<Integer>> statuses = IntStream.range(0, 8)
+                    .mapToObj(i -> pool.submit(
+                            () -> askForReset(email).returnResult().getStatus().value()))
+                    .toList();
+            for (Future<Integer> status : statuses) {
+                assertThat(status.get()).isEqualTo(202);
+            }
+        }
+
+        resetPassword(resetToken(email), NEW_PASSWORD).expectStatus().isNoContent();
     }
 
     // ---------- helpers ----------

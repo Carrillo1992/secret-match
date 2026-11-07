@@ -22,6 +22,10 @@ class JpaPasswordResets implements PasswordResets {
 
     @Override
     public void save(PasswordReset reset) {
-        repository.save(PasswordResetEntity.from(reset));
+        repository.upsert(
+                reset.userId().value(),
+                reset.tokenHash().value(),
+                reset.expiresAt(),
+                reset.usedAt().orElse(null));
     }
 }

@@ -10,6 +10,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
+/** Read through JPA; written with {@link PasswordResetRepository#upsert}. */
 @Entity
 @Table(name = "password_resets")
 class PasswordResetEntity {
@@ -28,15 +29,6 @@ class PasswordResetEntity {
     private Instant usedAt;
 
     protected PasswordResetEntity() {}
-
-    static PasswordResetEntity from(PasswordReset reset) {
-        PasswordResetEntity entity = new PasswordResetEntity();
-        entity.userId = reset.userId().value();
-        entity.tokenHash = reset.tokenHash().value();
-        entity.expiresAt = reset.expiresAt();
-        entity.usedAt = reset.usedAt().orElse(null);
-        return entity;
-    }
 
     PasswordReset toDomain() {
         return new PasswordReset(new UserId(userId), new TokenHash(tokenHash), expiresAt, usedAt);

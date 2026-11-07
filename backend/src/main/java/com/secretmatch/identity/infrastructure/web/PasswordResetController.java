@@ -1,7 +1,9 @@
 package com.secretmatch.identity.infrastructure.web;
 
-import com.secretmatch.identity.application.ForgottenPassword;
+import com.secretmatch.identity.application.PasswordResetting;
 import com.secretmatch.identity.application.ResetPasswordCommand;
+import com.secretmatch.identity.domain.EmailAddress;
+import com.secretmatch.identity.domain.EmailLinkToken;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -18,10 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "password-reset")
 class PasswordResetController {
 
-    private final ForgottenPassword forgottenPassword;
+    private final PasswordResetting passwordResetting;
 
-    PasswordResetController(ForgottenPassword forgottenPassword) {
-        this.forgottenPassword = forgottenPassword;
+    PasswordResetController(PasswordResetting passwordResetting) {
+        this.passwordResetting = passwordResetting;
     }
 
     @PostMapping("/password-reset-emails")
@@ -31,7 +33,7 @@ class PasswordResetController {
             description = "Sent only if the email has a User; it replaces any earlier link. Answers the same"
                     + " either way.")
     void sendResetLink(@Valid @RequestBody PasswordResetEmailRequest request) {
-        forgottenPassword.sendResetLink(request.email());
+        passwordResetting.sendResetLink(new EmailAddress(request.email()));
     }
 
     @PostMapping("/password-resets")
@@ -40,6 +42,7 @@ class PasswordResetController {
             summary = "Set a new password with the token from a reset link",
             description = "Ends every Session of the User.")
     void resetPassword(@Valid @RequestBody PasswordResetRequest request) {
-        forgottenPassword.resetPassword(new ResetPasswordCommand(request.token(), request.newPassword()));
+        passwordResetting.resetPassword(
+                new ResetPasswordCommand(EmailLinkToken.of(request.token()), request.newPassword()));
     }
 }

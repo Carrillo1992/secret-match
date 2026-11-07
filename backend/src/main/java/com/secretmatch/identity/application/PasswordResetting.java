@@ -16,13 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * A User who forgot their password sets a new one through a link emailed to them. A User without a password
- * (who only signs in with Google) sets their first one the same way.
+ * Password Reset: a signed-out User who forgot their password sets a new one through a link emailed to
+ * them. A User without a password (who only signs in with Google) sets their first one the same way.
  *
  * <p>Asking for a link answers the same whether or not the email has a User; only a User gets an email.
  */
 @Service
-public class ForgottenPassword {
+public class PasswordResetting {
 
     static final String SUBJECT = "Elige una contraseña nueva en SecretMatch";
 
@@ -34,7 +34,7 @@ public class ForgottenPassword {
     private final SecureRandom random;
     private final Clock clock;
 
-    ForgottenPassword(
+    PasswordResetting(
             Users users,
             PasswordResets resets,
             RefreshTokens refreshTokens,
@@ -56,8 +56,8 @@ public class ForgottenPassword {
      * without a User gets nothing, and the caller cannot tell.
      */
     @Transactional
-    public void sendResetLink(String email) {
-        users.findByEmail(new EmailAddress(email)).ifPresent(this::sendResetLink);
+    public void sendResetLink(EmailAddress email) {
+        users.findByEmail(email).ifPresent(this::issueLinkTo);
     }
 
     /**
@@ -71,12 +71,11 @@ public class ForgottenPassword {
     @Transactional
     public void resetPassword(ResetPasswordCommand command) {
         PasswordHash newHash = passwordHasher.hash(new NewPassword(command.newPassword()));
-        PasswordReset reset = resets.findByTokenHash(
-                        EmailLinkToken.of(command.token()).hash())
-                .orElseThrow(ResetLinkInvalidException::new);
+        PasswordReset reset =
+                resets.findByTokenHash(command.token().hash()).orElseThrow(ResetLinkInvalidException::new);
         UserId userId = reset.use(clock.instant());
-        // The reset row is deleted with its User, so a reset found here always has one.
-        User user = users.findById(userId).orElseThrow(ResetLinkInvalidException::new);
+        User user = users.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("a Password Reset outlived its User"));
         user.resetPassword(newHash);
         users.save(user);
         resets.save(reset);
@@ -84,7 +83,7 @@ public class ForgottenPassword {
     }
 
     /** The email does not name the User: whoever asks only knows the email, not who owns it. */
-    private void sendResetLink(User user) {
+    private void issueLinkTo(User user) {
         EmailLinkToken token = EmailLinkToken.generate(random);
         resets.save(PasswordReset.start(user.id(), token, clock.instant()));
         events.publishEvent(new EmailRequested(

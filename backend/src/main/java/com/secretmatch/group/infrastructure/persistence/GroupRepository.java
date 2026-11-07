@@ -37,6 +37,15 @@ interface GroupRepository extends JpaRepository<GroupEntity, UUID> {
             """, nativeQuery = true)
     int addMember(UUID groupId, UUID userId, Instant joinedAt);
 
+    /**
+     * Deletes the Member row directly, like {@link #addMember}, so two removals at once delete it once.
+     *
+     * @return 1 if the Member was removed, 0 if they were not one any more
+     */
+    @Modifying
+    @Query(value = "DELETE FROM group_members WHERE group_id = :groupId AND user_id = :userId", nativeQuery = true)
+    int removeMember(UUID groupId, UUID userId);
+
     @Modifying
     @Query("UPDATE GroupEntity g SET g.inviteCode = :inviteCode WHERE g.id = :groupId")
     int updateInviteCode(UUID groupId, String inviteCode);

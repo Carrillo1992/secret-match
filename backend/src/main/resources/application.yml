@@ -36,6 +36,10 @@ secretmatch:
       # Base64 of at least 32 random bytes (e.g. `openssl rand -base64 32`). It signs every access
       # token: changing it signs everybody out of their current access token.
       signing-key: ${JWT_SIGNING_KEY}
+    google:
+      # The OAuth client id from Google Cloud (not a secret). Empty turns "Continuar con Google" off: every
+      # Google ID token is refused.
+      client-id: ${GOOGLE_CLIENT_ID:}
   mail:
     # Every email is sent from this address, under the name SecretMatch.
     from-address: ${MAIL_FROM_ADDRESS}

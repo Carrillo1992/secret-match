@@ -29,7 +29,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * all this checks; whether a User may touch a Group is decided by the use cases.
  */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, GoogleProperties.class})
 class SecurityConfiguration {
 
     @Bean
@@ -51,8 +51,13 @@ class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/verification-emails", "/api/v1/email-verifications")
                         .permitAll()
-                        // Sessions are opened with a password and kept or ended with the refresh cookie.
-                        .requestMatchers(HttpMethod.POST, "/api/v1/sessions", "/api/v1/sessions/refresh")
+                        // Sessions are opened with a password or a Google ID token, and kept or ended with the
+                        // refresh cookie.
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/sessions",
+                                "/api/v1/sessions/google",
+                                "/api/v1/sessions/refresh")
                         .permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/sessions/current")
                         .permitAll()

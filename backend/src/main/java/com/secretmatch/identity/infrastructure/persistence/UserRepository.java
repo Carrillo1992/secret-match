@@ -13,17 +13,21 @@ interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByEmail(String email);
 
+    Optional<UserEntity> findByGoogleSubject(String googleSubject);
+
     /**
-     * Inserts the User unless the email is taken. A clash is a normal outcome (two sign-ups verified at
-     * once), so it must not surface as a constraint violation, whose message would carry the email.
+     * Inserts the User unless the email or the Google account is taken. A clash is a normal outcome (two
+     * sign-ups verified at once), so it must not surface as a constraint violation, whose message would carry
+     * the email.
      *
      * @return the number of rows inserted: 0 or 1
      */
     @Modifying
     @Query(value = """
-                    INSERT INTO users (id, email, display_name, password_hash, created_at)
-                    VALUES (:id, :email, :displayName, :passwordHash, :createdAt)
-                    ON CONFLICT (email) DO NOTHING
+                    INSERT INTO users (id, email, display_name, password_hash, google_subject, created_at)
+                    VALUES (:id, :email, :displayName, :passwordHash, :googleSubject, :createdAt)
+                    ON CONFLICT DO NOTHING
                     """, nativeQuery = true)
-    int insertIfEmailFree(UUID id, String email, String displayName, String passwordHash, Instant createdAt);
+    int insertIfEmailFree(
+            UUID id, String email, String displayName, String passwordHash, String googleSubject, Instant createdAt);
 }

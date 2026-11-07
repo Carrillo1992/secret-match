@@ -322,6 +322,36 @@
         "tags" : [ "sessions" ]
       }
     },
+    "/api/v1/sessions/google" : {
+      "post" : {
+        "description" : "Sets the refresh token cookie. A new email gets a User; an existing one is linked to the Google account.",
+        "operationId" : "signInWithGoogle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GoogleSignInRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Sign in with a Google ID token",
+        "tags" : [ "sessions" ]
+      }
+    },
     "/api/v1/sessions/refresh" : {
       "post" : {
         "description" : "Rotates the cookie. Reusing an old cookie ends the whole session.",
@@ -583,6 +613,16 @@
           }
         },
         "required" : [ "exchangeDate", "name" ]
+      },
+      "GoogleSignInRequest" : {
+        "type" : "object",
+        "properties" : {
+          "idToken" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "idToken" ]
       },
       "GroupResponse" : {
         "type" : "object",

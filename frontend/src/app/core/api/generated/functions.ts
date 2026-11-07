@@ -19,6 +19,8 @@ export type { Group$Params as Group$Params } from './fn/groups/group';
 export { group as group } from './fn/groups/group';
 export type { RegenerateInviteLink$Params as RegenerateInviteLink$Params } from './fn/groups/regenerate-invite-link';
 export { regenerateInviteLink as regenerateInviteLink } from './fn/groups/regenerate-invite-link';
+export type { RemoveMember$Params as RemoveMember$Params } from './fn/groups/remove-member';
+export { removeMember as removeMember } from './fn/groups/remove-member';
 export type { Join$Params as Join$Params } from './fn/invite-links/join';
 export { join as join } from './fn/invite-links/join';
 export type { SignIn$Params as SignIn$Params } from './fn/sessions/sign-in';

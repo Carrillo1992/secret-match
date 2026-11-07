@@ -8,18 +8,22 @@ import {
   signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideCalendar, LucideChevronLeft, LucideSearchX, LucideWallet } from '@lucide/angular';
 import { map } from 'rxjs';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
-import { Chip } from '../../../../shared/ui/chip/chip';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import {
   InviteLinkCard,
   RegenerateStatus,
 } from '../../components/invite-link-card/invite-link-card';
+import { Member, MembersCard, Removal } from '../../components/members-card/members-card';
+import {
+  LeaveStatus,
+  ParticipationCard,
+} from '../../components/participation-card/participation-card';
 import { euros, longExchangeDate } from '../../data-access/group-format';
 import { GroupsApi } from '../../data-access/groups-api';
 
@@ -31,10 +35,11 @@ import { GroupsApi } from '../../data-access/groups-api';
     RouterLink,
     AppShell,
     Button,
-    Chip,
     StatusHeader,
     TextLink,
     InviteLinkCard,
+    MembersCard,
+    ParticipationCard,
     LucideCalendar,
     LucideChevronLeft,
     LucideSearchX,
@@ -44,6 +49,7 @@ import { GroupsApi } from '../../data-access/groups-api';
 })
 export class GroupPage {
   private readonly groupsApi = inject(GroupsApi);
+  private readonly router = inject(Router);
   private readonly origin = inject(DOCUMENT).location.origin;
   private readonly groupId = toSignal(
     inject(ActivatedRoute).paramMap.pipe(map((params) => params.get('groupId') ?? '')),
@@ -72,6 +78,8 @@ export class GroupPage {
     return group ? `${this.origin}/join/${encodeURIComponent(group.inviteCode)}` : '';
   });
   protected readonly regenerateStatus = signal<RegenerateStatus>('idle');
+  protected readonly leaveStatus = signal<LeaveStatus>('idle');
+  protected readonly removal = signal<Removal | null>(null);
 
   protected readonly date = longExchangeDate;
   protected readonly euros = euros;
@@ -85,11 +93,36 @@ export class GroupPage {
     this.regenerateStatus.set(outcome.status);
   }
 
-  protected reload(): void {
-    this.outcome.reload();
+  /** Once out, the Group is gone for them: back to their Groups. */
+  protected async leave(): Promise<void> {
+    const you = this.group()?.members.find((member) => member.you);
+    if (!you) {
+      return;
+    }
+    this.leaveStatus.set('leaving');
+    const outcome = await this.groupsApi.removeMember(this.groupId(), you.id);
+    if (outcome.status === 'removed') {
+      await this.router.navigateByUrl('/home');
+      return;
+    }
+    this.leaveStatus.set('failed');
   }
 
-  protected initial(displayName: string): string {
-    return displayName.charAt(0).toLocaleUpperCase('es-ES');
+  /** The Admin removes another Member: once the API agrees, they leave the list. */
+  protected async removeMember(member: Member): Promise<void> {
+    this.removal.set({ member, status: 'removing' });
+    const outcome = await this.groupsApi.removeMember(this.groupId(), member.id);
+    const group = this.group();
+    if (outcome.status === 'removed' && group) {
+      this.outcome.set({
+        status: 'found',
+        group: { ...group, members: group.members.filter((other) => other.id !== member.id) },
+      });
+    }
+    this.removal.set({ member, status: outcome.status });
+  }
+
+  protected reload(): void {
+    this.outcome.reload();
   }
 }

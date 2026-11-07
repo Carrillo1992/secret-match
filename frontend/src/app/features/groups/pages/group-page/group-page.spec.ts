@@ -19,13 +19,24 @@ const navidad = {
   exchangeDate: '2026-12-24',
   budget: 30,
   members: [
-    { displayName: 'Abuela Carmen', admin: true },
-    { displayName: 'Luis', admin: false },
+    { id: 'u-carmen', displayName: 'Abuela Carmen', admin: true, you: false },
+    { id: 'u-luis', displayName: 'Luis', admin: false, you: true },
   ],
   inviteCode: 'q8Xf3kL0',
   admin: false,
 };
 const REGENERATE_URL = 'http://api.test/api/v1/groups/g-1/invite-link';
+const MEMBERS_URL = 'http://api.test/api/v1/groups/g-1/members';
+/** The same Group as its Admin, Abuela Carmen, sees it, with Marta in it too. */
+const asAdmin = {
+  ...navidad,
+  admin: true,
+  members: [
+    { id: 'u-carmen', displayName: 'Abuela Carmen', admin: true, you: true },
+    { id: 'u-luis', displayName: 'Luis', admin: false, you: false },
+    { id: 'u-marta', displayName: 'Marta', admin: false, you: false },
+  ],
+};
 
 describe('GroupPage', () => {
   let http: HttpTestingController;
@@ -209,6 +220,148 @@ describe('GroupPage', () => {
         'No hemos podido generar un enlace nuevo',
       );
       expect(shownLink()).toBe(`${location.origin}/join/q8Xf3kL0`);
+    });
+  });
+
+  describe('leaving', () => {
+    const participation = () =>
+      page().querySelector('section[aria-labelledby="group-participation"]');
+    const button = (label: string) =>
+      [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
+
+    it('lets a Member leave after confirming, and takes them back to their Groups', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      expect(text(participation())).toContain('Si sales, dejarás de ver este grupo');
+      button('Salir del grupo')?.click();
+      await settle();
+      expect(document.activeElement).toBe(button('Sí, salir'));
+      http.expectNone(`${MEMBERS_URL}/u-luis`);
+      button('Sí, salir')?.click();
+      await settle();
+
+      const leave = http.expectOne(`${MEMBERS_URL}/u-luis`);
+      expect(leave.request.method).toBe('DELETE');
+      leave.flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+
+      expect(text(page().querySelector('h1'))).toBe('Otra página');
+    });
+
+    it('keeps the Member in the Group when they cancel', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      button('Salir del grupo')?.click();
+      await settle();
+      button('Cancelar')?.click();
+      await settle();
+
+      http.expectNone(`${MEMBERS_URL}/u-luis`);
+      expect(document.activeElement).toBe(button('Salir del grupo'));
+    });
+
+    it('says so when leaving fails, and stays on the Group', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      button('Salir del grupo')?.click();
+      await settle();
+      button('Sí, salir')?.click();
+      await settle();
+      http.expectOne(`${MEMBERS_URL}/u-luis`).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      expect(text(participation()?.querySelector('[role="alert"]'))).toContain(
+        'No hemos podido sacarte del grupo',
+      );
+      expect(text(page().querySelector('h1'))).toBe('Navidad en casa');
+    });
+
+    it('tells the Admin they cannot leave, and points them to deleting the Group', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      expect(button('Salir del grupo')).toBeUndefined();
+      expect(text(participation())).toContain('Como administrador no puedes salir del grupo');
+      expect(text(participation())).toContain('borrarlo');
+    });
+  });
+
+  describe('removing Members', () => {
+    const button = (label: string) =>
+      [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
+    const removeButtons = () =>
+      [...page().querySelectorAll<HTMLButtonElement>('ul[aria-label="Miembros"] button')].filter(
+        (b) => b.textContent?.includes('Quitar'),
+      );
+
+    it('does not offer a regular Member to remove anyone', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      expect(removeButtons()).toHaveLength(0);
+    });
+
+    it('lets the Admin remove another Member after confirming, and the Member disappears', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      expect(removeButtons().map((b) => b.getAttribute('aria-label'))).toEqual([
+        'Quitar a Luis',
+        'Quitar a Marta',
+      ]);
+      removeButtons()[1].click();
+      await settle();
+      expect(text(members()[2])).toContain('¿Quitar a Marta?');
+      expect(text(members()[2])).toContain('Le avisaremos por email');
+      expect(document.activeElement).toBe(button('Sí, quitar'));
+      http.expectNone(`${MEMBERS_URL}/u-marta`);
+      button('Sí, quitar')?.click();
+      await settle();
+
+      const remove = http.expectOne(`${MEMBERS_URL}/u-marta`);
+      expect(remove.request.method).toBe('DELETE');
+      remove.flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+
+      expect(members().map(text).join(' ')).not.toContain('Marta');
+      expect(text(page())).toContain('Miembros (2)');
+      expect(
+        text(page().querySelector('section[aria-labelledby="group-members"] [role="status"]')),
+      ).toBe('Marta ya no está en el grupo.');
+    });
+
+    it('keeps the Member when the Admin cancels', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      removeButtons()[0].click();
+      await settle();
+      button('Cancelar')?.click();
+      await settle();
+
+      http.expectNone(`${MEMBERS_URL}/u-luis`);
+      expect(document.activeElement).toBe(removeButtons()[0]);
+      expect(members()).toHaveLength(3);
+    });
+
+    it('says so when the Member could not be removed, and keeps them in the list', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      removeButtons()[0].click();
+      await settle();
+      button('Sí, quitar')?.click();
+      await settle();
+      http.expectOne(`${MEMBERS_URL}/u-luis`).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      expect(
+        text(page().querySelector('section[aria-labelledby="group-members"] [role="alert"]')),
+      ).toContain('No hemos podido quitar a Luis');
+      expect(members()).toHaveLength(3);
     });
   });
 });

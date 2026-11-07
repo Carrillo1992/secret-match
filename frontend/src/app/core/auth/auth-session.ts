@@ -1,9 +1,12 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Api } from '../api/generated/api';
-import { refresh, signIn, signOut } from '../api/generated/functions';
+import { refresh, signIn, signInWithGoogle, signOut } from '../api/generated/functions';
 import { problemCode } from '../api/problem';
 
 export type SignInOutcome = 'signed-in' | 'invalid-credentials' | 'email-not-verified' | 'failed';
+
+/** `rejected`: the API did not trust the Google ID token (forged, expired, unverified email…). */
+export type GoogleSignInOutcome = 'signed-in' | 'rejected' | 'failed';
 
 /**
  * The signed-in User's session (docs/architecture.md §2.4). The access token lives only in memory;
@@ -28,6 +31,20 @@ export class AuthSession {
     } catch (error) {
       const code = problemCode(error);
       return code === 'invalid-credentials' || code === 'email-not-verified' ? code : 'failed';
+    }
+  }
+
+  /**
+   * Opens a session with the ID token Google Identity Services gave the SPA. A new email gets a User;
+   * an existing one is linked to the Google account.
+   */
+  async signInWithGoogle(idToken: string): Promise<GoogleSignInOutcome> {
+    try {
+      const { accessToken } = await this.api.invoke(signInWithGoogle, { body: { idToken } });
+      this.token.set(accessToken);
+      return 'signed-in';
+    } catch (error) {
+      return problemCode(error) === 'google-sign-in-rejected' ? 'rejected' : 'failed';
     }
   }
 

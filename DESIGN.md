@@ -74,6 +74,9 @@ The controls below are attribute directives in `shared/ui` that put the recipe o
   - `appAlert` (danger): a problem the person must notice, in `danger` on `danger-soft`. It sets `role="alert"`, so screen readers announce it when it appears.
   - `appAlert="success"`: confirms that a form which stays on screen was saved ("Nombre guardado."), in `success` on `success-soft` (5.2:1 light, 6.0:1 dark). It sets `role="status"`; put it inside a wrapper with `aria-live="polite"` that is always in the page, so its appearance is announced. Added in #17 for the profile page.
 
+- **Divider with text**: a `line` rule on each side of a short `text-sm text-ink-muted` label (`flex items-center gap-3`, rules `h-px flex-1 bg-line`), marked `aria-hidden` because it only separates two ways of doing the same thing. Used for "o con tu correo" between "Continuar con Google" and the email form. Chosen in #16.
+- **Continuar con Google**: `<app-google-sign-in>` (`features/auth/components`) at the top of the sign-in and sign-up sheets: Google's own button (drawn by Google Identity Services, outline pill, as Google's brand rules require), a danger Alert under it when the sign-in fails, then the divider with text. It renders nothing when Google sign-in is not set up. Chosen in #16.
+
 ## Layout patterns
 
 - **Sheet screen** (`app-sheet-layout` in `shared/ui`): the gift illustration on top and the content in a sheet rising over it; a centred card on wide screens. It is the doorway into the app: sign-up, sign-in, confirmations, invite landing.

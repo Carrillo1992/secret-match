@@ -54,6 +54,15 @@ class SessionController {
         return signedIn(sessions.signIn(new SignInCommand(request.email(), request.password())));
     }
 
+    @PostMapping(value = "/sessions/google", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Sign in with a Google ID token",
+            description = "Sets the refresh token cookie. A new email gets a User; an existing one is linked to"
+                    + " the Google account.")
+    ResponseEntity<AccessTokenResponse> signInWithGoogle(@Valid @RequestBody GoogleSignInRequest request) {
+        return signedIn(sessions.signInWithGoogle(request.idToken()));
+    }
+
     @PostMapping(value = "/sessions/refresh", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Swap the refresh token cookie for a new access token",

@@ -88,6 +88,35 @@ describe('AuthSession', () => {
     });
   });
 
+  describe('signing in with Google', () => {
+    const GOOGLE_URL = `${API}/sessions/google`;
+
+    it('posts the Google ID token with the cookie allowed, and keeps the access token', async () => {
+      const done = session.signInWithGoogle('google-id-token');
+
+      const request = http.expectOne(GOOGLE_URL);
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ idToken: 'google-id-token' });
+      expect(request.request.withCredentials).toBe(true);
+      expect(request.request.headers.has('Authorization')).toBe(false);
+      request.flush(tokenResponse('access-g'));
+
+      await expect(done).resolves.toBe('signed-in');
+      expect(session.accessToken()).toBe('access-g');
+    });
+
+    it('tells a rejected Google sign-in apart from a failure', async () => {
+      const rejected = session.signInWithGoogle('forged');
+      http.expectOne(GOOGLE_URL).flush(problem('google-sign-in-rejected'), unprocessable);
+      await expect(rejected).resolves.toBe('rejected');
+
+      const failed = session.signInWithGoogle('google-id-token');
+      http.expectOne(GOOGLE_URL).error(new ProgressEvent('error'), { status: 0 });
+      await expect(failed).resolves.toBe('failed');
+      expect(session.isSignedIn()).toBe(false);
+    });
+  });
+
   describe('the interceptor', () => {
     it('sends the access token to the API, and no token to the session endpoints', async () => {
       await signedIn('access-1');

@@ -7,6 +7,7 @@ export type { CreateGroupRequest } from './models/create-group-request';
 export type { CurrentUserResponse } from './models/current-user-response';
 export type { DisplayNameRequest } from './models/display-name-request';
 export type { EditGroupRequest } from './models/edit-group-request';
+export type { GoogleSignInRequest } from './models/google-sign-in-request';
 export type { GroupResponse } from './models/group-response';
 export type { GroupSummaryResponse } from './models/group-summary-response';
 export type { Health } from './models/health';

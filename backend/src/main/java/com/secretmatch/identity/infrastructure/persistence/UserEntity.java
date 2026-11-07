@@ -2,6 +2,7 @@ package com.secretmatch.identity.infrastructure.persistence;
 
 import com.secretmatch.identity.domain.DisplayName;
 import com.secretmatch.identity.domain.EmailAddress;
+import com.secretmatch.identity.domain.GoogleSubject;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
@@ -13,7 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * The {@code users} table. New rows go in through {@link UserRepository#insertIfEmailFree}; changes to an
+ * The {@code users} table. New rows go in through {@link UserRepository#insertUnlessTaken}; changes to an
  * existing row through {@code save}.
  */
 @Entity
@@ -32,6 +33,9 @@ class UserEntity {
     @Column(name = "password_hash")
     private String passwordHash;
 
+    @Column(name = "google_subject", unique = true)
+    private String googleSubject;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -43,6 +47,7 @@ class UserEntity {
         entity.email = user.email().value();
         entity.displayName = user.displayName().value();
         entity.passwordHash = user.passwordHash().map(PasswordHash::value).orElse(null);
+        entity.googleSubject = user.googleSubject().map(GoogleSubject::value).orElse(null);
         entity.createdAt = user.createdAt();
         return entity;
     }
@@ -53,6 +58,7 @@ class UserEntity {
                 new EmailAddress(email),
                 new DisplayName(displayName),
                 passwordHash == null ? null : new PasswordHash(passwordHash),
+                googleSubject == null ? null : new GoogleSubject(googleSubject),
                 createdAt);
     }
 }

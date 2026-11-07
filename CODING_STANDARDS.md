@@ -54,7 +54,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 - **Signals** for component and feature state (`signal`, `computed`, `input()`, `output()`). RxJS only where streams genuinely help (HTTP, debounced input), converted at the edge with `toSignal`.
 - `inject()` instead of constructor injection. Built-in control flow (`@if`, `@for` with `track`), not structural directives.
 - Strict TypeScript: no `any`, no non-null `!` to silence the compiler. API types live in one place per feature (`data-access`).
-- Feature folders: `features/<feature>/{pages,components,data-access}`. Pages orchestrate, components are presentational (inputs in, outputs out, no HTTP).
+- Feature folders: `features/<feature>/{pages,components,data-access}`. Pages orchestrate, components are presentational (inputs in, outputs out, no HTTP). Exception: a component that is one self-contained sign-in method, used as-is on several doorway screens (today `features/auth/components/google-sign-in`), may open the session through `AuthSession` and emit only `signedIn`, so each page does not repeat its error states.
 - Typed reactive forms. Validation messages are shown next to the field.
 - Styling: Tailwind utilities using the design tokens in `@theme` (`frontend/src/styles.css`), following `DESIGN.md`. No hard-coded colours or arbitrary values when a token exists, and no component CSS unless Tailwind cannot express it (e.g. canvas).
 - **Accessibility is part of done**: semantic HTML, labelled controls, visible focus, keyboard access. Animations (scratch card, gift reveal) respect `prefers-reduced-motion` and have a non-gesture alternative (a button).

@@ -42,6 +42,8 @@ services:
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@secretmatch.local}
       APP_BASE_URL: http://localhost:${SPA_PORT:-4200}
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:-bG9jYWwtb25seS1wbGFjZWhvbGRlci1jaGFuZ2UtbWUtMDEyMzQ1Ng==}
+      # Optional: without it, "Continuar con Google" is off.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
       - "${API_PORT:-8080}:8080"
 
@@ -50,6 +52,7 @@ services:
     environment:
       # Called by the browser, so it is the API's address as seen from the host.
       API_BASE_URL: http://localhost:${API_PORT:-8080}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
       - "${SPA_PORT:-4200}:80"
 

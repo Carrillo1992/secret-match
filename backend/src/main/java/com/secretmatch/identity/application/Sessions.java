@@ -2,6 +2,7 @@ package com.secretmatch.identity.application;
 
 import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.EmailNotVerifiedException;
+import com.secretmatch.identity.domain.GoogleSignInRejectedException;
 import com.secretmatch.identity.domain.InvalidCredentialsException;
 import com.secretmatch.identity.domain.InvalidUserDetailsException;
 import com.secretmatch.identity.domain.NewPassword;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Signing in with email and password, keeping the session alive with rotating refresh tokens, and signing
+ * Signing in with email and password or with Google, keeping the session alive with rotating refresh tokens, and signing
  * out (docs/architecture.md §2.4).
  */
 @Service
@@ -31,6 +32,7 @@ public class Sessions {
     private final SignUpVerifications signUps;
     private final RefreshTokens refreshTokens;
     private final AccessTokens accessTokens;
+    private final GoogleIdTokens googleIdTokens;
     private final PasswordHasher passwordHasher;
     private final SecureRandom random;
     private final Clock clock;
@@ -46,6 +48,7 @@ public class Sessions {
             SignUpVerifications signUps,
             RefreshTokens refreshTokens,
             AccessTokens accessTokens,
+            GoogleIdTokens googleIdTokens,
             PasswordHasher passwordHasher,
             SecureRandom random,
             Clock clock) {
@@ -53,6 +56,7 @@ public class Sessions {
         this.signUps = signUps;
         this.refreshTokens = refreshTokens;
         this.accessTokens = accessTokens;
+        this.googleIdTokens = googleIdTokens;
         this.passwordHasher = passwordHasher;
         this.random = random;
         this.clock = clock;
@@ -85,6 +89,28 @@ public class Sessions {
             passwordHasher.matches(command.password(), timingDecoy);
         }
         throw new InvalidCredentialsException();
+    }
+
+    /**
+     * Starts a session for the person a Google ID token names. The User linked to that Google account signs
+     * in, even if the account's email has changed since. Otherwise a new email gets a User named as in
+     * Google, and an email that already has a User gets the Google account linked to it: any password keeps
+     * working.
+     *
+     * @throws GoogleSignInRejectedException if the ID token is not genuine, not for us, expired or for an
+     *     unverified email, or the email's User is linked to another Google account
+     */
+    @Transactional
+    public SignedIn signInWithGoogle(String idToken) {
+        GoogleIdentity google = googleIdTokens.verify(idToken);
+        User user = users.findByGoogleSubject(google.subject())
+                .or(() -> users.findByEmail(google.email()))
+                .orElseGet(() -> newGoogleUser(google));
+        if (!user.googleSubject().equals(Optional.of(google.subject()))) {
+            user.linkGoogle(google.subject());
+            users.save(user);
+        }
+        return startSession(user.id());
     }
 
     /**
@@ -132,6 +158,14 @@ public class Sessions {
     public CurrentUser currentUser(UserId id) {
         User user = users.findById(id).orElseThrow(SessionExpiredException::new);
         return CurrentUser.of(user);
+    }
+
+    /** Creates the User, or takes the one created a moment ago with the same email by another sign-in. */
+    private User newGoogleUser(GoogleIdentity google) {
+        User user = User.fromGoogle(UserId.newId(), google.email(), google.name(), google.subject(), clock.instant());
+        return users.add(user)
+                ? user
+                : users.findByEmail(google.email()).orElseThrow(GoogleSignInRejectedException::new);
     }
 
     private SignedIn rotate(RefreshToken token, Instant now) {

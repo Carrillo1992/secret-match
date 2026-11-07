@@ -2,6 +2,7 @@ package com.secretmatch.identity.infrastructure.persistence;
 
 import com.secretmatch.identity.application.Users;
 import com.secretmatch.identity.domain.EmailAddress;
+import com.secretmatch.identity.domain.GoogleSubject;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
@@ -35,6 +36,11 @@ class JpaUsers implements Users {
     }
 
     @Override
+    public Optional<User> findByGoogleSubject(GoogleSubject subject) {
+        return repository.findByGoogleSubject(subject.value()).map(UserEntity::toDomain);
+    }
+
+    @Override
     public List<User> findAllById(Collection<UserId> ids) {
         return repository.findAllById(ids.stream().map(UserId::value).toList()).stream()
                 .map(UserEntity::toDomain)
@@ -43,11 +49,12 @@ class JpaUsers implements Users {
 
     @Override
     public boolean add(User user) {
-        return repository.insertIfEmailFree(
+        return repository.insertUnlessTaken(
                         user.id().value(),
                         user.email().value(),
                         user.displayName().value(),
                         user.passwordHash().map(PasswordHash::value).orElse(null),
+                        user.googleSubject().map(GoogleSubject::value).orElse(null),
                         user.createdAt())
                 == 1;
     }

@@ -22,6 +22,24 @@ describe('loadAppConfig', () => {
     await expect(loadAppConfig()).resolves.toEqual({ apiBaseUrl: 'https://api.example.org' });
   });
 
+  it('reads the Google client id when there is one', async () => {
+    serveConfig({ apiBaseUrl: 'https://api.example.org', googleClientId: ' id.apps.test ' });
+
+    await expect(loadAppConfig()).resolves.toEqual({
+      apiBaseUrl: 'https://api.example.org',
+      googleClientId: 'id.apps.test',
+    });
+  });
+
+  it.each([{ googleClientId: '' }, { googleClientId: '  ' }, { googleClientId: 42 }])(
+    'leaves Google sign-in off without a usable client id: %j',
+    async (google) => {
+      serveConfig({ apiBaseUrl: 'https://api.example.org', ...google });
+
+      await expect(loadAppConfig()).resolves.toEqual({ apiBaseUrl: 'https://api.example.org' });
+    },
+  );
+
   it('fails when /config.json cannot be loaded', async () => {
     serveConfig({}, 404);
 

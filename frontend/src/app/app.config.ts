@@ -3,7 +3,7 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideRouter } from '@angular/router';
 import { provideApiConfiguration } from './core/api/generated/api-configuration';
 import { authInterceptor } from './core/auth/auth.interceptor';
-import { AppConfig } from './core/config/app-config';
+import { APP_CONFIG, AppConfig } from './core/config/app-config';
 import { routes } from './app.routes';
 
 export function appConfig(config: AppConfig): ApplicationConfig {
@@ -13,6 +13,7 @@ export function appConfig(config: AppConfig): ApplicationConfig {
       provideRouter(routes),
       provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
       provideApiConfiguration(config.apiBaseUrl),
+      { provide: APP_CONFIG, useValue: config },
     ],
   };
 }

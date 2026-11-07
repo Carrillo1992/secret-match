@@ -141,28 +141,32 @@ public class MyGroups {
      */
     @Transactional
     public void delete(GroupId id, MemberId by) {
+        // Before reading its Members, so everyone emailed is everyone in it, and a second deletion at the same
+        // moment waits and then finds no Group.
+        groups.lock(id);
         Group group = memberView(id, by);
-        List<MemberId> toTell = group.delete(by);
+        List<MemberId> toTell = group.authoriseDeletion(by);
         // Before the Group's rows go, so the other modules can still delete theirs that point at it.
         events.publishEvent(new GroupDeleted(group.id().value()));
-        if (!groups.delete(group.id())) {
-            // Deleted at the same moment by another request, which did the rest.
-            return;
-        }
-        toTell.forEach(member -> emailGroupDeleted(group, member));
+        groups.delete(group.id());
+        emailGroupDeleted(group, toTell);
     }
 
     /** Catalogue email 7: "the Group was deleted", to each Member but the Admin. */
-    private void emailGroupDeleted(Group group, MemberId member) {
+    private void emailGroupDeleted(Group group, List<MemberId> toTell) {
         String admin = users.displayNamesOf(List.of(group.admin().value()))
                 .get(group.admin().value());
-        String to = users.emailOf(member.value()).orElseThrow(() -> new IllegalStateException("a Member has no User"));
         String groupName = group.name().value();
-        events.publishEvent(new EmailRequested(
-                to, "Se ha borrado el grupo «%s»".formatted(groupName), """
+        String subject = "Se ha borrado el grupo «%s»".formatted(groupName);
+        String message = """
                 %s, que administraba el grupo «%s», lo ha borrado junto con todo lo que había en él.
 
-                Ya no lo verás en SecretMatch.""".formatted(admin, groupName), "/home"));
+                Ya no lo verás en SecretMatch.""".formatted(admin, groupName);
+        for (MemberId member : toTell) {
+            String to =
+                    users.emailOf(member.value()).orElseThrow(() -> new IllegalStateException("a Member has no User"));
+            events.publishEvent(new EmailRequested(to, subject, message, "/home"));
+        }
     }
 
     /** Catalogue email 6: "you were removed", to the removed Member. */

@@ -290,12 +290,12 @@ class GroupTest {
     @Test
     @DisplayName("the Admin deletes the Group, and every other Member is to be told")
     void adminDeletes() {
-        assertThat(withGuests().delete(CREATOR)).containsExactly(GUEST, OTHER_GUEST);
+        assertThat(withGuests().authoriseDeletion(CREATOR)).containsExactly(GUEST, OTHER_GUEST);
     }
 
     @Test
     @DisplayName("a Member who is not the Admin cannot delete the Group")
     void onlyTheAdminDeletes() {
-        assertThatThrownBy(() -> withGuests().delete(GUEST)).isInstanceOf(AdminOnlyException.class);
+        assertThatThrownBy(() -> withGuests().authoriseDeletion(GUEST)).isInstanceOf(AdminOnlyException.class);
     }
 }

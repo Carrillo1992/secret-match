@@ -65,8 +65,15 @@ class JpaGroups implements Groups {
     }
 
     @Override
-    public boolean delete(GroupId group) {
-        return repository.deleteGroup(group.value()) == 1;
+    public void lock(GroupId group) {
+        repository.lock(group.value());
+    }
+
+    @Override
+    public void delete(GroupId group) {
+        if (repository.deleteGroup(group.value()) != 1) {
+            throw new IllegalStateException("no stored Group to delete");
+        }
     }
 
     @Override

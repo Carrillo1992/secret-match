@@ -41,12 +41,13 @@ public interface Groups {
     void saveDetails(Group group);
 
     /**
-     * Deletes the Group and its Members. Safe when the same Group is deleted twice at once: only one of them
-     * deletes it.
-     *
-     * @return whether it was deleted just now
+     * Locks the Group until the transaction ends: nobody joins it, and nobody else deletes it, meanwhile. Does
+     * nothing if there is no such Group.
      */
-    boolean delete(GroupId group);
+    void lock(GroupId group);
+
+    /** Deletes the Group and its Members. */
+    void delete(GroupId group);
 
     /** Stores the Group's current Invite Link code; the previous one stops matching. */
     void saveInviteCode(Group group);

@@ -140,7 +140,7 @@ public final class Group {
      * @return the Members to tell it is gone: everyone but the Admin, who deletes it
      * @throws AdminOnlyException if {@code by} is not the Admin
      */
-    public List<MemberId> delete(MemberId by) {
+    public List<MemberId> authoriseDeletion(MemberId by) {
         if (!admin.equals(by)) {
             throw new AdminOnlyException();
         }

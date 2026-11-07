@@ -7,4 +7,6 @@ if [ -z "${API_BASE_URL:-}" ]; then
   exit 1
 fi
 
-printf '{\n  "apiBaseUrl": "%s"\n}\n' "$API_BASE_URL" > /usr/share/nginx/html/config.json
+# GOOGLE_CLIENT_ID is optional: without it the SPA does not offer "Continuar con Google".
+printf '{\n  "apiBaseUrl": "%s",\n  "googleClientId": "%s"\n}\n' "$API_BASE_URL" "${GOOGLE_CLIENT_ID:-}" \
+  > /usr/share/nginx/html/config.json

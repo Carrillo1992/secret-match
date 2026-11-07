@@ -14,6 +14,7 @@ import { Field } from '../../../../shared/ui/field/field';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { Alert } from '../../../../shared/ui/alert/alert';
+import { GoogleSignIn } from '../../components/google-sign-in/google-sign-in';
 
 type SubmitError = Exclude<SignInOutcome, 'signed-in'>;
 
@@ -22,6 +23,7 @@ type SubmitError = Exclude<SignInOutcome, 'signed-in'>;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     Alert,
+    GoogleSignIn,
     ReactiveFormsModule,
     RouterLink,
     SheetLayout,
@@ -64,10 +66,15 @@ export class SignInPage {
     const outcome = await this.session.signIn(email.trim(), password);
     this.sending.set(false);
     if (outcome === 'signed-in') {
-      forgetReturnPath();
-      await this.router.navigateByUrl(this.next ?? HOME);
+      await this.enter();
     } else {
       this.submitError.set(outcome);
     }
+  }
+
+  /** Takes the signed-in User where they were going, or home. */
+  protected async enter(): Promise<void> {
+    forgetReturnPath();
+    await this.router.navigateByUrl(this.next ?? HOME);
   }
 }

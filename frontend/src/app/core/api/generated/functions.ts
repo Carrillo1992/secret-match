@@ -31,6 +31,8 @@ export type { SignIn$Params as SignIn$Params } from './fn/sessions/sign-in';
 export { signIn as signIn } from './fn/sessions/sign-in';
 export type { SignOut$Params as SignOut$Params } from './fn/sessions/sign-out';
 export { signOut as signOut } from './fn/sessions/sign-out';
+export type { SignInWithGoogle$Params as SignInWithGoogle$Params } from './fn/sessions/sign-in-with-google';
+export { signInWithGoogle as signInWithGoogle } from './fn/sessions/sign-in-with-google';
 export type { Refresh$Params as Refresh$Params } from './fn/sessions/refresh';
 export { refresh as refresh } from './fn/sessions/refresh';
 export type { CurrentUser$Params as CurrentUser$Params } from './fn/sessions/current-user';

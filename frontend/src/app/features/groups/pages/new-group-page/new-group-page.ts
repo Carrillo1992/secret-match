@@ -3,8 +3,6 @@ import {
   AbstractControl,
   NonNullableFormBuilder,
   ReactiveFormsModule,
-  ValidationErrors,
-  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -13,13 +11,16 @@ import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
+import {
+  budgetInEuros,
+  groupDetailsInput,
+  NAME_MAX_LENGTH,
+  notBefore,
+  notBlank,
+} from '../../data-access/group-details-form';
 import { earliestExchangeDate } from '../../data-access/group-format';
-import { GroupsApi, NewGroup } from '../../data-access/groups-api';
+import { GroupsApi } from '../../data-access/groups-api';
 import { Alert } from '../../../../shared/ui/alert/alert';
-
-/** Mirrors the API's rules: the name's length and the budget's shape (euros, to the cent, < 1 M). */
-const NAME_MAX_LENGTH = 80;
-const BUDGET = /^\d{1,6}([.,]\d{1,2})?$/;
 
 type SubmitError = 'exchange-date-not-in-future' | 'failed';
 
@@ -67,7 +68,7 @@ export class NewGroupPage {
       return;
     }
     this.sending.set(true);
-    const outcome = await this.groupsApi.create(this.newGroup());
+    const outcome = await this.groupsApi.create(groupDetailsInput(this.form.getRawValue()));
     this.sending.set(false);
     if (outcome.status === 'created') {
       await this.router.navigate(['/groups', outcome.groupId]);
@@ -75,27 +76,4 @@ export class NewGroupPage {
       this.submitError.set(outcome.status);
     }
   }
-
-  private newGroup(): NewGroup {
-    const { name, exchangeDate, budget } = this.form.getRawValue();
-    const amount = budget.trim();
-    return amount
-      ? { name: name.trim(), exchangeDate, budget: Number(amount.replace(',', '.')) }
-      : { name: name.trim(), exchangeDate };
-  }
-}
-
-function notBlank(control: AbstractControl<string>): ValidationErrors | null {
-  return control.value.trim() ? null : { required: true };
-}
-
-/** ISO dates (`YYYY-MM-DD`) compare correctly as strings. */
-function notBefore(earliest: string): ValidatorFn {
-  return (control: AbstractControl<string>) =>
-    control.value && control.value < earliest ? { notInFuture: true } : null;
-}
-
-function budgetInEuros(control: AbstractControl<string>): ValidationErrors | null {
-  const amount = control.value.trim();
-  return !amount || BUDGET.test(amount) ? null : { budget: true };
 }

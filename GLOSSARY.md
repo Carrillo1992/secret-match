@@ -35,7 +35,7 @@ A User inside a specific Group. Every Member takes part in the Draw.
 _Avoid_: Participant, player, santa
 
 **Admin**:
-The Member who created a Group and manages it: invites, removes Members, sets Exclusions, runs or cancels the Draw. Exactly one per Group; the Admin is also a regular Member of the Draw.
+The Member who created a Group and manages it: edits its name, Exchange Date and Budget, invites, removes Members, sets Exclusions, runs or cancels the Draw. Exactly one per Group; the Admin is also a regular Member of the Draw.
 _Avoid_: Organizer, owner, host
 
 **Exchange Date**:

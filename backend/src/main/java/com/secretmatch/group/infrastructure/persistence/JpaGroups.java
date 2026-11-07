@@ -1,6 +1,7 @@
 package com.secretmatch.group.infrastructure.persistence;
 
 import com.secretmatch.group.application.Groups;
+import com.secretmatch.group.domain.Budget;
 import com.secretmatch.group.domain.Group;
 import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.InviteCode;
@@ -49,6 +50,18 @@ class JpaGroups implements Groups {
     @Override
     public boolean removeMember(GroupId group, MemberId user) {
         return repository.removeMember(group.value(), user.value()) == 1;
+    }
+
+    @Override
+    public void saveDetails(Group group) {
+        int changed = repository.updateDetails(
+                group.id().value(),
+                group.name().value(),
+                group.exchangeDate(),
+                group.budget().map(Budget::euros).orElse(null));
+        if (changed != 1) {
+            throw new IllegalStateException("no stored Group to change");
+        }
     }
 
     @Override

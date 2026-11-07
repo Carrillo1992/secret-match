@@ -1,6 +1,7 @@
 package com.secretmatch.group.infrastructure.web;
 
 import com.secretmatch.group.application.CreateGroupCommand;
+import com.secretmatch.group.application.EditGroupCommand;
 import com.secretmatch.group.application.GroupDetails;
 import com.secretmatch.group.application.MyGroups;
 import com.secretmatch.group.domain.GroupId;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -59,6 +61,21 @@ class GroupController {
     @Operation(summary = "A Group the signed-in User is a Member of")
     GroupResponse group(@AuthenticationPrincipal Jwt accessToken, @PathVariable UUID groupId) {
         return GroupResponse.of(myGroups.group(new GroupId(groupId), signedIn(accessToken)));
+    }
+
+    @PutMapping(value = "/{groupId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Edit the Group's name, budget and Exchange Date",
+            description = "Only the Admin can, also after the Draw. The details replace the current ones; a changed"
+                    + " Exchange Date must be after today. Nobody is emailed.")
+    GroupResponse edit(
+            @AuthenticationPrincipal Jwt accessToken,
+            @PathVariable UUID groupId,
+            @Valid @RequestBody EditGroupRequest request) {
+        return GroupResponse.of(myGroups.edit(
+                new GroupId(groupId),
+                signedIn(accessToken),
+                new EditGroupCommand(request.name(), request.exchangeDate(), request.budget())));
     }
 
     @PostMapping(value = "/{groupId}/invite-link", produces = MediaType.APPLICATION_JSON_VALUE)

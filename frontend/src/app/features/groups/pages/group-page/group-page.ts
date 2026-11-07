@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideCalendar, LucideChevronLeft, LucideSearchX, LucideWallet } from '@lucide/angular';
+import { LucideChevronLeft, LucideSearchX } from '@lucide/angular';
 import { map } from 'rxjs';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
@@ -21,8 +21,11 @@ import {
 } from '../../components/invite-link-card/invite-link-card';
 import { Member, MembersCard, Removal } from '../../components/members-card/members-card';
 import { LeaveStatus, MembershipCard } from '../../components/membership-card/membership-card';
-import { euros, longExchangeDate } from '../../data-access/group-format';
-import { GroupsApi } from '../../data-access/groups-api';
+import {
+  EditStatus,
+  GroupDetailsCard,
+} from '../../components/group-details-card/group-details-card';
+import { GroupEdit, GroupsApi } from '../../data-access/groups-api';
 import { Alert } from '../../../../shared/ui/alert/alert';
 
 /** A Group as its Members see it: its details and who is in it. */
@@ -39,10 +42,9 @@ import { Alert } from '../../../../shared/ui/alert/alert';
     InviteLinkCard,
     MembersCard,
     MembershipCard,
-    LucideCalendar,
+    GroupDetailsCard,
     LucideChevronLeft,
     LucideSearchX,
-    LucideWallet,
   ],
   templateUrl: './group-page.html',
 })
@@ -80,8 +82,19 @@ export class GroupPage {
   protected readonly leaveStatus = signal<LeaveStatus>('idle');
   protected readonly removal = signal<Removal | null>(null);
 
-  protected readonly date = longExchangeDate;
-  protected readonly euros = euros;
+  protected readonly editStatus = signal<EditStatus>('idle');
+
+  /** The Admin's new details: once the API agrees, every part of the page shows them. */
+  protected async edit(details: GroupEdit): Promise<void> {
+    this.editStatus.set('saving');
+    const outcome = await this.groupsApi.edit(this.groupId(), details);
+    if (outcome.status === 'edited') {
+      this.outcome.set({ status: 'found', group: outcome.group });
+      this.editStatus.set('saved');
+      return;
+    }
+    this.editStatus.set(outcome.status);
+  }
 
   protected async regenerateInviteLink(): Promise<void> {
     this.regenerateStatus.set('regenerating');

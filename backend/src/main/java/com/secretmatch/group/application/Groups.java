@@ -37,6 +37,9 @@ public interface Groups {
      */
     boolean removeMember(GroupId group, MemberId user);
 
+    /** Stores the Group's name, Exchange Date and budget. */
+    void saveDetails(Group group);
+
     /** Stores the Group's current Invite Link code; the previous one stops matching. */
     void saveInviteCode(Group group);
 }

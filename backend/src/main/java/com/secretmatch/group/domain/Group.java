@@ -58,7 +58,7 @@ public final class Group {
             MemberId creator,
             InviteCode inviteCode,
             Instant now) {
-        if (exchangeDate == null || !exchangeDate.isAfter(LocalDate.ofInstant(now, TIME_ZONE))) {
+        if (!isInTheFuture(exchangeDate, now)) {
             throw InvalidGroupDetailsException.exchangeDate();
         }
         return new Group(
@@ -82,6 +82,33 @@ public final class Group {
             throw new AdminOnlyException();
         }
         return new Group(id, name, exchangeDate, budget, admin, members, newCode, createdAt);
+    }
+
+    /**
+     * The same Group with new details, which replace all the current ones.
+     *
+     * @param newBudget in euros; {@code null} to leave the Group without a budget
+     * @throws AdminOnlyException if {@code by} is not the Admin
+     * @throws InvalidGroupDetailsException if a detail breaks its rules, e.g. a changed Exchange Date is not
+     *     after today in {@link #TIME_ZONE}. An unchanged one is kept as it is, so on the Exchange Date itself
+     *     the Admin can still rename the Group.
+     */
+    public Group edit(MemberId by, String newName, LocalDate newExchangeDate, BigDecimal newBudget, Instant now) {
+        if (!admin.equals(by)) {
+            throw new AdminOnlyException();
+        }
+        if (!exchangeDate.equals(newExchangeDate) && !isInTheFuture(newExchangeDate, now)) {
+            throw InvalidGroupDetailsException.exchangeDate();
+        }
+        return new Group(
+                id,
+                new GroupName(newName),
+                newExchangeDate,
+                newBudget == null ? null : new Budget(newBudget),
+                admin,
+                members,
+                inviteCode,
+                createdAt);
     }
 
     /**
@@ -141,5 +168,9 @@ public final class Group {
 
     public Instant createdAt() {
         return createdAt;
+    }
+
+    private static boolean isInTheFuture(LocalDate date, Instant now) {
+        return date != null && date.isAfter(LocalDate.ofInstant(now, TIME_ZONE));
     }
 }

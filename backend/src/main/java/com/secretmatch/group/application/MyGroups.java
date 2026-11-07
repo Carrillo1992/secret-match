@@ -79,6 +79,23 @@ public class MyGroups {
     }
 
     /**
+     * Replaces the Group's name, budget and Exchange Date. Nobody is emailed: the Members see the change on the
+     * Group page.
+     *
+     * @return the Group with its new details
+     * @throws GroupNotFoundException if there is no such Group or the User is not one of its Members
+     * @throws com.secretmatch.group.domain.AdminOnlyException if the User is not its Admin
+     * @throws com.secretmatch.group.domain.InvalidGroupDetailsException if a detail breaks its rules
+     */
+    @Transactional
+    public GroupDetails edit(GroupId id, MemberId by, EditGroupCommand command) {
+        Group group =
+                memberView(id, by).edit(by, command.name(), command.exchangeDate(), command.budget(), clock.instant());
+        groups.saveDetails(group);
+        return detailsOf(group, by);
+    }
+
+    /**
      * Gives the Group a new Invite Link; the previous one stops working.
      *
      * @return the Group with its new Invite Link

@@ -1,18 +1,7 @@
-import {
-  afterNextRender,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  inject,
-  Injector,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { LucideLogOut } from '@lucide/angular';
+import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
 import { Button } from '../../../../shared/ui/button/button';
-import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { Alert } from '../../../../shared/ui/alert/alert';
 
 /** Where the Member's request to leave stands, as the page tells it. */
@@ -25,7 +14,7 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
 @Component({
   selector: 'app-membership-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Alert, Button, TextLink, LucideLogOut],
+  imports: [Alert, Button, ConfirmPanel, LucideLogOut],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-membership" class="rounded-card bg-surface p-5 shadow-card">
@@ -44,24 +33,24 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
         }
 
         @if (confirming()) {
-          <div class="mt-4 rounded-field bg-canvas p-4">
-            <p class="font-bold">¿Salir del grupo?</p>
-            <p class="mt-1.5 text-sm text-ink-muted">Dejarás de ver el grupo y a sus miembros.</p>
-            <div class="mt-4 flex flex-wrap items-center gap-4">
-              <button #confirmButton type="button" appButton="secondary" (click)="confirm()">
-                Sí, salir
-              </button>
-              <button type="button" appLink standalone (click)="cancel()">Cancelar</button>
-            </div>
-          </div>
+          <app-confirm-panel
+            class="mt-4"
+            question="¿Salir del grupo?"
+            confirmLabel="Sí, salir"
+            returnFocusTo="leave-group"
+            (confirmed)="confirm()"
+            (cancelled)="confirming.set(false)"
+          >
+            Dejarás de ver el grupo y a sus miembros.
+          </app-confirm-panel>
         } @else {
           <button
-            #leaveButton
+            id="leave-group"
             type="button"
             appButton="secondary"
             class="mt-4 w-full"
             [disabled]="status() === 'leaving'"
-            (click)="startConfirming()"
+            (click)="confirming.set(true)"
           >
             <svg lucideLogOut [size]="18"></svg>
             {{ status() === 'leaving' ? 'Saliendo…' : 'Salir del grupo' }}
@@ -79,28 +68,9 @@ export class MembershipCard {
   readonly leave = output();
 
   protected readonly confirming = signal(false);
-  private readonly injector = inject(Injector);
-  private readonly confirmButton = viewChild<ElementRef<HTMLButtonElement>>('confirmButton');
-  private readonly leaveButton = viewChild<ElementRef<HTMLButtonElement>>('leaveButton');
-
-  /** The button that opened the confirmation disappears, so keyboard focus moves into it. */
-  protected startConfirming(): void {
-    this.confirming.set(true);
-    this.focusAfterRender(() => this.confirmButton());
-  }
-
-  protected cancel(): void {
-    this.confirming.set(false);
-    this.focusAfterRender(() => this.leaveButton());
-  }
 
   protected confirm(): void {
     this.confirming.set(false);
     this.leave.emit();
-    this.focusAfterRender(() => this.leaveButton());
-  }
-
-  private focusAfterRender(target: () => ElementRef<HTMLButtonElement> | undefined): void {
-    afterNextRender(() => target()?.nativeElement.focus(), { injector: this.injector });
   }
 }

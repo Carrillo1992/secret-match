@@ -1,17 +1,5 @@
-import {
-  afterNextRender,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  inject,
-  Injector,
-  input,
-  output,
-  signal,
-  viewChild,
-  viewChildren,
-} from '@angular/core';
-import { Button } from '../../../../shared/ui/button/button';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { Group } from '../../data-access/groups-api';
@@ -32,12 +20,11 @@ export interface Removal {
 @Component({
   selector: 'app-members-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Alert, Button, Chip, TextLink],
+  imports: [Alert, Chip, ConfirmPanel, TextLink],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-members" class="rounded-card bg-surface p-5 shadow-card">
       <h2
-        #heading
         id="group-members"
         tabindex="-1"
         class="font-display text-lg font-semibold focus:outline-none"
@@ -70,40 +57,31 @@ export interface Removal {
               }
               @if (canRemove() && !member.admin && confirming()?.id !== member.id) {
                 <button
-                  #removeButton
+                  [id]="'remove-' + member.id"
                   type="button"
                   appLink
                   standalone
                   class="ml-auto shrink-0"
-                  [attr.data-member]="member.id"
                   [attr.aria-label]="'Quitar a ' + member.displayName"
                   [disabled]="isRemoving(member)"
-                  (click)="startConfirming(member)"
+                  (click)="confirming.set(member)"
                 >
                   {{ isRemoving(member) ? 'Quitando…' : 'Quitar' }}
                 </button>
               }
             </div>
             @if (confirming()?.id === member.id) {
-              <div class="mt-3 rounded-field bg-canvas p-4">
-                <p class="font-bold break-words">¿Quitar a {{ member.displayName }}?</p>
-                <p class="mt-1.5 text-sm text-ink-muted">
-                  Dejará de ver el grupo. Le avisaremos por email.
-                </p>
-                <div class="mt-4 flex flex-wrap items-center gap-4">
-                  <button
-                    #confirmButton
-                    type="button"
-                    appButton="secondary"
-                    (click)="confirm(member)"
-                  >
-                    Sí, quitar
-                  </button>
-                  <button type="button" appLink standalone (click)="cancel(member)">
-                    Cancelar
-                  </button>
-                </div>
-              </div>
+              <app-confirm-panel
+                class="mt-3"
+                [question]="'¿Quitar a ' + member.displayName + '?'"
+                confirmLabel="Sí, quitar"
+                [returnFocusTo]="'remove-' + member.id"
+                focusAfterConfirm="group-members"
+                (confirmed)="confirm(member)"
+                (cancelled)="confirming.set(null)"
+              >
+                Dejará de ver el grupo. Le avisaremos por email.
+              </app-confirm-panel>
             }
           </li>
         }
@@ -120,10 +98,6 @@ export class MembersCard {
   readonly remove = output<Member>();
 
   protected readonly confirming = signal<Member | null>(null);
-  private readonly injector = inject(Injector);
-  private readonly heading = viewChild.required<ElementRef<HTMLElement>>('heading');
-  private readonly confirmButton = viewChild<ElementRef<HTMLButtonElement>>('confirmButton');
-  private readonly removeButtons = viewChildren<ElementRef<HTMLButtonElement>>('removeButton');
 
   protected statusText(): string {
     const removal = this.removal();
@@ -141,31 +115,9 @@ export class MembersCard {
     return displayName.charAt(0).toLocaleUpperCase('es-ES');
   }
 
-  /** The button that opened the confirmation disappears, so keyboard focus moves into it. */
-  protected startConfirming(member: Member): void {
-    this.confirming.set(member);
-    this.focusAfterRender(() => this.confirmButton()?.nativeElement);
-  }
-
-  protected cancel(member: Member): void {
-    this.confirming.set(null);
-    this.focusAfterRender(() => this.removeButtonOf(member));
-  }
-
-  /** The row may be about to disappear, so focus goes to the list's heading. */
+  /** The row may be about to disappear, so the panel moves focus to the list's heading. */
   protected confirm(member: Member): void {
     this.confirming.set(null);
     this.remove.emit(member);
-    this.focusAfterRender(() => this.heading().nativeElement);
-  }
-
-  private removeButtonOf(member: Member): HTMLButtonElement | undefined {
-    return this.removeButtons()
-      .map((button) => button.nativeElement)
-      .find((button) => button.dataset['member'] === member.id);
-  }
-
-  private focusAfterRender(target: () => HTMLElement | undefined): void {
-    afterNextRender(() => target()?.focus(), { injector: this.injector });
   }
 }

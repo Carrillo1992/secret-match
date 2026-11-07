@@ -1,16 +1,6 @@
-import {
-  afterNextRender,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  inject,
-  Injector,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { LucideCopy, LucideRefreshCw } from '@lucide/angular';
+import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
@@ -28,7 +18,7 @@ type Notice = 'copied' | 'copy-failed' | null;
 @Component({
   selector: 'app-invite-link-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Alert, Button, Field, TextLink, LucideCopy, LucideRefreshCw],
+  imports: [Alert, Button, ConfirmPanel, Field, TextLink, LucideCopy, LucideRefreshCw],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-invite" class="rounded-card bg-surface p-5 shadow-card">
@@ -63,21 +53,19 @@ type Notice = 'copied' | 'copy-failed' | null;
 
       @if (admin()) {
         @if (confirming()) {
-          <div class="mt-4 rounded-field bg-canvas p-4">
-            <p class="font-bold">¿Generar un enlace nuevo?</p>
-            <p class="mt-1.5 text-sm text-ink-muted">
-              El enlace actual dejará de funcionar. Quien ya está en el grupo sigue dentro.
-            </p>
-            <div class="mt-4 flex flex-wrap items-center gap-4">
-              <button #confirmButton type="button" appButton="secondary" (click)="confirm()">
-                Sí, generar uno nuevo
-              </button>
-              <button type="button" appLink standalone (click)="cancel()">Cancelar</button>
-            </div>
-          </div>
+          <app-confirm-panel
+            class="mt-4"
+            question="¿Generar un enlace nuevo?"
+            confirmLabel="Sí, generar uno nuevo"
+            returnFocusTo="regenerate-invite-link"
+            (confirmed)="confirm()"
+            (cancelled)="confirming.set(false)"
+          >
+            El enlace actual dejará de funcionar. Quien ya está en el grupo sigue dentro.
+          </app-confirm-panel>
         } @else {
           <button
-            #regenerateButton
+            id="regenerate-invite-link"
             type="button"
             appLink
             standalone
@@ -104,9 +92,6 @@ export class InviteLinkCard {
 
   protected readonly confirming = signal(false);
   private readonly notice = signal<Notice>(null);
-  private readonly injector = inject(Injector);
-  private readonly confirmButton = viewChild<ElementRef<HTMLButtonElement>>('confirmButton');
-  private readonly regenerateButton = viewChild<ElementRef<HTMLButtonElement>>('regenerateButton');
 
   protected busy(): boolean {
     return this.regenerateStatus() === 'regenerating';
@@ -135,25 +120,13 @@ export class InviteLinkCard {
     }
   }
 
-  /** The button that opened the confirmation disappears, so keyboard focus moves into it. */
   protected startConfirming(): void {
     this.notice.set(null);
     this.confirming.set(true);
-    this.focusAfterRender(() => this.confirmButton());
-  }
-
-  protected cancel(): void {
-    this.confirming.set(false);
-    this.focusAfterRender(() => this.regenerateButton());
   }
 
   protected confirm(): void {
     this.confirming.set(false);
     this.regenerate.emit();
-    this.focusAfterRender(() => this.regenerateButton());
-  }
-
-  private focusAfterRender(target: () => ElementRef<HTMLButtonElement> | undefined): void {
-    afterNextRender(() => target()?.nativeElement.focus(), { injector: this.injector });
   }
 }

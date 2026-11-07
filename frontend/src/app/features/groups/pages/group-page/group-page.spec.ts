@@ -320,6 +320,7 @@ describe('GroupPage', () => {
       button('Sí, quitar')?.click();
       await settle();
 
+      expect(document.activeElement).toBe(page().querySelector('#group-members'));
       const remove = http.expectOne(`${MEMBERS_URL}/u-marta`);
       expect(remove.request.method).toBe('DELETE');
       remove.flush(null, { status: 204, statusText: 'No Content' });

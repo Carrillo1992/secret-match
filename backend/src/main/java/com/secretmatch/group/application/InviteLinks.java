@@ -8,6 +8,7 @@ import com.secretmatch.group.domain.MemberId;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -35,13 +36,19 @@ public class InviteLinks {
      *
      * @return the id of the Group
      * @throws InviteLinkInvalidException if no Group's current Invite Link has this code
+     * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
      */
     @Transactional
     public GroupId join(String inviteCode, MemberId user) {
         Group group = InviteCode.parse(inviteCode)
                 .flatMap(groups::findByInviteCode)
                 .orElseThrow(InviteLinkInvalidException::new);
-        if (!group.hasMember(user) && groups.addMember(group.id(), user, clock.instant())) {
+        if (group.hasMember(user)) {
+            return group.id();
+        }
+        Instant now = clock.instant();
+        group.authoriseJoin(now);
+        if (groups.addMember(group.id(), user, now)) {
             emailAdmin(group, user);
         }
         return group.id();

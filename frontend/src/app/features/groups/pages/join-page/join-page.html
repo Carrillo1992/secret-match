@@ -34,6 +34,14 @@
         </p>
         <a routerLink="/home" appButton class="mt-6 w-full">Ir al inicio</a>
       }
+      @case ('finished') {
+        <app-status-header>
+          <svg lucideCalendarX statusIcon [size]="30"></svg>
+          Este grupo ya ha finalizado
+        </app-status-header>
+        <p class="mt-2 text-ink-muted">Su intercambio ya pasó, así que no se puede entrar en él.</p>
+        <a routerLink="/home" appButton class="mt-6 w-full">Ir al inicio</a>
+      }
       @case ('failed') {
         <app-status-header>
           <svg lucideWifiOff statusIcon [size]="30"></svg>

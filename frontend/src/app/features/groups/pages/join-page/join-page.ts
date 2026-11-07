@@ -1,6 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideLoaderCircle, LucideUnlink, LucideUserPlus, LucideWifiOff } from '@lucide/angular';
+import {
+  LucideCalendarX,
+  LucideLoaderCircle,
+  LucideUnlink,
+  LucideUserPlus,
+  LucideWifiOff,
+} from '@lucide/angular';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { Button } from '../../../../shared/ui/button/button';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
@@ -8,7 +14,7 @@ import { StatusHeader } from '../../../../shared/ui/status-header/status-header'
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { GroupsApi } from '../../data-access/groups-api';
 
-type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'failed';
+type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'finished' | 'failed';
 
 /**
  * Where an Invite Link lands: `/join/<code>`. A signed-in User joins the Group and goes to its page;
@@ -24,6 +30,7 @@ type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'failed';
     StatusHeader,
     Button,
     TextLink,
+    LucideCalendarX,
     LucideLoaderCircle,
     LucideUnlink,
     LucideUserPlus,

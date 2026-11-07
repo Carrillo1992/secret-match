@@ -21,6 +21,7 @@ const navidad = {
   budget: 30,
   memberCount: 3,
   admin: true,
+  finished: false,
 };
 const reyes = {
   id: 'g-2',
@@ -28,6 +29,7 @@ const reyes = {
   exchangeDate: '2027-01-06',
   memberCount: 1,
   admin: false,
+  finished: false,
 };
 
 @Component({ template: '<h1>Otra página</h1>' })
@@ -101,6 +103,17 @@ describe('MyGroupsPage', () => {
     expect(cards[1].text).not.toContain('Admin');
     expect(cards[1].text).not.toContain('€');
     expect(cards[0].querySelector('a')?.getAttribute('href')).toBe('/groups/g-1');
+  });
+
+  it('marks a finished Group as such', async () => {
+    await open([
+      { ...navidad, finished: true },
+      { ...reyes, finished: false },
+    ]);
+
+    const [finished, open_] = groupCards();
+    expect(finished.text).toContain('Finalizado');
+    expect(open_.text).not.toContain('Finalizado');
   });
 
   it('offers to create a Group', async () => {

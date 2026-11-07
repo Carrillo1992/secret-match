@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideChevronLeft, LucideSearchX } from '@lucide/angular';
+import { LucideChevronLeft, LucideCircleCheck, LucideSearchX } from '@lucide/angular';
 import { map } from 'rxjs';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
@@ -29,6 +29,7 @@ import {
   EditStatus,
   GroupDetailsCard,
 } from '../../components/group-details-card/group-details-card';
+import { longExchangeDate } from '../../data-access/group-format';
 import { GroupEdit, GroupsApi } from '../../data-access/groups-api';
 import { Alert } from '../../../../shared/ui/alert/alert';
 
@@ -48,6 +49,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
     MembershipCard,
     GroupDetailsCard,
     LucideChevronLeft,
+    LucideCircleCheck,
     LucideSearchX,
   ],
   templateUrl: './group-page.html',
@@ -75,6 +77,7 @@ export class GroupPage {
     const result = this.result();
     return result?.status === 'found' ? result.group : undefined;
   });
+  protected readonly longExchangeDate = longExchangeDate;
   protected readonly notFound = computed(() => this.result()?.status === 'not-found');
 
   /** The Invite Link to share: the SPA's own address, so it works on any host. */

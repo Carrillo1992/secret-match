@@ -1,15 +1,18 @@
 package com.secretmatch.group.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -19,6 +22,9 @@ class GroupTest {
     private static final Instant NOW = Instant.parse("2026-12-01T23:30:00Z");
 
     private static final LocalDate CHRISTMAS_EVE = LocalDate.of(2026, 12, 24);
+
+    /** 00:00 on Christmas Day in Madrid: a Group exchanging on Christmas Eve is finished. */
+    private static final Instant AFTER_CHRISTMAS_EVE = Instant.parse("2026-12-24T23:00:00Z");
 
     private static final MemberId CREATOR = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
@@ -121,7 +127,7 @@ class GroupTest {
     void adminRegeneratesInviteLink() {
         Group group = Group.create("Amigos", CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW);
 
-        Group regenerated = group.regenerateInviteLink(CREATOR, new InviteCode("second-code"));
+        Group regenerated = group.regenerateInviteLink(CREATOR, new InviteCode("second-code"), NOW);
 
         assertThat(regenerated.inviteCode()).isEqualTo(new InviteCode("second-code"));
         assertThat(regenerated.id()).isEqualTo(group.id());
@@ -137,11 +143,11 @@ class GroupTest {
                 CHRISTMAS_EVE,
                 null,
                 CREATOR,
-                java.util.List.of(CREATOR, GUEST),
+                List.of(CREATOR, GUEST),
                 FIRST_CODE,
                 NOW);
 
-        assertThatThrownBy(() -> group.regenerateInviteLink(GUEST, new InviteCode("second-code")))
+        assertThatThrownBy(() -> group.regenerateInviteLink(GUEST, new InviteCode("second-code"), NOW))
                 .isInstanceOf(AdminOnlyException.class)
                 .extracting(e -> ((AdminOnlyException) e).code())
                 .isEqualTo("admin-only");
@@ -176,7 +182,7 @@ class GroupTest {
                 created.exchangeDate(),
                 null,
                 CREATOR,
-                java.util.List.of(CREATOR, GUEST, OTHER_GUEST),
+                List.of(CREATOR, GUEST, OTHER_GUEST),
                 FIRST_CODE,
                 NOW);
     }
@@ -184,7 +190,7 @@ class GroupTest {
     @Test
     @DisplayName("a Member who is not the Admin leaves the Group")
     void memberLeaves() {
-        Group left = withGuests().removeMember(GUEST, GUEST);
+        Group left = withGuests().removeMember(GUEST, GUEST, NOW);
 
         assertThat(left.members()).containsExactly(CREATOR, OTHER_GUEST);
     }
@@ -192,7 +198,7 @@ class GroupTest {
     @Test
     @DisplayName("the Admin removes another Member")
     void adminRemovesAMember() {
-        Group removed = withGuests().removeMember(CREATOR, OTHER_GUEST);
+        Group removed = withGuests().removeMember(CREATOR, OTHER_GUEST, NOW);
 
         assertThat(removed.members()).containsExactly(CREATOR, GUEST);
     }
@@ -200,7 +206,7 @@ class GroupTest {
     @Test
     @DisplayName("the Admin cannot leave their own Group")
     void adminCannotLeave() {
-        assertThatThrownBy(() -> withGuests().removeMember(CREATOR, CREATOR))
+        assertThatThrownBy(() -> withGuests().removeMember(CREATOR, CREATOR, NOW))
                 .isInstanceOf(AdminCannotLeaveException.class)
                 .extracting(e -> ((AdminCannotLeaveException) e).code())
                 .isEqualTo("admin-cannot-leave");
@@ -209,8 +215,9 @@ class GroupTest {
     @Test
     @DisplayName("a Member who is not the Admin cannot remove anyone else")
     void onlyTheAdminRemoves() {
-        assertThatThrownBy(() -> withGuests().removeMember(GUEST, OTHER_GUEST)).isInstanceOf(AdminOnlyException.class);
-        assertThatThrownBy(() -> withGuests().removeMember(GUEST, CREATOR)).isInstanceOf(AdminOnlyException.class);
+        assertThatThrownBy(() -> withGuests().removeMember(GUEST, OTHER_GUEST, NOW))
+                .isInstanceOf(AdminOnlyException.class);
+        assertThatThrownBy(() -> withGuests().removeMember(GUEST, CREATOR, NOW)).isInstanceOf(AdminOnlyException.class);
     }
 
     @Test
@@ -218,7 +225,7 @@ class GroupTest {
     void removingANonMember() {
         MemberId stranger = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000009"));
 
-        assertThatThrownBy(() -> withGuests().removeMember(CREATOR, stranger))
+        assertThatThrownBy(() -> withGuests().removeMember(CREATOR, stranger, NOW))
                 .isInstanceOf(MemberNotFoundException.class)
                 .isInstanceOf(com.secretmatch.shared.domain.NotFoundException.class);
     }
@@ -297,5 +304,92 @@ class GroupTest {
     @DisplayName("a Member who is not the Admin cannot delete the Group")
     void onlyTheAdminDeletes() {
         assertThatThrownBy(() -> withGuests().authoriseDeletion(GUEST)).isInstanceOf(AdminOnlyException.class);
+    }
+
+    // ---------- a finished Group ----------
+
+    private static Group exchangingOn(LocalDate exchangeDate) {
+        return new Group(
+                GroupId.newId(),
+                new GroupName("Amigos"),
+                exchangeDate,
+                null,
+                CREATOR,
+                List.of(CREATOR, GUEST, OTHER_GUEST),
+                FIRST_CODE,
+                NOW);
+    }
+
+    @ParameterizedTest(name = "Exchange Date {0}: still open at {1}, finished at {2}")
+    @CsvSource({
+        // Winter, Madrid is UTC+1.
+        "2026-12-24, 2026-12-24T22:59:59Z, 2026-12-24T23:00:00Z",
+        // Summer, Madrid is UTC+2.
+        "2027-07-15, 2027-07-15T21:59:59Z, 2027-07-15T22:00:00Z",
+        // Clocks go back on 2026-10-25 at 03:00: that day lasts 25 hours, and it starts in UTC+2 but ends in UTC+1.
+        "2026-10-25, 2026-10-25T22:59:59Z, 2026-10-25T23:00:00Z",
+        // Clocks go forward on 2027-03-28 at 02:00: that day lasts 23 hours, and ends in UTC+2.
+        "2027-03-28, 2027-03-28T21:59:59Z, 2027-03-28T22:00:00Z"
+    })
+    @DisplayName("a Group is finished from 00:00 in Madrid on the day after its Exchange Date")
+    void finishedFromTheDayAfterTheExchangeDate(
+            LocalDate exchangeDate, Instant lastOpenMoment, Instant firstFinishedMoment) {
+        Group group = exchangingOn(exchangeDate);
+
+        assertThat(group.isFinished(lastOpenMoment)).isFalse();
+        assertThat(group.isFinished(firstFinishedMoment)).isTrue();
+        assertThat(group.isFinished(firstFinishedMoment.plusSeconds(86_400 * 30)))
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("a Group is not finished long before its Exchange Date, nor on the day itself")
+    void notFinishedBefore() {
+        Group group = exchangingOn(CHRISTMAS_EVE);
+
+        assertThat(group.isFinished(NOW)).isFalse();
+        assertThat(group.isFinished(Instant.parse("2026-12-23T23:00:00Z"))).isFalse();
+    }
+
+    @Test
+    @DisplayName("on a finished Group nobody can edit it, regenerate its Invite Link, leave it or be removed")
+    void finishedGroupIsReadOnly() {
+        Group group = exchangingOn(CHRISTMAS_EVE);
+
+        assertThatThrownBy(() -> group.edit(CREATOR, "Reyes", CHRISTMAS_EVE, null, AFTER_CHRISTMAS_EVE))
+                .isInstanceOf(GroupFinishedException.class)
+                .extracting(e -> ((GroupFinishedException) e).code())
+                .isEqualTo("group-finished");
+        assertThatThrownBy(
+                        () -> group.regenerateInviteLink(CREATOR, new InviteCode("second-code"), AFTER_CHRISTMAS_EVE))
+                .isInstanceOf(GroupFinishedException.class);
+        assertThatThrownBy(() -> group.removeMember(GUEST, GUEST, AFTER_CHRISTMAS_EVE))
+                .isInstanceOf(GroupFinishedException.class);
+        assertThatThrownBy(() -> group.removeMember(CREATOR, OTHER_GUEST, AFTER_CHRISTMAS_EVE))
+                .isInstanceOf(GroupFinishedException.class);
+        assertThatThrownBy(() -> group.authoriseJoin(AFTER_CHRISTMAS_EVE)).isInstanceOf(GroupFinishedException.class);
+    }
+
+    @Test
+    @DisplayName("until the end of its Exchange Date a Group can still be joined, left and changed")
+    void openOnTheLastMoment() {
+        Group group = exchangingOn(CHRISTMAS_EVE);
+        Instant lastMoment = Instant.parse("2026-12-24T22:59:59Z");
+
+        assertThat(group.edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, lastMoment)
+                        .name()
+                        .value())
+                .isEqualTo("Nochebuena");
+        assertThat(group.regenerateInviteLink(CREATOR, new InviteCode("second-code"), lastMoment)
+                        .inviteCode())
+                .isEqualTo(new InviteCode("second-code"));
+        assertThat(group.removeMember(GUEST, GUEST, lastMoment).members()).containsExactly(CREATOR, OTHER_GUEST);
+        assertThatCode(() -> group.authoriseJoin(lastMoment)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("the Admin can still delete a finished Group")
+    void finishedGroupCanBeDeleted() {
+        assertThat(exchangingOn(CHRISTMAS_EVE).authoriseDeletion(CREATOR)).containsExactly(GUEST, OTHER_GUEST);
     }
 }

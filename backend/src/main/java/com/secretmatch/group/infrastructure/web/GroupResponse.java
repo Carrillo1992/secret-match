@@ -26,7 +26,13 @@ record GroupResponse(
         String inviteCode,
 
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "Whether the signed-in User is its Admin.")
-        boolean admin) {
+        boolean admin,
+
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                description =
+                        "Whether its Exchange Date is over: a finished Group is read-only and can only be deleted.")
+        boolean finished) {
 
     static GroupResponse of(GroupDetails group) {
         return new GroupResponse(
@@ -39,7 +45,8 @@ record GroupResponse(
                                 new MemberResponse(member.id(), member.displayName(), member.admin(), member.you()))
                         .toList(),
                 group.inviteCode(),
-                group.admin());
+                group.admin(),
+                group.finished());
     }
 
     record MemberResponse(

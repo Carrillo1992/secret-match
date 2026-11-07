@@ -10,6 +10,7 @@ import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,7 @@ public class MyGroups {
     /** The Groups this User is a Member of, soonest Exchange Date first. */
     @Transactional(readOnly = true)
     public List<GroupSummary> groupsOf(MemberId user) {
+        Instant now = clock.instant();
         return groups.findWithMember(user).stream()
                 .map(group -> new GroupSummary(
                         group.id().value(),
@@ -64,7 +66,8 @@ public class MyGroups {
                         group.exchangeDate(),
                         group.budget().map(Budget::euros).orElse(null),
                         group.members().size(),
-                        group.admin().equals(user)))
+                        group.admin().equals(user),
+                        group.isFinished(now)))
                 .toList();
     }
 
@@ -85,6 +88,7 @@ public class MyGroups {
      * @return the Group with its new details
      * @throws GroupNotFoundException if there is no such Group or the User is not one of its Members
      * @throws com.secretmatch.group.domain.AdminOnlyException if the User is not its Admin
+     * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
      * @throws com.secretmatch.group.domain.InvalidGroupDetailsException if a detail breaks its rules
      */
     @Transactional
@@ -101,10 +105,11 @@ public class MyGroups {
      * @return the Group with its new Invite Link
      * @throws GroupNotFoundException if there is no such Group or the User is not one of its Members
      * @throws com.secretmatch.group.domain.AdminOnlyException if the User is not its Admin
+     * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
      */
     @Transactional
     public GroupDetails regenerateInviteLink(GroupId id, MemberId by) {
-        Group group = memberView(id, by).regenerateInviteLink(by, InviteCode.generate(random));
+        Group group = memberView(id, by).regenerateInviteLink(by, InviteCode.generate(random), clock.instant());
         groups.saveInviteCode(group);
         return detailsOf(group, by);
     }
@@ -118,11 +123,12 @@ public class MyGroups {
      * @throws com.secretmatch.group.domain.AdminCannotLeaveException if the Admin tries to leave
      * @throws com.secretmatch.group.domain.AdminOnlyException if {@code by} removes someone else and is not the
      *     Admin
+     * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
      */
     @Transactional
     public void removeMember(GroupId id, MemberId by, MemberId member) {
         Group group = memberView(id, by);
-        group.removeMember(by, member);
+        group.removeMember(by, member, clock.instant());
         if (!groups.removeMember(group.id(), member)) {
             // Removed at the same moment by another request, which did the rest.
             return;
@@ -134,7 +140,7 @@ public class MyGroups {
     }
 
     /**
-     * The Admin deletes the Group, in any state, with everything in it. Every other Member is emailed.
+     * The Admin deletes the Group, in any state (finished included), with everything in it. Every other Member is emailed.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code by} is not one of its Members
      * @throws com.secretmatch.group.domain.AdminOnlyException if {@code by} is not its Admin
@@ -205,6 +211,7 @@ public class MyGroups {
                                 member.equals(viewer)))
                         .toList(),
                 group.inviteCode().value(),
-                group.admin().equals(viewer));
+                group.admin().equals(viewer),
+                group.isFinished(clock.instant()));
     }
 }

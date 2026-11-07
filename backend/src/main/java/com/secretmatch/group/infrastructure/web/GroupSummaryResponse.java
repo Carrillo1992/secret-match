@@ -19,10 +19,19 @@ record GroupSummaryResponse(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) int memberCount,
 
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "Whether the signed-in User is its Admin.")
-        boolean admin) {
+        boolean admin,
+
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "Whether its Exchange Date is over.")
+        boolean finished) {
 
     static GroupSummaryResponse of(GroupSummary group) {
         return new GroupSummaryResponse(
-                group.id(), group.name(), group.exchangeDate(), group.budget(), group.memberCount(), group.admin());
+                group.id(),
+                group.name(),
+                group.exchangeDate(),
+                group.budget(),
+                group.memberCount(),
+                group.admin(),
+                group.finished());
     }
 }

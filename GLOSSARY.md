@@ -42,6 +42,10 @@ _Avoid_: Organizer, owner, host
 The day the gifts are handed over in a Group.
 _Avoid_: Event date, deadline, party date
 
+**Finished**:
+A Group whose Exchange Date is over: from 00:00 Europe/Madrid on the day after it. A finished Group is read-only (nobody joins, leaves, is removed or edits it, and its Invite Link cannot be regenerated); only its deletion is still allowed. Shown as "Finalizado".
+_Avoid_: Closed, archived, expired, past
+
 **Budget**:
 How much each gift in a Group should cost, in euros. Optional and informational only: nothing is ever checked against it.
 _Avoid_: Price limit, spending cap, max price

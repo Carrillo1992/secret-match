@@ -14,6 +14,11 @@ export interface GroupResponse {
    */
   budget?: number;
   exchangeDate: string;
+
+  /**
+   * Whether its Exchange Date is over: a finished Group is read-only and can only be deleted.
+   */
+  finished: boolean;
   id: string;
 
   /**

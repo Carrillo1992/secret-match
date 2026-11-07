@@ -11,30 +11,12 @@
       {{ group.name }}
     </h1>
 
-    <dl class="mt-6 flex flex-col gap-4 rounded-card bg-surface p-5 shadow-card">
-      <div class="flex gap-3">
-        <svg lucideCalendar [size]="20" class="mt-0.5 shrink-0 text-ink-muted"></svg>
-        <div>
-          <dt class="font-bold">Fecha del intercambio</dt>
-          <dd class="text-ink-muted">
-            <time [attr.datetime]="group.exchangeDate">{{ date(group.exchangeDate) }}</time>
-          </dd>
-        </div>
-      </div>
-      <div class="flex gap-3">
-        <svg lucideWallet [size]="20" class="mt-0.5 shrink-0 text-ink-muted"></svg>
-        <div>
-          <dt class="font-bold">Presupuesto</dt>
-          <dd class="text-ink-muted">
-            @if (group.budget !== undefined) {
-              {{ euros(group.budget) }} por regalo
-            } @else {
-              Sin presupuesto
-            }
-          </dd>
-        </div>
-      </div>
-    </dl>
+    <app-group-details-card
+      class="mt-6"
+      [group]="group"
+      [status]="editStatus()"
+      (save)="edit($event)"
+    />
 
     <app-invite-link-card
       class="mt-6"

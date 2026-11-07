@@ -364,4 +364,141 @@ describe('GroupPage', () => {
       expect(members()).toHaveLength(3);
     });
   });
+
+  describe('editing', () => {
+    const details = () => page().querySelector('section[aria-labelledby="group-details"]');
+    const button = (label: string) =>
+      [...page().querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
+    const field = (label: string) => {
+      const id = [...page().querySelectorAll('label')]
+        .find((l) => l.textContent?.includes(label))
+        ?.getAttribute('for');
+      return page().querySelector<HTMLInputElement>(`#${id}`);
+    };
+    const type = (input: HTMLInputElement | null, value: string) => {
+      if (!input) throw new Error('no such field');
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      input.dispatchEvent(new Event('blur'));
+    };
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-12-01T10:00:00Z'));
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    it('does not offer a regular Member to edit the Group', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      expect(text(details())).toContain('Datos del grupo');
+      expect(button('Editar')).toBeUndefined();
+    });
+
+    it('lets the Admin change the name, the Exchange Date and the budget', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      button('Editar')?.click();
+      await settle();
+      expect(field('Nombre')?.value).toBe('Navidad en casa');
+      expect(field('Fecha del intercambio')?.value).toBe('2026-12-24');
+      expect(field('Presupuesto')?.value).toBe('30');
+      expect(document.activeElement).toBe(field('Nombre'));
+      expect(text(details())).toContain('no les avisamos');
+
+      type(field('Nombre'), '  Reyes en el pueblo ');
+      type(field('Fecha del intercambio'), '2027-01-06');
+      type(field('Presupuesto'), '');
+      button('Guardar cambios')?.click();
+      await settle();
+
+      const edit = http.expectOne(GROUP_URL);
+      expect(edit.request.method).toBe('PUT');
+      expect(edit.request.body).toEqual({ name: 'Reyes en el pueblo', exchangeDate: '2027-01-06' });
+      edit.flush({
+        ...asAdmin,
+        name: 'Reyes en el pueblo',
+        exchangeDate: '2027-01-06',
+        budget: undefined,
+      });
+      await settle();
+
+      expect(text(page().querySelector('h1'))).toBe('Reyes en el pueblo');
+      expect(text(details())).toContain('miércoles, 6 de enero de 2027');
+      expect(text(details())).toContain('Sin presupuesto');
+      expect(field('Nombre')).toBeNull();
+      expect(document.activeElement).toBe(button('Editar'));
+    });
+
+    it('keeps the Group as it was when the Admin cancels', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      button('Editar')?.click();
+      await settle();
+      type(field('Nombre'), 'Otro nombre');
+      button('Cancelar')?.click();
+      await settle();
+
+      expect(field('Nombre')).toBeNull();
+      expect(text(page().querySelector('h1'))).toBe('Navidad en casa');
+      expect(document.activeElement).toBe(button('Editar'));
+      button('Editar')?.click();
+      await settle();
+      expect(field('Nombre')?.value).toBe('Navidad en casa');
+    });
+
+    it('explains next to each field what to fix, without sending anything', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      button('Editar')?.click();
+      await settle();
+      type(field('Nombre'), '   ');
+      type(field('Fecha del intercambio'), '2026-12-01');
+      type(field('Presupuesto'), '12,345');
+      button('Guardar cambios')?.click();
+      await settle();
+
+      expect(text(details())).toContain('Escribe un nombre para el grupo.');
+      expect(text(details())).toContain('Elige una fecha a partir de mañana.');
+      expect(text(details())).toContain('Escribe una cantidad en euros');
+      expect(field('Nombre')?.getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('says so when the API refuses the date or the change fails, and keeps the form', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      button('Editar')?.click();
+      await settle();
+      type(field('Fecha del intercambio'), '2026-12-02');
+      button('Guardar cambios')?.click();
+      await settle();
+      http
+        .expectOne(GROUP_URL)
+        .flush(
+          { type: 'urn:secretmatch:problem:exchange-date-not-in-future', status: 422 },
+          { status: 422, statusText: 'Unprocessable Content' },
+        );
+      await settle();
+
+      expect(text(details()?.querySelector('[role="alert"]'))).toContain(
+        'La fecha del intercambio tiene que ser a partir de mañana',
+      );
+      button('Guardar cambios')?.click();
+      await settle();
+      http.expectOne(GROUP_URL).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      expect(text(details()?.querySelector('[role="alert"]'))).toContain(
+        'No hemos podido guardar los cambios',
+      );
+      expect(field('Fecha del intercambio')?.value).toBe('2026-12-02');
+      expect(text(page().querySelector('h1'))).toBe('Navidad en casa');
+    });
+  });
 });

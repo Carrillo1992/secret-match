@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
 import {
   create,
+  edit,
   group,
   join,
   myGroups,
@@ -11,6 +12,7 @@ import {
 } from '../../../core/api/generated/functions';
 import {
   CreateGroupRequest,
+  EditGroupRequest,
   GroupResponse,
   GroupSummaryResponse,
 } from '../../../core/api/generated/models';
@@ -19,6 +21,8 @@ import { problemCode } from '../../../core/api/problem';
 export type GroupSummary = GroupSummaryResponse;
 export type Group = GroupResponse;
 export type NewGroup = CreateGroupRequest;
+/** All the Group's details, which replace the current ones; a budget left out is taken away. */
+export type GroupEdit = EditGroupRequest;
 
 /**
  * `not-found` covers a Group the User is not a Member of (the API answers both the same) and a
@@ -31,6 +35,12 @@ export type GroupOutcome =
 
 export type CreateGroupOutcome =
   | { readonly status: 'created'; readonly groupId: string }
+  | { readonly status: 'exchange-date-not-in-future' }
+  | { readonly status: 'failed' };
+
+/** `failed` covers the other refusals too: the page only offers editing to the Admin. */
+export type EditGroupOutcome =
+  | { readonly status: 'edited'; readonly group: Group }
   | { readonly status: 'exchange-date-not-in-future' }
   | { readonly status: 'failed' };
 
@@ -70,6 +80,16 @@ export class GroupsApi {
     try {
       const { id } = await this.api.invoke(create, { body: details });
       return { status: 'created', groupId: id };
+    } catch (error) {
+      return problemCode(error) === 'exchange-date-not-in-future'
+        ? { status: 'exchange-date-not-in-future' }
+        : { status: 'failed' };
+    }
+  }
+
+  async edit(groupId: string, details: GroupEdit): Promise<EditGroupOutcome> {
+    try {
+      return { status: 'edited', group: await this.api.invoke(edit, { groupId, body: details }) };
     } catch (error) {
       return problemCode(error) === 'exchange-date-not-in-future'
         ? { status: 'exchange-date-not-in-future' }

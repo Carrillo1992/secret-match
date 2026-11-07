@@ -8,8 +8,9 @@ import { Field } from '../../../../shared/ui/field/field';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
-import { PasswordResetApi, RESET_LINK_VALIDITY_HOURS } from '../../data-access/password-reset-api';
-import { emailShape, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
+import { PasswordResetApi } from '../../data-access/password-reset-api';
+import { PASSWORD_RESET_RULES } from '../../data-access/password-reset-rules';
+import { emailShape } from '../../data-access/sign-up-rules';
 
 /**
  * A signed-out User asks for a link to set a new password. The page answers the same whether or not the
@@ -35,13 +36,12 @@ import { emailShape, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 export class ForgotPasswordPage {
   private readonly passwordResetApi = inject(PasswordResetApi);
 
-  protected readonly rules = SIGN_UP_RULES;
-  protected readonly linkValidityHours = RESET_LINK_VALIDITY_HOURS;
+  protected readonly rules = PASSWORD_RESET_RULES;
   protected readonly form = inject(NonNullableFormBuilder).group({
     // The sign-in page hands over what was typed there through the navigation state, never the URL.
     email: [
       emailFromSignIn(inject(Router).currentNavigation()?.extras.state),
-      [Validators.required, emailShape, Validators.maxLength(SIGN_UP_RULES.emailMaxLength)],
+      [Validators.required, emailShape, Validators.maxLength(PASSWORD_RESET_RULES.emailMaxLength)],
     ],
   });
 

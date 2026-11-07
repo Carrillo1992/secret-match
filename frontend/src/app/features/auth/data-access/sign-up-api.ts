@@ -9,6 +9,7 @@ import {
   verifyEmail,
 } from '../../../core/api/generated/functions';
 import { SignUpRequest } from '../../../core/api/generated/models';
+import { accepted } from './accepted';
 
 /**
  * `accepted` also covers an email that already has an account: the API answers both the same, with a
@@ -52,21 +53,12 @@ export class SignUpApi {
 
   /** Resolves `true` once the API has taken the request, whether or not it sends anything. */
   newLinkForSignUp(signUpId: string): Promise<boolean> {
-    return this.accepted(this.api.invoke(sendNewLinkForSignUp, { signUpId }));
+    return accepted(this.api.invoke(sendNewLinkForSignUp, { signUpId }));
   }
 
   /** Resolves `true` once the API has taken the request, whether or not it sends anything. */
   newLinkInPlaceOf(token: string): Promise<boolean> {
-    return this.accepted(this.api.invoke(sendNewLinkInPlaceOf, { body: { token } }));
-  }
-
-  private async accepted(request: Promise<void>): Promise<boolean> {
-    try {
-      await request;
-      return true;
-    } catch {
-      return false;
-    }
+    return accepted(this.api.invoke(sendNewLinkInPlaceOf, { body: { token } }));
   }
 }
 

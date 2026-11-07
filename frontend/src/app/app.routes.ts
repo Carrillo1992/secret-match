@@ -46,7 +46,7 @@ export const routes: Routes = [
       ),
   },
   {
-    // The link in the Password Reset email (built by the API's forgotten-password use case).
+    // The link in the Password Reset email (built by the API's `PasswordResetting` use case).
     path: 'reset-password',
     title: 'Nueva contraseña · SecretMatch',
     loadComponent: () =>

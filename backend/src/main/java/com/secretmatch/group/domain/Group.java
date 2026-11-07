@@ -84,6 +84,29 @@ public final class Group {
         return new Group(id, name, exchangeDate, budget, admin, members, newCode, createdAt);
     }
 
+    /**
+     * The same Group without {@code member}: they leave it when {@code by} is themselves, or the Admin removes
+     * them.
+     *
+     * @throws AdminCannotLeaveException if the Admin tries to leave
+     * @throws AdminOnlyException if {@code by} removes someone else and is not the Admin
+     * @throws MemberNotFoundException if {@code member} is not a Member
+     */
+    public Group removeMember(MemberId by, MemberId member) {
+        if (admin.equals(member) && admin.equals(by)) {
+            throw new AdminCannotLeaveException();
+        }
+        if (!by.equals(member) && !admin.equals(by)) {
+            throw new AdminOnlyException();
+        }
+        if (!hasMember(member)) {
+            throw new MemberNotFoundException();
+        }
+        List<MemberId> remaining =
+                members.stream().filter(other -> !other.equals(member)).toList();
+        return new Group(id, name, exchangeDate, budget, admin, remaining, inviteCode, createdAt);
+    }
+
     public GroupId id() {
         return id;
     }

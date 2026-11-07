@@ -35,16 +35,25 @@ record GroupResponse(
                 group.exchangeDate(),
                 group.budget(),
                 group.members().stream()
-                        .map(member -> new MemberResponse(member.displayName(), member.admin()))
+                        .map(member ->
+                                new MemberResponse(member.id(), member.displayName(), member.admin(), member.you()))
                         .toList(),
                 group.inviteCode(),
                 group.admin());
     }
 
     record MemberResponse(
+            @Schema(
+                    requiredMode = Schema.RequiredMode.REQUIRED,
+                    description = "Identifies the Member in the Group, e.g. to remove them.")
+            UUID id,
+
             @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
             String displayName,
 
             @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
-            boolean admin) {}
+            boolean admin,
+
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "Whether this is the signed-in User.")
+            boolean you) {}
 }

@@ -42,10 +42,7 @@
     </div>
 
     @if (submitError(); as error) {
-      <p
-        role="alert"
-        class="rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
-      >
+      <p appAlert>
         @switch (error) {
           @case ('invalid-credentials') {
             El correo o la contraseña no son correctos.

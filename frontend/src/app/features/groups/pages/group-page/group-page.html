@@ -44,26 +44,20 @@
       (regenerate)="regenerateInviteLink()"
     />
 
-    <section aria-labelledby="group-members" class="mt-6 rounded-card bg-surface p-5 shadow-card">
-      <h2 id="group-members" class="font-display text-lg font-semibold">
-        Miembros ({{ group.members.length }})
-      </h2>
-      <ul aria-label="Miembros" class="mt-3 flex flex-col gap-3">
-        @for (member of group.members; track $index) {
-          <li class="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              class="flex size-10 shrink-0 items-center justify-center rounded-full bg-subtle font-display font-bold"
-              >{{ initial(member.displayName) }}</span
-            >
-            <span class="min-w-0 break-words">{{ member.displayName }}</span>
-            @if (member.admin) {
-              <span appChip>Admin</span>
-            }
-          </li>
-        }
-      </ul>
-    </section>
+    <app-members-card
+      class="mt-6"
+      [members]="group.members"
+      [canRemove]="group.admin"
+      [removal]="removal()"
+      (remove)="removeMember($event)"
+    />
+
+    <app-membership-card
+      class="mt-6"
+      [admin]="group.admin"
+      [status]="leaveStatus()"
+      (leave)="leave()"
+    />
   } @else if (notFound()) {
     <div class="mt-6">
       <app-status-header>
@@ -75,12 +69,7 @@
       </p>
     </div>
   } @else {
-    <p
-      role="alert"
-      class="mt-6 rounded-field bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
-    >
-      No hemos podido cargar el grupo. Inténtalo de nuevo.
-    </p>
+    <p appAlert class="mt-6">No hemos podido cargar el grupo. Inténtalo de nuevo.</p>
     <button type="button" appButton="secondary" class="mt-4" (click)="reload()">Reintentar</button>
   }
 </app-shell>

@@ -23,5 +23,6 @@ public record GroupDetails(
         members = List.copyOf(members);
     }
 
-    public record Member(String displayName, boolean admin) {}
+    /** {@code id} is the id of the User the Member is; {@code you} says whether that is the Member looking. */
+    public record Member(UUID id, String displayName, boolean admin, boolean you) {}
 }

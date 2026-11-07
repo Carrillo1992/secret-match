@@ -165,4 +165,61 @@ class GroupTest {
     void malformedCodes(String value) {
         assertThat(InviteCode.parse(value)).isEmpty();
     }
+
+    private static final MemberId OTHER_GUEST = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000003"));
+
+    private static Group withGuests() {
+        Group created = Group.create("Amigos", CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW);
+        return new Group(
+                created.id(),
+                created.name(),
+                created.exchangeDate(),
+                null,
+                CREATOR,
+                java.util.List.of(CREATOR, GUEST, OTHER_GUEST),
+                FIRST_CODE,
+                NOW);
+    }
+
+    @Test
+    @DisplayName("a Member who is not the Admin leaves the Group")
+    void memberLeaves() {
+        Group left = withGuests().removeMember(GUEST, GUEST);
+
+        assertThat(left.members()).containsExactly(CREATOR, OTHER_GUEST);
+    }
+
+    @Test
+    @DisplayName("the Admin removes another Member")
+    void adminRemovesAMember() {
+        Group removed = withGuests().removeMember(CREATOR, OTHER_GUEST);
+
+        assertThat(removed.members()).containsExactly(CREATOR, GUEST);
+    }
+
+    @Test
+    @DisplayName("the Admin cannot leave their own Group")
+    void adminCannotLeave() {
+        assertThatThrownBy(() -> withGuests().removeMember(CREATOR, CREATOR))
+                .isInstanceOf(AdminCannotLeaveException.class)
+                .extracting(e -> ((AdminCannotLeaveException) e).code())
+                .isEqualTo("admin-cannot-leave");
+    }
+
+    @Test
+    @DisplayName("a Member who is not the Admin cannot remove anyone else")
+    void onlyTheAdminRemoves() {
+        assertThatThrownBy(() -> withGuests().removeMember(GUEST, OTHER_GUEST)).isInstanceOf(AdminOnlyException.class);
+        assertThatThrownBy(() -> withGuests().removeMember(GUEST, CREATOR)).isInstanceOf(AdminOnlyException.class);
+    }
+
+    @Test
+    @DisplayName("removing someone who is not a Member is refused as not found")
+    void removingANonMember() {
+        MemberId stranger = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000009"));
+
+        assertThatThrownBy(() -> withGuests().removeMember(CREATOR, stranger))
+                .isInstanceOf(MemberNotFoundException.class)
+                .isInstanceOf(com.secretmatch.shared.domain.NotFoundException.class);
+    }
 }

@@ -7,12 +7,14 @@ import com.secretmatch.group.domain.GroupNotFoundException;
 import com.secretmatch.group.domain.InviteCode;
 import com.secretmatch.group.domain.MemberId;
 import com.secretmatch.identity.application.UserDirectory;
+import com.secretmatch.notification.application.EmailRequested;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,12 +26,14 @@ public class MyGroups {
     private final UserDirectory users;
     private final SecureRandom random;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    MyGroups(Groups groups, UserDirectory users, SecureRandom random, Clock clock) {
+    MyGroups(Groups groups, UserDirectory users, SecureRandom random, Clock clock, ApplicationEventPublisher events) {
         this.groups = groups;
         this.users = users;
         this.random = random;
         this.clock = clock;
+        this.events = events;
     }
 
     /**
@@ -88,6 +92,43 @@ public class MyGroups {
         return detailsOf(group, by);
     }
 
+    /**
+     * Ends a membership of the Group before the Draw: {@code by} leaves when {@code member} is themselves, or
+     * the Admin removes another Member.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code by} is not one of its Members
+     * @throws com.secretmatch.group.domain.MemberNotFoundException if {@code member} is not one of its Members
+     * @throws com.secretmatch.group.domain.AdminCannotLeaveException if the Admin tries to leave
+     * @throws com.secretmatch.group.domain.AdminOnlyException if {@code by} removes someone else and is not the
+     *     Admin
+     */
+    @Transactional
+    public void removeMember(GroupId id, MemberId by, MemberId member) {
+        Group group = memberView(id, by);
+        group.removeMember(by, member);
+        if (!groups.removeMember(group.id(), member)) {
+            // Removed at the same moment by another request, which did the rest.
+            return;
+        }
+        events.publishEvent(new MembershipEnded(group.id().value(), member.value()));
+        if (!by.equals(member)) {
+            emailRemovedMember(group, member);
+        }
+    }
+
+    /** Catalogue email 6: "you were removed", to the removed Member. */
+    private void emailRemovedMember(Group group, MemberId removed) {
+        String admin = users.displayNamesOf(List.of(group.admin().value()))
+                .get(group.admin().value());
+        String to = users.emailOf(removed.value()).orElseThrow(() -> new IllegalStateException("a Member has no User"));
+        String groupName = group.name().value();
+        events.publishEvent(new EmailRequested(
+                to, "Ya no estás en «%s»".formatted(groupName), """
+                %s, que administra el grupo «%s», te ha quitado del grupo.
+
+                Si crees que es un error, habla con %s.""".formatted(admin, groupName, admin), "/home"));
+    }
+
     /** The Group, only if the User is one of its Members. Every use case on one Group goes through here. */
     private Group memberView(GroupId id, MemberId user) {
         return groups.findById(id).filter(group -> group.hasMember(user)).orElseThrow(GroupNotFoundException::new);
@@ -104,7 +145,11 @@ public class MyGroups {
                 group.members().stream()
                         // Stable: the Admin first, the rest keep the order they joined in.
                         .sorted(Comparator.comparing(member -> !member.equals(group.admin())))
-                        .map(member -> new GroupDetails.Member(names.get(member.value()), member.equals(group.admin())))
+                        .map(member -> new GroupDetails.Member(
+                                member.value(),
+                                names.get(member.value()),
+                                member.equals(group.admin()),
+                                member.equals(viewer)))
                         .toList(),
                 group.inviteCode().value(),
                 group.admin().equals(viewer));

@@ -7,6 +7,7 @@ import {
   join,
   myGroups,
   regenerateInviteLink,
+  removeMember,
 } from '../../../core/api/generated/functions';
 import {
   CreateGroupRequest,
@@ -41,6 +42,9 @@ export type JoinOutcome =
 
 export type RegenerateOutcome =
   { readonly status: 'regenerated'; readonly group: Group } | { readonly status: 'failed' };
+
+/** `failed` covers every refusal too: the page offers it only to whom the API allows it. */
+export type RemoveMemberOutcome = { readonly status: 'removed' } | { readonly status: 'failed' };
 
 /** The signed-in User's Groups, with the API's errors turned into outcomes a page can show. */
 @Injectable({ providedIn: 'root' })
@@ -95,6 +99,19 @@ export class GroupsApi {
         status: 'regenerated',
         group: await this.api.invoke(regenerateInviteLink, { groupId }),
       };
+    } catch {
+      return { status: 'failed' };
+    }
+  }
+
+  /**
+   * Ends a membership of the Group: the signed-in User leaves when `memberId` is their own, or the
+   * Admin removes another Member.
+   */
+  async removeMember(groupId: string, memberId: string): Promise<RemoveMemberOutcome> {
+    try {
+      await this.api.invoke(removeMember, { groupId, memberId });
+      return { status: 'removed' };
     } catch {
       return { status: 'failed' };
     }

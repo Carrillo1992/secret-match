@@ -162,6 +162,36 @@
         "tags" : [ "groups" ]
       }
     },
+    "/api/v1/groups/{groupId}/members/{memberId}" : {
+      "delete" : {
+        "description" : "A Member leaves when memberId is their own id; only the Admin can remove someone else, and the Admin cannot leave. The removed Member is emailed.",
+        "operationId" : "removeMember",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "memberId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Leave the Group, or remove a Member from it",
+        "tags" : [ "groups" ]
+      }
+    },
     "/api/v1/memberships" : {
       "post" : {
         "description" : "A User who is a Member already just gets the Group back. A code that matches no Group's current Invite Link is a 404 that says nothing about any Group.",
@@ -502,9 +532,18 @@
           },
           "displayName" : {
             "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Identifies the Member in the Group, e.g. to remove them."
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "Whether this is the signed-in User."
           }
         },
-        "required" : [ "admin", "displayName" ]
+        "required" : [ "admin", "displayName", "id", "you" ]
       },
       "MembershipResponse" : {
         "type" : "object",

@@ -29,6 +29,14 @@ public interface Groups {
      */
     boolean addMember(GroupId group, MemberId user, Instant joinedAt);
 
+    /**
+     * Ends this User's membership of the Group. Safe when the same Member is removed twice at once: only one
+     * of them removes them.
+     *
+     * @return whether they stopped being a Member just now
+     */
+    boolean removeMember(GroupId group, MemberId user);
+
     /** Stores the Group's current Invite Link code; the previous one stops matching. */
     void saveInviteCode(Group group);
 }

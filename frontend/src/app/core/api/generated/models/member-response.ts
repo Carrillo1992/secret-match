@@ -4,4 +4,14 @@
 export interface MemberResponse {
   admin: boolean;
   displayName: string;
+
+  /**
+   * Identifies the Member in the Group, e.g. to remove them.
+   */
+  id: string;
+
+  /**
+   * Whether this is the signed-in User.
+   */
+  you: boolean;
 }

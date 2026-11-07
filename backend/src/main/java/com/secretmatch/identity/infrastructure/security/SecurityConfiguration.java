@@ -51,6 +51,9 @@ class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/verification-emails", "/api/v1/email-verifications")
                         .permitAll()
+                        // A User who forgot their password is signed out (#18).
+                        .requestMatchers(HttpMethod.POST, "/api/v1/password-reset-emails", "/api/v1/password-resets")
+                        .permitAll()
                         // Sessions are opened with a password or a Google ID token, and kept or ended with the
                         // refresh cookie.
                         .requestMatchers(

@@ -37,4 +37,9 @@ class JpaRefreshTokens implements RefreshTokens {
     public void revokeOtherSessions(UserId userId, SessionId kept, Instant now) {
         repository.revokeOtherSessions(userId.value(), kept.value(), now);
     }
+
+    @Override
+    public void revokeAllSessions(UserId userId, Instant now) {
+        repository.revokeAllSessions(userId.value(), now);
+    }
 }

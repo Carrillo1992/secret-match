@@ -22,4 +22,7 @@ public interface RefreshTokens {
 
     /** Ends every session of the User except {@code kept}. */
     void revokeOtherSessions(UserId userId, SessionId kept, Instant now);
+
+    /** Ends every session of the User. */
+    void revokeAllSessions(UserId userId, Instant now);
 }

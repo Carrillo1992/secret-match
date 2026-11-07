@@ -93,6 +93,14 @@ public final class User {
         this.passwordHash = newPasswordHash;
     }
 
+    /**
+     * From now on, the User signs in with the new password, whatever they had before. Only for a User who has
+     * just proved they own the email through a Password Reset; a signed-in User uses {@link #changePassword}.
+     */
+    public void resetPassword(PasswordHash newPasswordHash) {
+        this.passwordHash = Objects.requireNonNull(newPasswordHash, "newPasswordHash");
+    }
+
     public UserId id() {
         return id;
     }

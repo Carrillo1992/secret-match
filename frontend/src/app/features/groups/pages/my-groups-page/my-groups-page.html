@@ -1,8 +1,14 @@
 <app-shell>
-  <button type="button" appButton="secondary" shellActions (click)="signOut()">
-    <svg lucideLogOut [size]="18"></svg>
-    Cerrar sesión
-  </button>
+  <div shellActions class="flex flex-wrap items-center gap-3">
+    <a appButton="secondary" routerLink="/profile">
+      <svg lucideUserRound [size]="18"></svg>
+      Perfil
+    </a>
+    <button type="button" appButton="secondary" (click)="signOut()">
+      <svg lucideLogOut [size]="18"></svg>
+      Cerrar sesión
+    </button>
+  </div>
 
   @if (signOutFailed()) {
     <p appAlert class="mb-6">No hemos podido cerrar la sesión. Inténtalo de nuevo en un momento.</p>

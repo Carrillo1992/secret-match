@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { LucideLogOut, LucidePlus } from '@lucide/angular';
+import { LucideLogOut, LucidePlus, LucideUserRound } from '@lucide/angular';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { CurrentUser } from '../../../../core/auth/current-user';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
@@ -30,6 +30,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
     RouterLink,
     LucideLogOut,
     LucidePlus,
+    LucideUserRound,
   ],
   templateUrl: './my-groups-page.html',
   providers: [CurrentUser],

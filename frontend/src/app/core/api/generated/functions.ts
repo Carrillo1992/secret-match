@@ -35,3 +35,7 @@ export type { Refresh$Params as Refresh$Params } from './fn/sessions/refresh';
 export { refresh as refresh } from './fn/sessions/refresh';
 export type { CurrentUser$Params as CurrentUser$Params } from './fn/sessions/current-user';
 export { currentUser as currentUser } from './fn/sessions/current-user';
+export type { ChangeDisplayName$Params as ChangeDisplayName$Params } from './fn/profile/change-display-name';
+export { changeDisplayName as changeDisplayName } from './fn/profile/change-display-name';
+export type { ChangePassword$Params as ChangePassword$Params } from './fn/profile/change-password';
+export { changePassword as changePassword } from './fn/profile/change-password';

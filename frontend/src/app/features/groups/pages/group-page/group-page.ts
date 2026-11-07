@@ -20,10 +20,7 @@ import {
   RegenerateStatus,
 } from '../../components/invite-link-card/invite-link-card';
 import { Member, MembersCard, Removal } from '../../components/members-card/members-card';
-import {
-  LeaveStatus,
-  ParticipationCard,
-} from '../../components/participation-card/participation-card';
+import { LeaveStatus, MembershipCard } from '../../components/membership-card/membership-card';
 import { euros, longExchangeDate } from '../../data-access/group-format';
 import { GroupsApi } from '../../data-access/groups-api';
 
@@ -39,7 +36,7 @@ import { GroupsApi } from '../../data-access/groups-api';
     TextLink,
     InviteLinkCard,
     MembersCard,
-    ParticipationCard,
+    MembershipCard,
     LucideCalendar,
     LucideChevronLeft,
     LucideSearchX,

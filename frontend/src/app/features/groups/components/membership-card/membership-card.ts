@@ -22,13 +22,13 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
  * confirmation. The Admin cannot, so they are pointed to deleting the Group instead.
  */
 @Component({
-  selector: 'app-participation-card',
+  selector: 'app-membership-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Button, TextLink, LucideLogOut],
   host: { class: 'block' },
   template: `
-    <section aria-labelledby="group-participation" class="rounded-card bg-surface p-5 shadow-card">
-      <h2 id="group-participation" class="font-display text-lg font-semibold">Tu participación</h2>
+    <section aria-labelledby="group-membership" class="rounded-card bg-surface p-5 shadow-card">
+      <h2 id="group-membership" class="font-display text-lg font-semibold">Tu participación</h2>
 
       @if (admin()) {
         <p class="mt-1.5 text-ink-muted">
@@ -36,9 +36,7 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
           borrarlo.
         </p>
       } @else {
-        <p class="mt-1.5 text-ink-muted">
-          Si sales, dejarás de ver este grupo. Podrás volver a unirte con el enlace de invitación.
-        </p>
+        <p class="mt-1.5 text-ink-muted">Si sales, dejarás de ver este grupo.</p>
 
         @if (status() === 'failed') {
           <p
@@ -77,7 +75,7 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
     </section>
   `,
 })
-export class ParticipationCard {
+export class MembershipCard {
   /** Whether the Member looking is the Admin, who cannot leave. */
   readonly admin = input.required<boolean>();
   readonly status = input<LeaveStatus>('idle');

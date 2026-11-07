@@ -224,8 +224,7 @@ describe('GroupPage', () => {
   });
 
   describe('leaving', () => {
-    const participation = () =>
-      page().querySelector('section[aria-labelledby="group-participation"]');
+    const membership = () => page().querySelector('section[aria-labelledby="group-membership"]');
     const button = (label: string) =>
       [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
 
@@ -233,7 +232,7 @@ describe('GroupPage', () => {
       http.expectOne(GROUP_URL).flush(navidad);
       await settle();
 
-      expect(text(participation())).toContain('Si sales, dejarás de ver este grupo');
+      expect(text(membership())).toContain('Si sales, dejarás de ver este grupo');
       button('Salir del grupo')?.click();
       await settle();
       expect(document.activeElement).toBe(button('Sí, salir'));
@@ -273,7 +272,7 @@ describe('GroupPage', () => {
       http.expectOne(`${MEMBERS_URL}/u-luis`).error(new ProgressEvent('error'), { status: 0 });
       await settle();
 
-      expect(text(participation()?.querySelector('[role="alert"]'))).toContain(
+      expect(text(membership()?.querySelector('[role="alert"]'))).toContain(
         'No hemos podido sacarte del grupo',
       );
       expect(text(page().querySelector('h1'))).toBe('Navidad en casa');
@@ -284,8 +283,8 @@ describe('GroupPage', () => {
       await settle();
 
       expect(button('Salir del grupo')).toBeUndefined();
-      expect(text(participation())).toContain('Como administrador no puedes salir del grupo');
-      expect(text(participation())).toContain('borrarlo');
+      expect(text(membership())).toContain('Como administrador no puedes salir del grupo');
+      expect(text(membership())).toContain('borrarlo');
     });
   });
 

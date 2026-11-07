@@ -13,6 +13,11 @@ export interface GroupSummaryResponse {
    */
   budget?: number;
   exchangeDate: string;
+
+  /**
+   * Whether its Exchange Date is over.
+   */
+  finished: boolean;
   id: string;
   memberCount: number;
   name: string;

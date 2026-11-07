@@ -13,6 +13,7 @@ export type DeleteStatus = 'idle' | 'deleting' | 'failed';
 /**
  * The Member's own place in the Group: a regular Member can leave it, behind an inline
  * confirmation. The Admin cannot; they can delete the Group instead, behind the same confirmation.
+ * Nobody leaves a finished Group, but its Admin can still delete it (#25).
  */
 @Component({
   selector: 'app-membership-card',
@@ -58,6 +59,10 @@ export type DeleteStatus = 'idle' | 'deleting' | 'failed';
             {{ deleteStatus() === 'deleting' ? 'Borrando…' : 'Borrar el grupo' }}
           </button>
         }
+      } @else if (finished()) {
+        <p class="mt-1.5 text-ink-muted">
+          El grupo ha finalizado, así que ya no puedes salir de él.
+        </p>
       } @else {
         <p class="mt-1.5 text-ink-muted">Si sales, dejarás de ver este grupo.</p>
 
@@ -96,6 +101,8 @@ export type DeleteStatus = 'idle' | 'deleting' | 'failed';
 export class MembershipCard {
   /** Whether the Member looking is the Admin, who cannot leave but can delete the Group. */
   readonly admin = input.required<boolean>();
+  /** Whether the Group is finished: it is read-only, so a Member can no longer leave it. */
+  readonly finished = input(false);
   readonly status = input<LeaveStatus>('idle');
   /** The Member confirmed: the page asks the API to take them out. */
   readonly leave = output();

@@ -24,6 +24,7 @@ const navidad = {
   ],
   inviteCode: 'q8Xf3kL0',
   admin: false,
+  finished: false,
 };
 const REGENERATE_URL = 'http://api.test/api/v1/groups/g-1/invite-link';
 const MEMBERS_URL = 'http://api.test/api/v1/groups/g-1/members';
@@ -567,6 +568,42 @@ describe('GroupPage', () => {
       button('Editar')?.click();
       await settle();
       expect(details()?.querySelector('[role="alert"]')).toBeNull();
+    });
+  });
+  describe('Finished Group', () => {
+    const button = (label: string) =>
+      [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
+    const notice = () => page().querySelector('[aria-labelledby="group-finished"]');
+
+    it('tells every Member the Group is finished, and offers nothing to change', async () => {
+      http.expectOne(GROUP_URL).flush({ ...navidad, finished: true });
+      await settle();
+
+      expect(text(notice())).toContain('Finalizado');
+      expect(text(notice())).toContain('El intercambio fue el jueves, 24 de diciembre de 2026');
+      expect(text(notice())).toContain('El grupo ya solo se puede consultar');
+      expect(page().querySelector('section[aria-labelledby="group-invite"]')).toBeNull();
+      expect(button('Salir del grupo')).toBeUndefined();
+      expect(text(page())).toContain('Abuela Carmen');
+    });
+
+    it('lets the Admin delete a finished Group, and nothing else', async () => {
+      http.expectOne(GROUP_URL).flush({ ...asAdmin, finished: true });
+      await settle();
+
+      expect(text(notice())).toContain('Finalizado');
+      expect(button('Editar')).toBeUndefined();
+      expect(button('Generar uno nuevo')).toBeUndefined();
+      expect(button('Quitar')).toBeUndefined();
+      expect(button('Borrar el grupo')).toBeDefined();
+    });
+
+    it('shows no notice while the Group is not finished', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      expect(notice()).toBeNull();
+      expect(button('Editar')).toBeDefined();
     });
   });
 });

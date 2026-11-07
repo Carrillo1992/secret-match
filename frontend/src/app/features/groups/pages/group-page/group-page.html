@@ -11,6 +11,26 @@
       {{ group.name }}
     </h1>
 
+    @if (group.finished) {
+      <section
+        aria-labelledby="group-finished"
+        class="mt-6 flex gap-3 rounded-card bg-surface p-5 shadow-card"
+      >
+        <div
+          class="flex size-10 shrink-0 items-center justify-center rounded-full bg-subtle text-ink"
+        >
+          <svg lucideCircleCheck [size]="20"></svg>
+        </div>
+        <div>
+          <h2 id="group-finished" class="font-display text-lg font-semibold">Finalizado</h2>
+          <p class="mt-1.5 text-ink-muted">
+            El intercambio fue el {{ exchangeDay(group.exchangeDate) }}. El grupo ya solo se puede
+            consultar.
+          </p>
+        </div>
+      </section>
+    }
+
     <app-group-details-card
       class="mt-6"
       [group]="group"
@@ -18,18 +38,20 @@
       (save)="edit($event)"
     />
 
-    <app-invite-link-card
-      class="mt-6"
-      [link]="inviteLink()"
-      [admin]="group.admin"
-      [regenerateStatus]="regenerateStatus()"
-      (regenerate)="regenerateInviteLink()"
-    />
+    @if (!group.finished) {
+      <app-invite-link-card
+        class="mt-6"
+        [link]="inviteLink()"
+        [admin]="group.admin"
+        [regenerateStatus]="regenerateStatus()"
+        (regenerate)="regenerateInviteLink()"
+      />
+    }
 
     <app-members-card
       class="mt-6"
       [members]="group.members"
-      [canRemove]="group.admin"
+      [canRemove]="group.admin && !group.finished"
       [removal]="removal()"
       (remove)="removeMember($event)"
     />
@@ -37,6 +59,7 @@
     <app-membership-card
       class="mt-6"
       [admin]="group.admin"
+      [finished]="group.finished"
       [status]="leaveStatus()"
       (leave)="leave()"
       [deleteStatus]="deleteStatus()"

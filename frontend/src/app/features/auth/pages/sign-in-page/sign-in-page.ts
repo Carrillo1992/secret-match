@@ -8,15 +8,13 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideLogIn } from '@lucide/angular';
 import { AuthSession, SignInOutcome } from '../../../../core/auth/auth-session';
+import { forgetReturnPath, HOME, safeReturnPath } from '../../../../core/auth/return-path';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 
 type SubmitError = Exclude<SignInOutcome, 'signed-in'>;
-
-/** Where a signed-in User lands unless they were on their way somewhere else. */
-const HOME = '/home';
 
 @Component({
   selector: 'app-sign-in-page',
@@ -27,7 +25,10 @@ const HOME = '/home';
 export class SignInPage {
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);
-  private readonly next = inject(ActivatedRoute).snapshot.queryParamMap.get('next');
+  /** Where the User was going, if it is a page inside the SPA. */
+  protected readonly next = safeReturnPath(
+    inject(ActivatedRoute).snapshot.queryParamMap.get('next'),
+  );
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     email: ['', Validators.required],
@@ -53,15 +54,10 @@ export class SignInPage {
     const outcome = await this.session.signIn(email.trim(), password);
     this.sending.set(false);
     if (outcome === 'signed-in') {
-      await this.router.navigateByUrl(this.destination());
+      forgetReturnPath();
+      await this.router.navigateByUrl(this.next ?? HOME);
     } else {
       this.submitError.set(outcome);
     }
-  }
-
-  /** Only a path inside the SPA: `//host` or `https://…` would send the User off-site. */
-  private destination(): string {
-    const next = this.next ?? '';
-    return next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : HOME;
   }
 }

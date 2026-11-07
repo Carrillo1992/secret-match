@@ -4,6 +4,7 @@ import com.secretmatch.group.domain.Budget;
 import com.secretmatch.group.domain.Group;
 import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.GroupName;
+import com.secretmatch.group.domain.InviteCode;
 import com.secretmatch.group.domain.MemberId;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -41,6 +42,9 @@ class GroupEntity {
     @Column(name = "admin_id", nullable = false)
     private UUID adminId;
 
+    @Column(name = "invite_code", nullable = false)
+    private String inviteCode;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -59,6 +63,7 @@ class GroupEntity {
         entity.exchangeDate = group.exchangeDate();
         entity.budget = group.budget().map(Budget::euros).orElse(null);
         entity.adminId = group.admin().value();
+        entity.inviteCode = group.inviteCode().value();
         entity.createdAt = group.createdAt();
         group.members().forEach(member -> entity.members.add(new MemberEmbeddable(member.value(), group.createdAt())));
         return entity;
@@ -72,6 +77,7 @@ class GroupEntity {
                 budget == null ? null : new Budget(budget),
                 new MemberId(adminId),
                 members.stream().map(member -> new MemberId(member.userId)).toList(),
+                new InviteCode(inviteCode),
                 createdAt);
     }
 

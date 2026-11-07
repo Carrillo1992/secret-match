@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
+import { forgetReturnPath, rememberReturnPath } from '../../../../core/auth/return-path';
 import { VerifyEmailPage } from './verify-email-page';
 
 const VERIFY_URL = 'http://api.test/api/v1/email-verifications';
@@ -54,6 +55,18 @@ describe('VerifyEmailPage', () => {
 
     expect(heading()).toContain('¡Correo confirmado!');
     expect(page().querySelector('a[href="/sign-in"]')?.textContent).toContain('Iniciar sesión');
+  });
+
+  it('signs in towards where the User was going when they signed up, such as an Invite Link', async () => {
+    rememberReturnPath('/join/q8Xf3kL0');
+    await harness.navigateByUrl('/verify-email?token=tok-123');
+    http.expectOne(VERIFY_URL).flush(null, { status: 204, statusText: 'No Content' });
+    await settle();
+
+    expect(
+      page().querySelector('a[href="/sign-in?next=%2Fjoin%2Fq8Xf3kL0"]')?.textContent,
+    ).toContain('Iniciar sesión');
+    forgetReturnPath();
   });
 
   it('takes the token out of the address bar', async () => {

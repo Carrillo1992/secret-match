@@ -47,7 +47,7 @@ How much each gift in a Group should cost, in euros. Optional and informational 
 _Avoid_: Price limit, spending cap, max price
 
 **Invite Link**:
-The single shareable link through which Users join a Group. Regenerating it invalidates the previous one, and it stops working once the Draw is made.
+The single shareable link through which Users join a Group. Regenerating it invalidates the previous one, and it stops working once the Draw is made. Its random, unguessable part is the Invite Link's code (`InviteCode` in code); joining through it makes the User a Member (a membership).
 _Avoid_: Invitation code, join code, invitation
 
 ### Draw

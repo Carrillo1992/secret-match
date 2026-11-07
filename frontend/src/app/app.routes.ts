@@ -58,5 +58,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/groups/pages/group-page/group-page').then((m) => m.GroupPage),
   },
+  {
+    // The Invite Link. Not guarded: a signed-out visitor is invited to sign up or sign in first.
+    path: 'join/:code',
+    title: 'Únete al grupo · SecretMatch',
+    loadComponent: () =>
+      import('./features/groups/pages/join-page/join-page').then((m) => m.JoinPage),
+  },
   { path: '**', redirectTo: '' },
 ];

@@ -68,6 +68,6 @@
 
   <p class="mt-6 text-center">
     ¿No tienes cuenta?
-    <a routerLink="/sign-up" appLink>Crea una</a>
+    <a routerLink="/sign-up" [queryParams]="next ? { next } : {}" appLink>Crea una</a>
   </p>
 </app-sheet-layout>

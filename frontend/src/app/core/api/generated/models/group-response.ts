@@ -5,11 +5,21 @@ import { MemberResponse } from '../models/member-response';
 export interface GroupResponse {
 
   /**
+   * Whether the signed-in User is its Admin.
+   */
+  admin: boolean;
+
+  /**
    * In euros; absent when the Group has no budget.
    */
   budget?: number;
   exchangeDate: string;
   id: string;
+
+  /**
+   * The code of the Group's Invite Link: the SPA builds the link from it.
+   */
+  inviteCode: string;
 
   /**
    * The Admin first.

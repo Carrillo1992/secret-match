@@ -58,6 +58,14 @@ class GroupController {
         return GroupResponse.of(myGroups.group(new GroupId(groupId), signedIn(accessToken)));
     }
 
+    @PostMapping(value = "/{groupId}/invite-link", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Regenerate the Group's Invite Link",
+            description = "Only the Admin can. The previous Invite Link stops working.")
+    GroupResponse regenerateInviteLink(@AuthenticationPrincipal Jwt accessToken, @PathVariable UUID groupId) {
+        return GroupResponse.of(myGroups.regenerateInviteLink(new GroupId(groupId), signedIn(accessToken)));
+    }
+
     private static MemberId signedIn(Jwt accessToken) {
         return new MemberId(UUID.fromString(accessToken.getSubject()));
     }

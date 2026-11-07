@@ -7,6 +7,7 @@ import {
   LucideUnlink,
   LucideWifiOff,
 } from '@lucide/angular';
+import { rememberedReturnPath } from '../../../../core/auth/return-path';
 import { Button } from '../../../../shared/ui/button/button';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
@@ -45,6 +46,9 @@ export class VerifyEmailPage {
   protected readonly newLink = inject(NewVerificationLink);
   protected readonly rules = SIGN_UP_RULES;
   protected readonly status = signal<VerifyEmailStatus>('verifying');
+  /** Where the User was going when they signed up, e.g. an Invite Link. */
+  private readonly next = rememberedReturnPath();
+  protected readonly signInParams = this.next ? { next: this.next } : {};
 
   constructor() {
     const route = inject(ActivatedRoute);

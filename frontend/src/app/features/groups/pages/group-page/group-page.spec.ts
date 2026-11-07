@@ -22,7 +22,10 @@ const navidad = {
     { displayName: 'Abuela Carmen', admin: true },
     { displayName: 'Luis', admin: false },
   ],
+  inviteCode: 'q8Xf3kL0',
+  admin: false,
 };
+const REGENERATE_URL = 'http://api.test/api/v1/groups/g-1/invite-link';
 
 describe('GroupPage', () => {
   let http: HttpTestingController;
@@ -121,5 +124,91 @@ describe('GroupPage', () => {
     await settle();
 
     expect(text(page().querySelector('h1'))).toBe('Navidad en casa');
+  });
+
+  describe('Invite Link', () => {
+    const inviteCard = () => page().querySelector('section[aria-labelledby="group-invite"]');
+    const button = (label: string) =>
+      [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
+    const shownLink = () =>
+      inviteCard()?.querySelector<HTMLInputElement>('input[readonly]')?.value ?? '';
+
+    it('shows every Member the link to share, and lets them copy it', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      expect(text(inviteCard())).toContain('Invita a tu gente');
+      expect(shownLink()).toBe(`${location.origin}/join/q8Xf3kL0`);
+      button('Copiar enlace')?.click();
+      await settle();
+
+      expect(writeText).toHaveBeenCalledWith(`${location.origin}/join/q8Xf3kL0`);
+      expect(text(inviteCard()?.querySelector('[role="status"]'))).toBe('¡Enlace copiado!');
+    });
+
+    it('does not offer a regular Member to regenerate the link', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      expect(button('Generar uno nuevo')).toBeUndefined();
+    });
+
+    it('lets the Admin regenerate the link after confirming that the current one stops working', async () => {
+      http.expectOne(GROUP_URL).flush({ ...navidad, admin: true });
+      await settle();
+
+      button('Generar uno nuevo')?.click();
+      await settle();
+      expect(text(inviteCard())).toContain('El enlace actual dejará de funcionar');
+      expect(document.activeElement).toBe(button('Sí, generar uno nuevo'));
+      http.expectNone(REGENERATE_URL);
+      button('Sí, generar uno nuevo')?.click();
+      await settle();
+
+      const regenerate = http.expectOne(REGENERATE_URL);
+      expect(regenerate.request.method).toBe('POST');
+      regenerate.flush({ ...navidad, admin: true, inviteCode: 'Zz9-new' });
+      await settle();
+
+      expect(shownLink()).toBe(`${location.origin}/join/Zz9-new`);
+      expect(text(inviteCard()?.querySelector('[role="status"]'))).toBe(
+        'Enlace nuevo listo. El anterior ya no funciona.',
+      );
+      expect(button('Sí, generar uno nuevo')).toBeUndefined();
+    });
+
+    it('keeps the current link when the Admin cancels', async () => {
+      http.expectOne(GROUP_URL).flush({ ...navidad, admin: true });
+      await settle();
+
+      button('Generar uno nuevo')?.click();
+      await settle();
+      button('Cancelar')?.click();
+      await settle();
+
+      expect(document.activeElement).toBe(button('Generar uno nuevo'));
+      http.expectNone(REGENERATE_URL);
+      expect(button('Sí, generar uno nuevo')).toBeUndefined();
+      expect(shownLink()).toBe(`${location.origin}/join/q8Xf3kL0`);
+    });
+
+    it('says so when the link could not be regenerated, and keeps the current one', async () => {
+      http.expectOne(GROUP_URL).flush({ ...navidad, admin: true });
+      await settle();
+
+      button('Generar uno nuevo')?.click();
+      await settle();
+      button('Sí, generar uno nuevo')?.click();
+      await settle();
+      http.expectOne(REGENERATE_URL).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      expect(text(inviteCard()?.querySelector('[role="alert"]'))).toContain(
+        'No hemos podido generar un enlace nuevo',
+      );
+      expect(shownLink()).toBe(`${location.origin}/join/q8Xf3kL0`);
+    });
   });
 });

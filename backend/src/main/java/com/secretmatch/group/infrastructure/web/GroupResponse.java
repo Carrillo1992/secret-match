@@ -18,7 +18,15 @@ record GroupResponse(
         BigDecimal budget,
 
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The Admin first.")
-        List<MemberResponse> members) {
+        List<MemberResponse> members,
+
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "The code of the Group's Invite Link: the SPA builds the link from it.")
+        String inviteCode,
+
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "Whether the signed-in User is its Admin.")
+        boolean admin) {
 
     static GroupResponse of(GroupDetails group) {
         return new GroupResponse(
@@ -28,7 +36,9 @@ record GroupResponse(
                 group.budget(),
                 group.members().stream()
                         .map(member -> new MemberResponse(member.displayName(), member.admin()))
-                        .toList());
+                        .toList(),
+                group.inviteCode(),
+                group.admin());
     }
 
     record MemberResponse(

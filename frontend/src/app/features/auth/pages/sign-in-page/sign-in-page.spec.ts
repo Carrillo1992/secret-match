@@ -6,6 +6,7 @@ import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { authInterceptor } from '../../../../core/auth/auth.interceptor';
+import { rememberedReturnPath, rememberReturnPath } from '../../../../core/auth/return-path';
 import { SignInPage } from './sign-in-page';
 
 const SIGN_IN_URL = 'http://api.test/api/v1/sessions';
@@ -115,6 +116,26 @@ describe('SignInPage', () => {
     await settle();
 
     expect(TestBed.inject(Router).url).toBe('/groups/1');
+  });
+
+  it('keeps where the User was going when they go to create an account instead', async () => {
+    await harness.navigateByUrl('/sign-in?next=%2Fjoin%2Fq8Xf3kL0');
+
+    expect(
+      [...page().querySelectorAll('a')]
+        .find((a) => a.textContent?.includes('Crea una'))
+        ?.getAttribute('href'),
+    ).toBe('/sign-up?next=%2Fjoin%2Fq8Xf3kL0');
+  });
+
+  it('forgets a destination remembered at sign-up once the User is signed in', async () => {
+    rememberReturnPath('/join/q8Xf3kL0');
+    await harness.navigateByUrl('/sign-in?next=%2Fgroups%2F1');
+    await fillAndSubmit();
+    http.expectOne(SIGN_IN_URL).flush(signedIn);
+    await settle();
+
+    expect(rememberedReturnPath()).toBeNull();
   });
 
   it('ignores a "next" that points outside the app', async () => {

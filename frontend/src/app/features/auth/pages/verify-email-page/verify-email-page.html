@@ -13,7 +13,9 @@
           ¡Correo confirmado!
         </app-status-header>
         <p class="mt-2 text-ink-muted">Tu cuenta ya está lista.</p>
-        <a routerLink="/sign-in" appButton class="mt-6 w-full">Iniciar sesión</a>
+        <a routerLink="/sign-in" [queryParams]="signInParams" appButton class="mt-6 w-full"
+          >Iniciar sesión</a
+        >
       }
       @case ('expired') {
         <app-status-header>

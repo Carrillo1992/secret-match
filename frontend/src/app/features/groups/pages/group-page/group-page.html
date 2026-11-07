@@ -36,6 +36,14 @@
       </div>
     </dl>
 
+    <app-invite-link-card
+      class="mt-6"
+      [link]="inviteLink()"
+      [admin]="group.admin"
+      [regenerateStatus]="regenerateStatus()"
+      (regenerate)="regenerateInviteLink()"
+    />
+
     <section aria-labelledby="group-members" class="mt-6 rounded-card bg-surface p-5 shadow-card">
       <h2 id="group-members" class="font-display text-lg font-semibold">
         Miembros ({{ group.members.length }})

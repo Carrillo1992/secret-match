@@ -1,8 +1,10 @@
 package com.secretmatch.draw.domain;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.random.RandomGenerator;
 
@@ -29,15 +31,18 @@ public final class DrawEngine {
                 allowed[giver][receiver] = giver != receiver && !excluded(exclusions, ordered, giver, receiver);
             }
         }
-        int[] receiverOf = new Search(allowed, random).run();
-        if (receiverOf.length == 0) {
-            return new DrawResult.NoValidDraw();
-        }
+        return new Search(allowed, random)
+                .run()
+                .<DrawResult>map(receiverOf -> new DrawResult.Drawn(assignments(ordered, receiverOf)))
+                .orElseGet(DrawResult.NoValidDraw::new);
+    }
+
+    private static Set<Assignment> assignments(List<MemberId> ordered, int[] receiverOf) {
         Set<Assignment> assignments = new HashSet<>();
-        for (int giver = 0; giver < size; giver++) {
+        for (int giver = 0; giver < receiverOf.length; giver++) {
             assignments.add(new Assignment(ordered.get(giver), ordered.get(receiverOf[giver])));
         }
-        return new DrawResult.Drawn(assignments);
+        return assignments;
     }
 
     private static boolean excluded(Set<Exclusion> exclusions, List<MemberId> ordered, int giver, int receiver) {
@@ -69,9 +74,9 @@ public final class DrawEngine {
             this.giverOf = filled(size);
         }
 
-        /** The Receiver of each Giver, or an empty array when no valid Draw exists. */
-        int[] run() {
-            return assignRemaining(size) ? receiverOf.clone() : new int[0];
+        /** The Receiver of each Giver, or empty when no valid Draw exists. */
+        Optional<int[]> run() {
+            return assignRemaining(size) ? Optional.of(receiverOf.clone()) : Optional.empty();
         }
 
         private boolean assignRemaining(int remaining) {
@@ -143,7 +148,7 @@ public final class DrawEngine {
                     candidates[count++] = receiver;
                 }
             }
-            return java.util.Arrays.copyOf(candidates, count);
+            return Arrays.copyOf(candidates, count);
         }
 
         /** Free Receiver, not forbidden, and not someone who already gives to this Giver (no reciprocal pair). */
@@ -164,7 +169,7 @@ public final class DrawEngine {
 
         private static int[] filled(int size) {
             int[] values = new int[size];
-            java.util.Arrays.fill(values, NONE);
+            Arrays.fill(values, NONE);
             return values;
         }
     }

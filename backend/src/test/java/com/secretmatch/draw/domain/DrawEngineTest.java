@@ -46,17 +46,16 @@ class DrawEngineTest {
 
         DrawResult result = DrawEngine.draw(members, Set.of(), new Random(1));
 
-        assertThat(result).isInstanceOf(DrawResult.Drawn.class);
-        assertHardRules(members, Set.of(), ((DrawResult.Drawn) result).assignments());
+        assertHardRules(members, Set.of(), assignmentsOf(result));
     }
 
     @Test
     @DisplayName("a Draw and its Assignments print without revealing who gives to whom")
     void printsWithoutRevealingAssignments() {
-        DrawResult.Drawn drawn = (DrawResult.Drawn) DrawEngine.draw(members(4), Set.of(), new Random(1));
+        DrawResult result = DrawEngine.draw(members(4), Set.of(), new Random(1));
 
-        assertThat(drawn.toString()).isEqualTo("Drawn[redacted]");
-        assertThat(drawn.assignments())
+        assertThat(result.toString()).isEqualTo("Drawn[redacted]");
+        assertThat(assignmentsOf(result))
                 .allSatisfy(assignment -> assertThat(assignment.toString()).isEqualTo("Assignment[redacted]"));
     }
 
@@ -93,8 +92,7 @@ class DrawEngineTest {
         DrawResult result = DrawEngine.draw(members, exclusions, new Random(seed));
 
         if (validDrawExists(members, exclusions)) {
-            assertThat(result).isInstanceOf(DrawResult.Drawn.class);
-            assertHardRules(members, exclusions, ((DrawResult.Drawn) result).assignments());
+            assertHardRules(members, exclusions, assignmentsOf(result));
         } else {
             assertThat(result).isEqualTo(new DrawResult.NoValidDraw());
         }
@@ -110,7 +108,7 @@ class DrawEngineTest {
         DrawResult first = DrawEngine.draw(new LinkedHashSet<>(members), exclusions, new Random(42));
         DrawResult second = DrawEngine.draw(reversed, exclusions, new Random(42));
 
-        assertThat(((DrawResult.Drawn) second).assignments()).isEqualTo(((DrawResult.Drawn) first).assignments());
+        assertThat(assignmentsOf(second)).isEqualTo(assignmentsOf(first));
     }
 
     @Test
@@ -119,8 +117,7 @@ class DrawEngineTest {
         Set<MemberId> members = members(12);
 
         Set<Set<Assignment>> draws = LongStream.range(0, 20)
-                .mapToObj(
-                        seed -> ((DrawResult.Drawn) DrawEngine.draw(members, Set.of(), new Random(seed))).assignments())
+                .mapToObj(seed -> assignmentsOf(DrawEngine.draw(members, Set.of(), new Random(seed))))
                 .collect(Collectors.toSet());
 
         assertThat(draws).hasSizeGreaterThan(1);
@@ -160,8 +157,24 @@ class DrawEngineTest {
 
         DrawResult result = DrawEngine.draw(Set.copyOf(members), exclusions, new Random(seed));
 
-        assertThat(result).isInstanceOf(DrawResult.Drawn.class);
-        assertHardRules(Set.copyOf(members), exclusions, ((DrawResult.Drawn) result).assignments());
+        assertHardRules(Set.copyOf(members), exclusions, assignmentsOf(result));
+    }
+
+    @ParameterizedTest(name = "seed {0}")
+    @MethodSource("seeds")
+    @Timeout(value = 1, unit = TimeUnit.SECONDS, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    @DisplayName("in sparse Groups of 50, quickly settles whether a Draw exists, and any Draw keeps every hard rule")
+    void quicklySettlesSparseLargeGroups(long seed) {
+        Random shape = new Random(seed);
+        Set<MemberId> members = members(50);
+        // Only 3–15 % of the pairs stay allowed: many of these Groups have no valid Draw at all.
+        Set<Exclusion> exclusions = randomExclusions(members, 0.85 + shape.nextDouble() * 0.12, shape);
+
+        DrawResult result = DrawEngine.draw(members, exclusions, new Random(seed));
+
+        if (result instanceof DrawResult.Drawn drawn) {
+            assertHardRules(members, exclusions, drawn.assignments());
+        }
     }
 
     static LongStream seeds() {
@@ -195,7 +208,7 @@ class DrawEngineTest {
                 MemberId giver = givers.get(i);
                 MemberId receiver = receivers[i];
                 boolean reciprocal = receivers[givers.indexOf(receiver)].equals(giver);
-                boolean excluded = exclusions.contains(new Exclusion(giver, receiver));
+                boolean excluded = excluded(exclusions, giver, receiver);
                 if (reciprocal || excluded) {
                     return false;
                 }
@@ -227,11 +240,24 @@ class DrawEngineTest {
                     .as("no reciprocal pair")
                     .noneMatch(other -> other.giver().equals(assignment.receiver())
                             && other.receiver().equals(assignment.giver()));
-            assertThat(exclusions)
+            assertThat(excluded(exclusions, assignment.giver(), assignment.receiver()))
                     .as("no Exclusion is violated")
-                    .noneMatch(exclusion -> Set.of(exclusion.first(), exclusion.second())
-                            .equals(Set.of(assignment.giver(), assignment.receiver())));
+                    .isFalse();
         }
+    }
+
+    private static Set<Assignment> assignmentsOf(DrawResult result) {
+        return switch (result) {
+            case DrawResult.Drawn drawn -> drawn.assignments();
+            case DrawResult.NoValidDraw noValidDraw -> throw new AssertionError("expected a Draw, got no valid Draw");
+        };
+    }
+
+    /** Whether some Exclusion names these two Members, in either order: compared as an unordered pair. */
+    private static boolean excluded(Set<Exclusion> exclusions, MemberId one, MemberId other) {
+        return exclusions.stream()
+                .anyMatch(exclusion ->
+                        Set.of(exclusion.first(), exclusion.second()).equals(Set.of(one, other)));
     }
 
     private static Set<MemberId> members(int size) {

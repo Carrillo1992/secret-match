@@ -33,6 +33,10 @@ export type { DeleteExclusion$Params as DeleteExclusion$Params } from './fn/excl
 export { deleteExclusion as deleteExclusion } from './fn/exclusions/delete-exclusion';
 export type { Join$Params as Join$Params } from './fn/invite-links/join';
 export { join as join } from './fn/invite-links/join';
+export type { SendResetLink$Params as SendResetLink$Params } from './fn/password-reset/send-reset-link';
+export { sendResetLink as sendResetLink } from './fn/password-reset/send-reset-link';
+export type { ResetPassword$Params as ResetPassword$Params } from './fn/password-reset/reset-password';
+export { resetPassword as resetPassword } from './fn/password-reset/reset-password';
 export type { SignIn$Params as SignIn$Params } from './fn/sessions/sign-in';
 export { signIn as signIn } from './fn/sessions/sign-in';
 export type { SignOut$Params as SignOut$Params } from './fn/sessions/sign-out';

@@ -38,6 +38,23 @@ export const routes: Routes = [
       import('./features/auth/pages/sign-in-page/sign-in-page').then((m) => m.SignInPage),
   },
   {
+    path: 'forgot-password',
+    title: 'Recuperar contraseña · SecretMatch',
+    loadComponent: () =>
+      import('./features/auth/pages/forgot-password-page/forgot-password-page').then(
+        (m) => m.ForgotPasswordPage,
+      ),
+  },
+  {
+    // The link in the Password Reset email (built by the API's forgotten-password use case).
+    path: 'reset-password',
+    title: 'Nueva contraseña · SecretMatch',
+    loadComponent: () =>
+      import('./features/auth/pages/reset-password-page/reset-password-page').then(
+        (m) => m.ResetPasswordPage,
+      ),
+  },
+  {
     path: 'home',
     title: 'Mis grupos · SecretMatch',
     canActivate: [authGuard],

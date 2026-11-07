@@ -18,6 +18,8 @@ export type { JoinGroupRequest } from './models/join-group-request';
 export type { LinkTokenRequest } from './models/link-token-request';
 export type { MemberResponse } from './models/member-response';
 export type { MembershipResponse } from './models/membership-response';
+export type { PasswordResetEmailRequest } from './models/password-reset-email-request';
+export type { PasswordResetRequest } from './models/password-reset-request';
 export type { SignInRequest } from './models/sign-in-request';
 export type { SignUpRequest } from './models/sign-up-request';
 export type { SignUpResponse } from './models/sign-up-response';

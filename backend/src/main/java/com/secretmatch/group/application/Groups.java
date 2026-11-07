@@ -40,6 +40,14 @@ public interface Groups {
     /** Stores the Group's name, Exchange Date and budget. */
     void saveDetails(Group group);
 
+    /**
+     * Deletes the Group and its Members. Safe when the same Group is deleted twice at once: only one of them
+     * deletes it.
+     *
+     * @return whether it was deleted just now
+     */
+    boolean delete(GroupId group);
+
     /** Stores the Group's current Invite Link code; the previous one stops matching. */
     void saveInviteCode(Group group);
 }

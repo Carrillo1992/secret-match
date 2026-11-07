@@ -65,6 +65,11 @@ class JpaGroups implements Groups {
     }
 
     @Override
+    public boolean delete(GroupId group) {
+        return repository.deleteGroup(group.value()) == 1;
+    }
+
+    @Override
     public void saveInviteCode(Group group) {
         if (repository.updateInviteCode(group.id().value(), group.inviteCode().value()) != 1) {
             throw new IllegalStateException("no stored Group to change");

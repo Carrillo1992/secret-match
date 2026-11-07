@@ -86,6 +86,16 @@ class GroupController {
         return GroupResponse.of(myGroups.regenerateInviteLink(new GroupId(groupId), signedIn(accessToken)));
     }
 
+    @DeleteMapping("/{groupId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Delete the Group",
+            description = "Only the Admin can, in any state. Everything in the Group is deleted and every other"
+                    + " Member is emailed.")
+    void deleteGroup(@AuthenticationPrincipal Jwt accessToken, @PathVariable UUID groupId) {
+        myGroups.delete(new GroupId(groupId), signedIn(accessToken));
+    }
+
     @DeleteMapping("/{groupId}/members/{memberId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(

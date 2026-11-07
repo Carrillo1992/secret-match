@@ -106,6 +106,26 @@
       }
     },
     "/api/v1/groups/{groupId}" : {
+      "delete" : {
+        "description" : "Only the Admin can, in any state. Everything in the Group is deleted and every other Member is emailed.",
+        "operationId" : "deleteGroup",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Delete the Group",
+        "tags" : [ "groups" ]
+      },
       "get" : {
         "operationId" : "group",
         "parameters" : [ {

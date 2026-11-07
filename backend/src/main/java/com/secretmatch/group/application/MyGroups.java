@@ -133,6 +133,38 @@ public class MyGroups {
         }
     }
 
+    /**
+     * The Admin deletes the Group, in any state, with everything in it. Every other Member is emailed.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code by} is not one of its Members
+     * @throws com.secretmatch.group.domain.AdminOnlyException if {@code by} is not its Admin
+     */
+    @Transactional
+    public void delete(GroupId id, MemberId by) {
+        Group group = memberView(id, by);
+        List<MemberId> toTell = group.delete(by);
+        // Before the Group's rows go, so the other modules can still delete theirs that point at it.
+        events.publishEvent(new GroupDeleted(group.id().value()));
+        if (!groups.delete(group.id())) {
+            // Deleted at the same moment by another request, which did the rest.
+            return;
+        }
+        toTell.forEach(member -> emailGroupDeleted(group, member));
+    }
+
+    /** Catalogue email 7: "the Group was deleted", to each Member but the Admin. */
+    private void emailGroupDeleted(Group group, MemberId member) {
+        String admin = users.displayNamesOf(List.of(group.admin().value()))
+                .get(group.admin().value());
+        String to = users.emailOf(member.value()).orElseThrow(() -> new IllegalStateException("a Member has no User"));
+        String groupName = group.name().value();
+        events.publishEvent(new EmailRequested(
+                to, "Se ha borrado el grupo «%s»".formatted(groupName), """
+                %s, que administraba el grupo «%s», lo ha borrado junto con todo lo que había en él.
+
+                Ya no lo verás en SecretMatch.""".formatted(admin, groupName), "/home"));
+    }
+
     /** Catalogue email 6: "you were removed", to the removed Member. */
     private void emailRemovedMember(Group group, MemberId removed) {
         String admin = users.displayNamesOf(List.of(group.admin().value()))

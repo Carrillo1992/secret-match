@@ -48,6 +48,16 @@ interface GroupRepository extends JpaRepository<GroupEntity, UUID> {
     @Query(value = "DELETE FROM group_members WHERE group_id = :groupId AND user_id = :userId", nativeQuery = true)
     int removeMember(UUID groupId, UUID userId);
 
+    /**
+     * Deletes the Group row directly, like {@link #removeMember}, so two deletions at once delete it once. Its
+     * Members go with it ({@code ON DELETE CASCADE}).
+     *
+     * @return 1 if the Group was deleted, 0 if it was gone already
+     */
+    @Modifying
+    @Query(value = "DELETE FROM groups WHERE id = :groupId", nativeQuery = true)
+    int deleteGroup(UUID groupId);
+
     @Modifying
     @Query("""
             UPDATE GroupEntity g SET g.name = :name, g.exchangeDate = :exchangeDate, g.budget = :budget

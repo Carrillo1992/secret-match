@@ -26,4 +26,8 @@ interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity, Strin
     @Query("UPDATE RefreshTokenEntity t SET t.revokedAt = :now"
             + " WHERE t.userId = :userId AND t.sessionId <> :kept AND t.revokedAt IS NULL")
     int revokeOtherSessions(UUID userId, UUID kept, Instant now);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE RefreshTokenEntity t SET t.revokedAt = :now WHERE t.userId = :userId AND t.revokedAt IS NULL")
+    int revokeAllSessions(UUID userId, Instant now);
 }

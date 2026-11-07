@@ -41,6 +41,13 @@
           Escribe tu contraseña.
         </p>
       }
+      <a
+        routerLink="/forgot-password"
+        [state]="{ email: form.controls.email.value.trim() }"
+        appLink
+        class="self-start"
+        >¿Olvidaste tu contraseña?</a
+      >
     </div>
 
     @if (submitError(); as error) {

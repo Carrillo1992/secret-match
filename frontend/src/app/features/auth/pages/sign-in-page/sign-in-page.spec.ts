@@ -30,6 +30,7 @@ describe('SignInPage', () => {
           { path: 'sign-in', component: SignInPage },
           { path: 'home', component: Destination },
           { path: 'groups/1', component: Destination },
+          { path: 'forgot-password', component: Destination },
         ]),
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
@@ -181,6 +182,21 @@ describe('SignInPage', () => {
     expect(alert()).toContain('Inténtalo de nuevo');
     expect(page().querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
   });
+
+  it('offers a reset for a forgotten password, handing over the typed email outside the URL', async () => {
+    await harness.navigateByUrl('/sign-in');
+    type('Correo electrónico', ' ana@example.com ');
+    harness.detectChanges();
+
+    const link = page().querySelector<HTMLAnchorElement>('a[href="/forgot-password"]');
+    expect(link?.textContent).toContain('¿Olvidaste tu contraseña?');
+    link?.click();
+    await settle();
+
+    const router = TestBed.inject(Router);
+    expect(router.url).toBe('/forgot-password');
+    expect(router.lastSuccessfulNavigation()?.extras.state).toEqual({ email: 'ana@example.com' });
+  });
 });
 
 describe('SignInPage with Google', () => {
@@ -209,6 +225,7 @@ describe('SignInPage with Google', () => {
           { path: 'sign-in', component: SignInPage },
           { path: 'home', component: Destination },
           { path: 'groups/1', component: Destination },
+          { path: 'forgot-password', component: Destination },
         ]),
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),

@@ -23,8 +23,12 @@ The link in the email that verifies a Sign-up Verification. Asking for a new one
 _Avoid_: Activation link, confirmation code, magic link
 
 **Session**:
-A User being signed in on one device. It starts when they sign in with their email and password or with Google, survives page reloads, and ends when they sign out, after 30 days without use, or as soon as a stolen copy of it is detected. Signing out ends only that Session, not the User's others; changing or setting the password ends all the others, keeping only the one it was done from.
+A User being signed in on one device. It starts when they sign in with their email and password or with Google, survives page reloads, and ends when they sign out, after 30 days without use, or as soon as a stolen copy of it is detected. Signing out ends only that Session, not the User's others; changing or setting the password ends all the others, keeping only the one it was done from; a Password Reset ends every one of them.
 _Avoid_: Login, connection
+
+**Password Reset**:
+A signed-out User setting a new password, or a first one if they only sign in with Google, through a link emailed to them. The link is single-use and expires after one hour; asking again replaces it, so only the latest link works. Asking answers the same whether or not the email has a User, and only a User gets the email.
+_Avoid_: Password recovery, forgot-password token
 
 **Google Link**:
 The tie between a User and one Google account, made the first time they continue with Google. A new email gets a new User named as in Google; an email that already has a User is linked to it. It remembers the Google account itself, not its email, so a later change of Google email keeps the same User, and another Google account cannot take over a User already linked.

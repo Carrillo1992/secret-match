@@ -378,6 +378,52 @@
         "tags" : [ "invite-links" ]
       }
     },
+    "/api/v1/password-reset-emails" : {
+      "post" : {
+        "description" : "Sent only if the email has a User; it replaces any earlier link. Answers the same either way.",
+        "operationId" : "sendResetLink",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasswordResetEmailRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
+          }
+        },
+        "summary" : "Email a link to set a new password",
+        "tags" : [ "password-reset" ]
+      }
+    },
+    "/api/v1/password-resets" : {
+      "post" : {
+        "description" : "Ends every Session of the User.",
+        "operationId" : "resetPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasswordResetRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Set a new password with the token from a reset link",
+        "tags" : [ "password-reset" ]
+      }
+    },
     "/api/v1/sessions" : {
       "post" : {
         "description" : "Sets the refresh token cookie. A wrong email or password gets the same answer.",
@@ -907,6 +953,33 @@
           }
         },
         "required" : [ "groupId" ]
+      },
+      "PasswordResetEmailRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "pattern" : "\\s*[^@\\s]+@[^@\\s]+\\.[^@\\s]+\\s*"
+          }
+        },
+        "required" : [ "email" ]
+      },
+      "PasswordResetRequest" : {
+        "type" : "object",
+        "properties" : {
+          "newPassword" : {
+            "type" : "string",
+            "maxLength" : 72,
+            "minLength" : 8
+          },
+          "token" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "newPassword", "token" ]
       },
       "SignInRequest" : {
         "type" : "object",

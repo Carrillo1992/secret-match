@@ -77,7 +77,7 @@ export class GroupPage {
     const result = this.result();
     return result?.status === 'found' ? result.group : undefined;
   });
-  protected readonly exchangeDay = longExchangeDate;
+  protected readonly longExchangeDate = longExchangeDate;
   protected readonly notFound = computed(() => this.result()?.status === 'not-found');
 
   /** The Invite Link to share: the SPA's own address, so it works on any host. */

@@ -39,8 +39,9 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
 /**
  * The Group's Exchange Date and budget. The Admin gets a quiet "Editar" that turns the card into a
  * form for the name, the Exchange Date and the budget; it closes once the page reports `saved`.
- * A finished Group is read-only, so nobody gets "Editar" there (#25). Chosen on #23 (option A). An alert about the last save shows only once this opening of the form
- * has been sent, so reopening it starts clean.
+ * Chosen on #23 (option A). An alert about the last save shows only once this opening of the form
+ * has been sent, so reopening it starts clean. A finished Group is read-only, so nobody gets
+ * "Editar" there (#25).
  */
 @Component({
   selector: 'app-group-details-card',

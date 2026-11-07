@@ -8,6 +8,7 @@ import com.secretmatch.group.domain.MemberId;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -45,8 +46,9 @@ public class InviteLinks {
         if (group.hasMember(user)) {
             return group.id();
         }
-        group.authoriseJoin(clock.instant());
-        if (groups.addMember(group.id(), user, clock.instant())) {
+        Instant now = clock.instant();
+        group.authoriseJoin(now);
+        if (groups.addMember(group.id(), user, now)) {
             emailAdmin(group, user);
         }
         return group.id();

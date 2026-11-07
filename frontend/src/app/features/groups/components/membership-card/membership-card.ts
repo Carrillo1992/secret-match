@@ -102,7 +102,7 @@ export class MembershipCard {
   /** Whether the Member looking is the Admin, who cannot leave but can delete the Group. */
   readonly admin = input.required<boolean>();
   /** Whether the Group is finished: it is read-only, so a Member can no longer leave it. */
-  readonly finished = input(false);
+  readonly finished = input.required<boolean>();
   readonly status = input<LeaveStatus>('idle');
   /** The Member confirmed: the page asks the API to take them out. */
   readonly leave = output();

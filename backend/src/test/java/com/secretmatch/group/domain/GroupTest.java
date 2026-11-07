@@ -7,10 +7,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -20,6 +22,9 @@ class GroupTest {
     private static final Instant NOW = Instant.parse("2026-12-01T23:30:00Z");
 
     private static final LocalDate CHRISTMAS_EVE = LocalDate.of(2026, 12, 24);
+
+    /** 00:00 on Christmas Day in Madrid: a Group exchanging on Christmas Eve is finished. */
+    private static final Instant AFTER_CHRISTMAS_EVE = Instant.parse("2026-12-24T23:00:00Z");
 
     private static final MemberId CREATOR = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
@@ -138,7 +143,7 @@ class GroupTest {
                 CHRISTMAS_EVE,
                 null,
                 CREATOR,
-                java.util.List.of(CREATOR, GUEST),
+                List.of(CREATOR, GUEST),
                 FIRST_CODE,
                 NOW);
 
@@ -177,7 +182,7 @@ class GroupTest {
                 created.exchangeDate(),
                 null,
                 CREATOR,
-                java.util.List.of(CREATOR, GUEST, OTHER_GUEST),
+                List.of(CREATOR, GUEST, OTHER_GUEST),
                 FIRST_CODE,
                 NOW);
     }
@@ -310,13 +315,13 @@ class GroupTest {
                 exchangeDate,
                 null,
                 CREATOR,
-                java.util.List.of(CREATOR, GUEST, OTHER_GUEST),
+                List.of(CREATOR, GUEST, OTHER_GUEST),
                 FIRST_CODE,
                 NOW);
     }
 
     @ParameterizedTest(name = "Exchange Date {0}: still open at {1}, finished at {2}")
-    @org.junit.jupiter.params.provider.CsvSource({
+    @CsvSource({
         // Winter, Madrid is UTC+1.
         "2026-12-24, 2026-12-24T22:59:59Z, 2026-12-24T23:00:00Z",
         // Summer, Madrid is UTC+2.
@@ -345,8 +350,6 @@ class GroupTest {
         assertThat(group.isFinished(NOW)).isFalse();
         assertThat(group.isFinished(Instant.parse("2026-12-23T23:00:00Z"))).isFalse();
     }
-
-    private static final Instant AFTER_CHRISTMAS_EVE = Instant.parse("2026-12-24T23:00:00Z");
 
     @Test
     @DisplayName("on a finished Group nobody can edit it, regenerate its Invite Link, leave it or be removed")

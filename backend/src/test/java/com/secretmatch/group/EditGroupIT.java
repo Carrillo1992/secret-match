@@ -177,6 +177,23 @@ class EditGroupIT {
                 .isBadRequest();
     }
 
+    @Test
+    @DisplayName("the SPA's browser may send the edit: the CORS preflight for PUT is allowed")
+    void spaMayPut() {
+        http.options()
+                .uri("/api/v1/groups/" + UUID.randomUUID())
+                .header(HttpHeaders.ORIGIN, "http://spa.test")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "PUT")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "authorization,content-type")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectHeader()
+                .value(
+                        HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS,
+                        methods -> assertThat(methods).contains("PUT"));
+    }
+
     // ---------- helpers ----------
 
     private static Map<String, Object> details(String name, String exchangeDate, String budget) {

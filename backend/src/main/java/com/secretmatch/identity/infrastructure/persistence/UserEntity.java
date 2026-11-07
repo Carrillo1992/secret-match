@@ -12,7 +12,10 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/** The {@code users} table. New rows go in through {@link UserRepository#insertIfEmailFree}. */
+/**
+ * The {@code users} table. New rows go in through {@link UserRepository#insertIfEmailFree}; changes to an
+ * existing row through {@code save}.
+ */
 @Entity
 @Table(name = "users")
 class UserEntity {
@@ -33,6 +36,16 @@ class UserEntity {
     private Instant createdAt;
 
     protected UserEntity() {}
+
+    static UserEntity from(User user) {
+        UserEntity entity = new UserEntity();
+        entity.id = user.id().value();
+        entity.email = user.email().value();
+        entity.displayName = user.displayName().value();
+        entity.passwordHash = user.passwordHash().map(PasswordHash::value).orElse(null);
+        entity.createdAt = user.createdAt();
+        return entity;
+    }
 
     User toDomain() {
         return new User(

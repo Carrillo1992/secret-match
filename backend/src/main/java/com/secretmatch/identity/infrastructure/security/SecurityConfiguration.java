@@ -3,6 +3,7 @@ package com.secretmatch.identity.infrastructure.security;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Objects;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -14,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtIssuerValidator;
@@ -72,7 +74,11 @@ class SecurityConfiguration {
         return new NimbusJwtEncoder(new ImmutableSecret<>(key(properties)));
     }
 
-    /** Checks the signature, the issuer and the expiry, against the application's clock and with no leeway. */
+    /**
+     * Checks the signature, the issuer and the expiry, against the application's clock and with no leeway, and
+     * that the token names its Session. A token from before Sessions were named gets a 401, so the SPA
+     * refreshes it.
+     */
     @Bean
     JwtDecoder jwtDecoder(JwtProperties properties, Clock clock) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key(properties))
@@ -80,8 +86,10 @@ class SecurityConfiguration {
                 .build();
         JwtTimestampValidator expiry = new JwtTimestampValidator(Duration.ZERO);
         expiry.setClock(clock);
-        decoder.setJwtValidator(
-                new DelegatingOAuth2TokenValidator<>(expiry, new JwtIssuerValidator(JwtAccessTokens.ISSUER)));
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                expiry,
+                new JwtIssuerValidator(JwtAccessTokens.ISSUER),
+                new JwtClaimValidator<String>(AccessTokenClaims.SESSION, Objects::nonNull)));
         return decoder;
     }
 

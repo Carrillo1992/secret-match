@@ -81,7 +81,7 @@ class SessionController {
     @Operation(summary = "The signed-in User")
     CurrentUserResponse currentUser(@AuthenticationPrincipal Jwt accessToken) {
         CurrentUser user = sessions.currentUser(new UserId(UUID.fromString(accessToken.getSubject())));
-        return new CurrentUserResponse(user.email(), user.displayName());
+        return CurrentUserResponse.of(user);
     }
 
     private static ResponseEntity<AccessTokenResponse> signedIn(SignedIn signedIn) {

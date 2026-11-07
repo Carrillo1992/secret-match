@@ -10,7 +10,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 
 - **Domain language first.** Class, method, test and endpoint names use the terms in `GLOSSARY.md`. A missing term means a glossary gap, not permission to invent a synonym.
 - **Deep modules, small interfaces.** Prefer one module that hides a lot behind a narrow API over many shallow pass-through layers.
-- **No speculative generality.** No interfaces with a single implementation "for later", no config flags nobody sets, no generic frameworks for one use case. Exception: ports to external systems (see 2.1).
+- **No speculative generality.** No interfaces with a single implementation "for later", no config flags nobody sets, no generic frameworks for one use case. Exception: ports to external systems and to other modules (see 2.1).
 - **Validate at the boundaries, trust inside.** Input is validated where it enters (HTTP, messages, config). Domain objects cannot be built in an invalid state.
 - **Fail loudly.** No swallowed exceptions, no `catch (Exception e) {}`, no `null` returned to mean "error".
 - **Anonymity invariant.** No giver identity in any receiver-facing output: DTOs, emails, logs, exception messages, URLs. Logs never contain message bodies, wishlist contents, emails or tokens.
@@ -23,6 +23,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 - Package by **module** first (`draw`, `group`, `wishlist`…), then by layer inside it: `domain`, `application`, `infrastructure`. See `docs/architecture.md`.
 - `domain` has **no** Spring, JPA, Jackson or Jakarta imports. Plain Java only.
 - Each external system (database, Resend, JWT provider) sits behind a **port** (an interface in `application`) with an **adapter** in `infrastructure`.
+- A module whose use cases need another module's data may read it through a port of its own, in its own language, whose adapter calls the other module's `application` API (e.g. `draw.application.Rosters` → `GroupRosters` → `group.application.MyGroups`). See `docs/architecture.md` §2.1.
 - JPA entities are **not** domain objects. They live in `infrastructure.persistence` and are mapped explicitly to and from the domain.
 
 ### 2.2 Java style
@@ -62,7 +63,7 @@ A rule here overrides a generic best practice. To change a rule, change this fil
 ## 4. Testing
 
 - Test **behaviour at agreed seams** (public interfaces), not implementation details. A refactor that keeps behaviour must not break tests.
-- **Backend**: JUnit 5 + AssertJ. Domain and draw engine get fast pure unit tests, with no Spring context. Use cases and persistence get integration tests against real PostgreSQL via Testcontainers. Mock only ports to external systems (e.g. the email sender), never domain objects.
+- **Backend**: JUnit 5 + AssertJ. Domain and draw engine get fast pure unit tests, with no Spring context. Use cases and persistence get integration tests against real PostgreSQL via Testcontainers. Mock or fake only ports, to external systems (e.g. the email sender) or to other modules (e.g. an in-memory `Rosters` in a use case's unit test), never domain objects.
 - Test names describe behaviour: `@DisplayName("assigns nobody to themselves")` or `assignsNobodyToThemselves()`.
 - Expected values come from an independent source (literal, worked example, spec), never recomputed the way the production code does.
 - **Draw engine**: besides example-based tests, run invariant checks over many seeds and generated groups (no self-assignment, every Member gives and receives exactly once, all Exclusions respected, no reciprocal pairs, impossible configurations reported as such).

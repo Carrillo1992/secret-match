@@ -28,6 +28,7 @@ const navidad = {
 };
 const REGENERATE_URL = 'http://api.test/api/v1/groups/g-1/invite-link';
 const MEMBERS_URL = 'http://api.test/api/v1/groups/g-1/members';
+const EXCLUSIONS_URL = 'http://api.test/api/v1/groups/g-1/exclusions';
 /** The same Group as its Admin, Abuela Carmen, sees it, with Marta in it too. */
 const asAdmin = {
   ...navidad,
@@ -60,7 +61,11 @@ describe('GroupPage', () => {
     await harness.navigateByUrl('/groups/g-1');
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // The Admin's page always loads the Exclusions; tests about something else answer with none.
+    http.match(EXCLUSIONS_URL).forEach((request) => request.flush([]));
+    http.verify();
+  });
 
   const page = () => harness.routeNativeElement as HTMLElement;
   /** Spaces normalised: currency amounts are formatted with a no-break space before the €. */
@@ -604,6 +609,257 @@ describe('GroupPage', () => {
 
       expect(notice()).toBeNull();
       expect(button('Editar')).toBeDefined();
+    });
+  });
+
+  describe('Exclusions', () => {
+    const luisAndMarta = {
+      id: 'x-1',
+      members: [
+        { id: 'u-luis', displayName: 'Luis' },
+        { id: 'u-marta', displayName: 'Marta' },
+      ],
+    };
+    const carmenAndLuis = {
+      id: 'x-2',
+      members: [
+        { id: 'u-carmen', displayName: 'Abuela Carmen' },
+        { id: 'u-luis', displayName: 'Luis' },
+      ],
+    };
+    const section = () => page().querySelector('section[aria-labelledby="group-exclusions"]');
+    const rows = () => [...page().querySelectorAll('ul[aria-label="Exclusiones"] > li')];
+    const button = (label: string) =>
+      [...(section()?.querySelectorAll('button') ?? [])].find((b) =>
+        b.textContent?.includes(label),
+      );
+    const select = (label: string) => {
+      const id = [...page().querySelectorAll('label')]
+        .find((l) => l.textContent?.trim() === label)
+        ?.getAttribute('for');
+      return page().querySelector<HTMLSelectElement>(`select#${id}`);
+    };
+    const choose = (label: string, memberId: string) => {
+      const control = select(label);
+      if (!control) {
+        throw new Error(`no select labelled ${label}`);
+      }
+      control.value = memberId;
+      control.dispatchEvent(new Event('change'));
+    };
+    const statusLine = () => text(section()?.querySelector('[role="status"]'));
+
+    async function openAsAdmin(group = asAdmin, exclusions: unknown[] = []): Promise<void> {
+      http.expectOne(GROUP_URL).flush(group);
+      await settle();
+      http.expectOne(EXCLUSIONS_URL).flush(exclusions);
+      await settle();
+    }
+
+    it('shows a regular Member nothing about Exclusions, and never asks for them', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      http.expectNone(EXCLUSIONS_URL);
+      expect(section()).toBeNull();
+      expect(text(page()).toLowerCase()).not.toContain('exclusi');
+    });
+
+    it('lists the Exclusions to the Admin, each with its two Members', async () => {
+      await openAsAdmin(asAdmin, [luisAndMarta, carmenAndLuis]);
+
+      expect(text(section())).toContain('Exclusiones (2)');
+      expect(text(section())).toContain('Solo tú las ves');
+      expect(rows().map(text)).toEqual([
+        expect.stringContaining('Luis') as unknown as string,
+        expect.stringContaining('Abuela Carmen') as unknown as string,
+      ]);
+      expect(text(rows()[0])).toContain('Marta');
+    });
+
+    it('says when there are none yet', async () => {
+      await openAsAdmin();
+
+      expect(text(section())).toContain('Aún no hay exclusiones.');
+      expect(rows()).toHaveLength(0);
+    });
+
+    it('lets the Admin add an Exclusion between two Members, which then shows in the list', async () => {
+      await openAsAdmin();
+
+      button('Añadir exclusión')?.click();
+      await settle();
+      expect(document.activeElement).toBe(select('Una persona'));
+      choose('Una persona', 'u-luis');
+      choose('Y otra', 'u-marta');
+      button('Añadir')?.click();
+      await settle();
+
+      const add = http.expectOne(EXCLUSIONS_URL);
+      expect(add.request.method).toBe('POST');
+      expect(add.request.body).toEqual({ memberIds: ['u-luis', 'u-marta'] });
+      add.flush(luisAndMarta);
+      await settle();
+
+      expect(rows().map(text)).toEqual([expect.stringContaining('Marta') as unknown as string]);
+      expect(select('Una persona')).toBeNull();
+      expect(statusLine()).toBe('Luis y Marta nunca se tocarán en el sorteo.');
+      expect(document.activeElement).toBe(button('Añadir exclusión'));
+    });
+
+    it('does not list twice an Exclusion the Group already had', async () => {
+      await openAsAdmin(asAdmin, [luisAndMarta]);
+
+      button('Añadir exclusión')?.click();
+      await settle();
+      choose('Una persona', 'u-marta');
+      choose('Y otra', 'u-luis');
+      button('Añadir')?.click();
+      await settle();
+      http.expectOne(EXCLUSIONS_URL).flush(luisAndMarta);
+      await settle();
+
+      expect(rows()).toHaveLength(1);
+    });
+
+    it('explains next to the field what to fix, without sending anything', async () => {
+      await openAsAdmin();
+
+      button('Añadir exclusión')?.click();
+      await settle();
+      button('Añadir')?.click();
+      await settle();
+      expect(text(section())).toContain('Elige a una persona.');
+      expect(text(section())).toContain('Elige a otra persona.');
+
+      choose('Una persona', 'u-luis');
+      choose('Y otra', 'u-luis');
+      await settle();
+      expect(text(section())).toContain('Elige a alguien distinto de la primera persona.');
+      expect(select('Y otra')?.getAttribute('aria-invalid')).toBe('true');
+      http.expectNone(EXCLUSIONS_URL);
+    });
+
+    it('closes the form without sending anything when the Admin cancels', async () => {
+      await openAsAdmin();
+
+      button('Añadir exclusión')?.click();
+      await settle();
+      button('Cancelar')?.click();
+      await settle();
+
+      expect(select('Una persona')).toBeNull();
+      expect(document.activeElement).toBe(button('Añadir exclusión'));
+      http.expectNone(EXCLUSIONS_URL);
+    });
+
+    it('says so when the Exclusion could not be added, and keeps the form', async () => {
+      await openAsAdmin();
+
+      button('Añadir exclusión')?.click();
+      await settle();
+      choose('Una persona', 'u-luis');
+      choose('Y otra', 'u-marta');
+      button('Añadir')?.click();
+      await settle();
+      http
+        .expectOne(EXCLUSIONS_URL)
+        .flush(
+          { type: 'urn:secretmatch:problem:exclusion-not-a-member', status: 422 },
+          { status: 422, statusText: 'Unprocessable Content' },
+        );
+      await settle();
+
+      expect(text(section()?.querySelector('[role="alert"]'))).toContain(
+        'No hemos podido añadir la exclusión',
+      );
+      expect(select('Una persona')).not.toBeNull();
+      expect(rows()).toHaveLength(0);
+    });
+
+    it('lets the Admin remove an Exclusion at once', async () => {
+      await openAsAdmin(asAdmin, [luisAndMarta, carmenAndLuis]);
+
+      const quitar = section()?.querySelector<HTMLButtonElement>(
+        'button[aria-label="Quitar la exclusión entre Luis y Marta"]',
+      );
+      quitar?.click();
+      await settle();
+      const remove = http.expectOne(`${EXCLUSIONS_URL}/x-1`);
+      expect(remove.request.method).toBe('DELETE');
+      remove.flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+
+      expect(rows()).toHaveLength(1);
+      expect(text(rows()[0])).toContain('Abuela Carmen');
+      expect(statusLine()).toBe('Ya no hay exclusión entre Luis y Marta.');
+      expect(document.activeElement).toBe(page().querySelector('#group-exclusions'));
+    });
+
+    it('says so when the Exclusion could not be removed, and keeps it', async () => {
+      await openAsAdmin(asAdmin, [luisAndMarta]);
+
+      button('Quitar')?.click();
+      await settle();
+      http
+        .expectOne(`${EXCLUSIONS_URL}/x-1`)
+        .flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(text(section()?.querySelector('[role="alert"]'))).toContain(
+        'No hemos podido quitar la exclusión entre Luis y Marta',
+      );
+      expect(rows()).toHaveLength(1);
+    });
+
+    it('offers a retry when the Exclusions cannot be loaded', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+      http.expectOne(EXCLUSIONS_URL).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      expect(text(section()?.querySelector('[role="alert"]'))).toContain(
+        'No hemos podido cargar las exclusiones',
+      );
+      button('Reintentar')?.click();
+      await settle();
+      http.expectOne(EXCLUSIONS_URL).flush([luisAndMarta]);
+      await settle();
+
+      expect(rows()).toHaveLength(1);
+    });
+
+    it('offers nothing to add while the Admin is alone in the Group', async () => {
+      await openAsAdmin({ ...asAdmin, members: [asAdmin.members[0]] });
+
+      expect(button('Añadir exclusión')).toBeUndefined();
+      expect(text(section())).toContain('Cuando haya al menos dos personas en el grupo');
+    });
+
+    it('drops a removed Member’s Exclusions from the list', async () => {
+      await openAsAdmin(asAdmin, [luisAndMarta, carmenAndLuis]);
+
+      page().querySelector<HTMLButtonElement>('button[aria-label="Quitar a Marta"]')?.click();
+      await settle();
+      [...page().querySelectorAll('button')]
+        .find((b) => b.textContent?.includes('Sí, quitar'))
+        ?.click();
+      await settle();
+      http
+        .expectOne(`${MEMBERS_URL}/u-marta`)
+        .flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+
+      expect(rows()).toHaveLength(1);
+      expect(text(rows()[0])).toContain('Abuela Carmen');
+    });
+
+    it('shows a finished Group’s Exclusions to the Admin, with nothing to change', async () => {
+      await openAsAdmin({ ...asAdmin, finished: true }, [luisAndMarta]);
+
+      expect(rows()).toHaveLength(1);
+      expect(button('Quitar')).toBeUndefined();
+      expect(button('Añadir exclusión')).toBeUndefined();
     });
   });
 });

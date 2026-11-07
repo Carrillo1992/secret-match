@@ -25,8 +25,7 @@ import {
   EditStatus,
   GroupDetailsCard,
 } from '../../components/group-details-card/group-details-card';
-import { GroupDetailsInput } from '../../data-access/group-details-form';
-import { GroupsApi } from '../../data-access/groups-api';
+import { GroupEdit, GroupsApi } from '../../data-access/groups-api';
 import { Alert } from '../../../../shared/ui/alert/alert';
 
 /** A Group as its Members see it: its details and who is in it. */
@@ -86,7 +85,7 @@ export class GroupPage {
   protected readonly editStatus = signal<EditStatus>('idle');
 
   /** The Admin's new details: once the API agrees, every part of the page shows them. */
-  protected async edit(details: GroupDetailsInput): Promise<void> {
+  protected async edit(details: GroupEdit): Promise<void> {
     this.editStatus.set('saving');
     const outcome = await this.groupsApi.edit(this.groupId(), details);
     if (outcome.status === 'edited') {

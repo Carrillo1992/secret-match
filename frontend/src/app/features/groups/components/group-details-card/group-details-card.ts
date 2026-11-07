@@ -26,13 +26,12 @@ import {
   budgetInEuros,
   budgetText,
   groupDetailsInput,
-  GroupDetailsInput,
   NAME_MAX_LENGTH,
   notBefore,
   notBlank,
 } from '../../data-access/group-details-form';
 import { earliestExchangeDate, euros, longExchangeDate } from '../../data-access/group-format';
-import { Group } from '../../data-access/groups-api';
+import { Group, GroupEdit } from '../../data-access/groups-api';
 
 /** Where the Admin's last edit stands, as the page tells it. */
 export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-future' | 'failed';
@@ -40,7 +39,8 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
 /**
  * The Group's Exchange Date and budget. The Admin gets a quiet "Editar" that turns the card into a
  * form for the name, the Exchange Date and the budget; it closes once the page reports `saved`.
- * Chosen on #23 (option A).
+ * Chosen on #23 (option A). An alert about the last save shows only once this opening of the form
+ * has been sent, so reopening it starts clean.
  */
 @Component({
   selector: 'app-group-details-card',
@@ -152,9 +152,9 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
             Los miembros verán el cambio en esta página; no les avisamos por email.
           </p>
 
-          @if (status() === 'exchange-date-not-in-future') {
+          @if (submitted() && status() === 'exchange-date-not-in-future') {
             <p appAlert>La fecha del intercambio tiene que ser a partir de mañana.</p>
-          } @else if (status() === 'failed') {
+          } @else if (submitted() && status() === 'failed') {
             <p appAlert>No hemos podido guardar los cambios. Inténtalo de nuevo en un momento.</p>
           }
 
@@ -208,7 +208,7 @@ export class GroupDetailsCard {
   readonly group = input.required<Group>();
   readonly status = input<EditStatus>('idle');
   /** The Admin sent the form: the page asks the API to replace the Group's details. */
-  readonly save = output<GroupDetailsInput>();
+  readonly save = output<GroupEdit>();
 
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);

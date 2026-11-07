@@ -1,4 +1,5 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { GroupEdit } from './groups-api';
 
 /**
  * The rules and shapes shared by the forms that create and edit a Group. They mirror the API's
@@ -7,13 +8,6 @@ import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 
 export const NAME_MAX_LENGTH = 80;
 const BUDGET = /^\d{1,6}([.,]\d{1,2})?$/;
-
-/** A Group's details as they go to the API: a budget left empty is left out. */
-export interface GroupDetailsInput {
-  readonly name: string;
-  readonly exchangeDate: string;
-  readonly budget?: number;
-}
 
 export function notBlank(control: AbstractControl<string>): ValidationErrors | null {
   return control.value.trim() ? null : { required: true };
@@ -35,12 +29,15 @@ export function budgetInEuros(control: AbstractControl<string>): ValidationError
   return !amount || BUDGET.test(amount) ? null : { budget: true };
 }
 
-/** The form's raw values as the API takes them: `25,50` → 25.5, an empty budget left out. */
+/**
+ * The form's raw values as the API takes them, to create a Group or edit one (both take the same
+ * shape): `25,50` → 25.5, an empty budget left out.
+ */
 export function groupDetailsInput(form: {
   name: string;
   exchangeDate: string;
   budget: string;
-}): GroupDetailsInput {
+}): GroupEdit {
   const name = form.name.trim();
   const amount = form.budget.trim();
   return amount

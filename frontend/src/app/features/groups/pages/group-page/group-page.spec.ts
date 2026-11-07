@@ -499,6 +499,12 @@ describe('GroupPage', () => {
       );
       expect(field('Fecha del intercambio')?.value).toBe('2026-12-02');
       expect(text(page().querySelector('h1'))).toBe('Navidad en casa');
+
+      button('Cancelar')?.click();
+      await settle();
+      button('Editar')?.click();
+      await settle();
+      expect(details()?.querySelector('[role="alert"]')).toBeNull();
     });
   });
 });

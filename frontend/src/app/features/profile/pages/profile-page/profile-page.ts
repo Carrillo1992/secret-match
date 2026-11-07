@@ -21,7 +21,8 @@ import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
-import { maxUtf8Bytes, notBlank, SIGN_UP_RULES } from '../../../auth/data-access/sign-up-rules';
+import { USER_RULES } from '../../../../core/auth/user-rules';
+import { maxUtf8Bytes, notBlank } from '../../../../shared/forms/validators';
 import { Me, ProfileApi } from '../../data-access/profile-api';
 
 type FormState = 'idle' | 'sending' | 'saved' | 'failed';
@@ -52,12 +53,12 @@ export class ProfilePage {
   private readonly saved = signal<Me | undefined>(undefined);
   /** The User as last loaded or saved; `undefined` while loading or after a failure. */
   protected readonly me = computed(() => this.saved() ?? this.user.value());
-  protected readonly rules = SIGN_UP_RULES;
+  protected readonly rules = USER_RULES;
 
   protected readonly nameForm = this.forms.group({
     displayName: [
       '',
-      [Validators.required, notBlank, Validators.maxLength(SIGN_UP_RULES.displayNameMaxLength)],
+      [Validators.required, notBlank, Validators.maxLength(USER_RULES.displayNameMaxLength)],
     ],
   });
   protected readonly nameSubmitted = signal(false);
@@ -70,8 +71,8 @@ export class ProfilePage {
       '',
       [
         Validators.required,
-        Validators.minLength(SIGN_UP_RULES.passwordMinLength),
-        maxUtf8Bytes(SIGN_UP_RULES.passwordMaxBytes),
+        Validators.minLength(USER_RULES.passwordMinLength),
+        maxUtf8Bytes(USER_RULES.passwordMaxBytes),
       ],
     ],
   });

@@ -35,9 +35,19 @@ public final class User {
         this.displayName = Objects.requireNonNull(newDisplayName, "newDisplayName");
     }
 
-    /** From now on, the User signs in with this password; a User without one gets their first. */
-    public void changePassword(PasswordHash newPasswordHash) {
-        this.passwordHash = Objects.requireNonNull(newPasswordHash, "newPasswordHash");
+    /**
+     * From now on, the User signs in with the new password. A User who has a password must prove it first; a
+     * User without one (who only signs in with Google) gets their first without.
+     *
+     * @param currentPassword the password as typed; ignored, and may be {@code null}, if the User has none
+     * @throws WrongPasswordException if the User has a password and {@code currentPassword} is not it
+     */
+    public void changePassword(String currentPassword, PasswordHash newPasswordHash, PasswordMatcher matcher) {
+        Objects.requireNonNull(newPasswordHash, "newPasswordHash");
+        if (passwordHash != null && (currentPassword == null || !matcher.matches(currentPassword, passwordHash))) {
+            throw new WrongPasswordException();
+        }
+        this.passwordHash = newPasswordHash;
     }
 
     public UserId id() {

@@ -2,12 +2,10 @@ package com.secretmatch.identity.application;
 
 import com.secretmatch.identity.domain.NewPassword;
 import com.secretmatch.identity.domain.PasswordHash;
+import com.secretmatch.identity.domain.PasswordMatcher;
 
 /** Port to the one-way password hashing algorithm. */
-public interface PasswordHasher {
+public interface PasswordHasher extends PasswordMatcher {
 
     PasswordHash hash(NewPassword password);
-
-    /** Whether this password, as typed at sign-in, is the one the hash was made from. */
-    boolean matches(String password, PasswordHash hash);
 }

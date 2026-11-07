@@ -9,11 +9,10 @@ import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
 import com.secretmatch.identity.domain.WrongPasswordException;
 import java.time.Clock;
-import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** The signed-in User manages their own profile: the display name others see, and their password. */
+/** The signed-in User manages their Profile: the display name others see, and their password. */
 @Service
 public class Profile {
 
@@ -35,9 +34,9 @@ public class Profile {
      * @throws SessionExpiredException if that User no longer exists
      */
     @Transactional
-    public CurrentUser changeDisplayName(UserId id, String displayName) {
-        User user = users.findById(id).orElseThrow(SessionExpiredException::new);
-        user.rename(new DisplayName(displayName));
+    public CurrentUser changeDisplayName(UserId id, ChangeDisplayNameCommand command) {
+        User user = existing(id);
+        user.rename(new DisplayName(command.displayName()));
         users.save(user);
         return CurrentUser.of(user);
     }
@@ -47,21 +46,19 @@ public class Profile {
      * Google). Every other Session of the User ends, so a device signed in with the old password, or without
      * one, must sign in again; the Session the change was made from stays.
      *
-     * @param currentPassword the password the User has now; ignored, and may be {@code null}, if they have none
-     * @throws WrongPasswordException if the User has a password and {@code currentPassword} is not it
+     * @throws WrongPasswordException if the User has a password and the command's current one is not it
      * @throws SessionExpiredException if that User no longer exists
      */
     @Transactional
-    public void changePassword(UserId id, SessionId currentSession, String currentPassword, String newPassword) {
-        PasswordHash newHash = passwordHasher.hash(new NewPassword(newPassword));
-        User user = users.findById(id).orElseThrow(SessionExpiredException::new);
-        Optional<PasswordHash> current = user.passwordHash();
-        if (current.isPresent()
-                && (currentPassword == null || !passwordHasher.matches(currentPassword, current.get()))) {
-            throw new WrongPasswordException();
-        }
-        user.changePassword(newHash);
+    public void changePassword(UserId id, SessionId currentSession, ChangePasswordCommand command) {
+        PasswordHash newHash = passwordHasher.hash(new NewPassword(command.newPassword()));
+        User user = existing(id);
+        user.changePassword(command.currentPassword(), newHash, passwordHasher);
         users.save(user);
         refreshTokens.revokeOtherSessions(id, currentSession, clock.instant());
+    }
+
+    private User existing(UserId id) {
+        return users.findById(id).orElseThrow(SessionExpiredException::new);
     }
 }

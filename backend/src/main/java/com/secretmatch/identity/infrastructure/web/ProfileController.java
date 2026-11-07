@@ -1,5 +1,7 @@
 package com.secretmatch.identity.infrastructure.web;
 
+import com.secretmatch.identity.application.ChangeDisplayNameCommand;
+import com.secretmatch.identity.application.ChangePasswordCommand;
 import com.secretmatch.identity.application.CurrentUser;
 import com.secretmatch.identity.application.Profile;
 import com.secretmatch.identity.infrastructure.security.AccessTokenClaims;
@@ -32,7 +34,8 @@ class ProfileController {
     @Operation(summary = "Change the signed-in User's display name")
     CurrentUserResponse changeDisplayName(
             @AuthenticationPrincipal Jwt accessToken, @Valid @RequestBody DisplayNameRequest request) {
-        CurrentUser user = profile.changeDisplayName(AccessTokenClaims.userId(accessToken), request.displayName());
+        CurrentUser user = profile.changeDisplayName(
+                AccessTokenClaims.userId(accessToken), new ChangeDisplayNameCommand(request.displayName()));
         return CurrentUserResponse.of(user);
     }
 
@@ -46,7 +49,6 @@ class ProfileController {
         profile.changePassword(
                 AccessTokenClaims.userId(accessToken),
                 AccessTokenClaims.sessionId(accessToken),
-                request.currentPassword(),
-                request.newPassword());
+                new ChangePasswordCommand(request.currentPassword(), request.newPassword()));
     }
 }

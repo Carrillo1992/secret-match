@@ -9,10 +9,6 @@ import { GroupEdit } from './groups-api';
 export const NAME_MAX_LENGTH = 80;
 const BUDGET = /^\d{1,6}([.,]\d{1,2})?$/;
 
-export function notBlank(control: AbstractControl<string>): ValidationErrors | null {
-  return control.value.trim() ? null : { required: true };
-}
-
 /**
  * ISO dates (`YYYY-MM-DD`) compare correctly as strings. `kept` is a date that is accepted even
  * when earlier: the Group's current Exchange Date, which the API does not check again.

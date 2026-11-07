@@ -57,11 +57,11 @@
           <button type="submit" appButton="secondary" [disabled]="nameState() === 'sending'">
             {{ nameState() === 'sending' ? 'Guardando…' : 'Guardar nombre' }}
           </button>
-          <p role="status" class="text-sm font-semibold text-success">
+          <div aria-live="polite" class="w-full">
             @if (nameState() === 'saved') {
-              Nombre guardado.
+              <p appAlert="success">Nombre guardado.</p>
             }
-          </p>
+          </div>
         </div>
       </form>
     </section>
@@ -162,11 +162,11 @@
               {{ hasPassword() ? 'Cambiar contraseña' : 'Crear contraseña' }}
             }
           </button>
-          <p role="status" class="text-sm font-semibold text-success">
+          <div aria-live="polite" class="w-full">
             @if (passwordState() === 'saved') {
-              Contraseña cambiada. Las demás sesiones se han cerrado.
+              <p appAlert="success">Contraseña cambiada. Las demás sesiones se han cerrado.</p>
             }
-          </p>
+          </div>
         </div>
       </form>
     </section>

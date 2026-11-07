@@ -288,6 +288,68 @@ describe('GroupPage', () => {
     });
   });
 
+  describe('deleting the Group', () => {
+    const membership = () => page().querySelector('section[aria-labelledby="group-membership"]');
+    const button = (label: string) =>
+      [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
+    const deletion = { url: GROUP_URL, method: 'DELETE' };
+
+    it('lets the Admin delete the Group after confirming, and takes them back to their Groups', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      button('Borrar el grupo')?.click();
+      await settle();
+      expect(document.activeElement).toBe(button('Sí, borrar'));
+      expect(text(membership())).toContain('avisaremos por email');
+      http.expectNone(deletion);
+      button('Sí, borrar')?.click();
+      await settle();
+
+      http.expectOne(deletion).flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+
+      expect(text(page().querySelector('h1'))).toBe('Otra página');
+    });
+
+    it('keeps the Group when the Admin cancels', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      button('Borrar el grupo')?.click();
+      await settle();
+      button('Cancelar')?.click();
+      await settle();
+
+      http.expectNone(deletion);
+      expect(document.activeElement).toBe(button('Borrar el grupo'));
+    });
+
+    it('says so when deleting fails, and stays on the Group', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      button('Borrar el grupo')?.click();
+      await settle();
+      button('Sí, borrar')?.click();
+      await settle();
+      http.expectOne(deletion).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      expect(text(membership()?.querySelector('[role="alert"]'))).toContain(
+        'No hemos podido borrar el grupo',
+      );
+      expect(text(page().querySelector('h1'))).toBe('Navidad en casa');
+    });
+
+    it('does not offer a regular Member to delete the Group', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+
+      expect(button('Borrar el grupo')).toBeUndefined();
+    });
+  });
+
   describe('removing Members', () => {
     const button = (label: string) =>
       [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));

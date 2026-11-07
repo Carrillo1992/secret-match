@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
 import {
   create,
+  deleteGroup,
   edit,
   group,
   join,
@@ -55,6 +56,9 @@ export type RegenerateOutcome =
 
 /** `failed` covers every refusal too: the page offers it only to whom the API allows it. */
 export type RemoveMemberOutcome = { readonly status: 'removed' } | { readonly status: 'failed' };
+
+/** `failed` covers every refusal too: the page offers it only to the Admin. */
+export type DeleteGroupOutcome = { readonly status: 'deleted' } | { readonly status: 'failed' };
 
 /** The signed-in User's Groups, with the API's errors turned into outcomes a page can show. */
 @Injectable({ providedIn: 'root' })
@@ -132,6 +136,16 @@ export class GroupsApi {
     try {
       await this.api.invoke(removeMember, { groupId, memberId });
       return { status: 'removed' };
+    } catch {
+      return { status: 'failed' };
+    }
+  }
+
+  /** The Admin deletes the Group, with everything in it, for every Member. */
+  async deleteGroup(groupId: string): Promise<DeleteGroupOutcome> {
+    try {
+      await this.api.invoke(deleteGroup, { groupId });
+      return { status: 'deleted' };
     } catch {
       return { status: 'failed' };
     }

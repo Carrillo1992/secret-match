@@ -20,7 +20,11 @@ import {
   RegenerateStatus,
 } from '../../components/invite-link-card/invite-link-card';
 import { Member, MembersCard, Removal } from '../../components/members-card/members-card';
-import { LeaveStatus, MembershipCard } from '../../components/membership-card/membership-card';
+import {
+  DeleteStatus,
+  LeaveStatus,
+  MembershipCard,
+} from '../../components/membership-card/membership-card';
 import {
   EditStatus,
   GroupDetailsCard,
@@ -80,6 +84,7 @@ export class GroupPage {
   });
   protected readonly regenerateStatus = signal<RegenerateStatus>('idle');
   protected readonly leaveStatus = signal<LeaveStatus>('idle');
+  protected readonly deleteStatus = signal<DeleteStatus>('idle');
   protected readonly removal = signal<Removal | null>(null);
 
   protected readonly editStatus = signal<EditStatus>('idle');
@@ -118,6 +123,17 @@ export class GroupPage {
       return;
     }
     this.leaveStatus.set('failed');
+  }
+
+  /** Once deleted, the Group is gone for everyone: back to the Admin's Groups. */
+  protected async deleteGroup(): Promise<void> {
+    this.deleteStatus.set('deleting');
+    const outcome = await this.groupsApi.deleteGroup(this.groupId());
+    if (outcome.status === 'deleted') {
+      await this.router.navigateByUrl('/home');
+      return;
+    }
+    this.deleteStatus.set('failed');
   }
 
   /** The Admin removes another Member: once the API agrees, they leave the list. */

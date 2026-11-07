@@ -39,6 +39,8 @@
       [admin]="group.admin"
       [status]="leaveStatus()"
       (leave)="leave()"
+      [deleteStatus]="deleteStatus()"
+      (deleteGroup)="deleteGroup()"
     />
   } @else if (notFound()) {
     <div class="mt-6">

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-import { LucideLogOut } from '@lucide/angular';
+import { LucideLogOut, LucideTrash2 } from '@lucide/angular';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
 import { Button } from '../../../../shared/ui/button/button';
 import { Alert } from '../../../../shared/ui/alert/alert';
@@ -7,14 +7,17 @@ import { Alert } from '../../../../shared/ui/alert/alert';
 /** Where the Member's request to leave stands, as the page tells it. */
 export type LeaveStatus = 'idle' | 'leaving' | 'failed';
 
+/** Where the Admin's request to delete the Group stands, as the page tells it. */
+export type DeleteStatus = 'idle' | 'deleting' | 'failed';
+
 /**
  * The Member's own place in the Group: a regular Member can leave it, behind an inline
- * confirmation. The Admin cannot, so they are pointed to deleting the Group instead.
+ * confirmation. The Admin cannot; they can delete the Group instead, behind the same confirmation.
  */
 @Component({
   selector: 'app-membership-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Alert, Button, ConfirmPanel, LucideLogOut],
+  imports: [Alert, Button, ConfirmPanel, LucideLogOut, LucideTrash2],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-membership" class="rounded-card bg-surface p-5 shadow-card">
@@ -22,9 +25,39 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
 
       @if (admin()) {
         <p class="mt-1.5 text-ink-muted">
-          Como administrador no puedes salir del grupo. Si ya no quieres seguir con él, podrás
+          Como administrador no puedes salir del grupo. Si ya no quieres seguir con él, puedes
           borrarlo.
         </p>
+
+        @if (deleteStatus() === 'failed') {
+          <p appAlert class="mt-4">No hemos podido borrar el grupo. Inténtalo de nuevo.</p>
+        }
+
+        @if (confirming()) {
+          <app-confirm-panel
+            class="mt-4"
+            question="¿Borrar el grupo?"
+            confirmLabel="Sí, borrar"
+            returnFocusTo="delete-group"
+            (confirmed)="confirmDelete()"
+            (cancelled)="confirming.set(false)"
+          >
+            Se borrará para todos, con todo lo que hay en él, y no se puede deshacer. A los demás
+            miembros les avisaremos por email.
+          </app-confirm-panel>
+        } @else {
+          <button
+            id="delete-group"
+            type="button"
+            appButton="secondary"
+            class="mt-4 w-full"
+            [disabled]="deleteStatus() === 'deleting'"
+            (click)="confirming.set(true)"
+          >
+            <svg lucideTrash2 [size]="18"></svg>
+            {{ deleteStatus() === 'deleting' ? 'Borrando…' : 'Borrar el grupo' }}
+          </button>
+        }
       } @else {
         <p class="mt-1.5 text-ink-muted">Si sales, dejarás de ver este grupo.</p>
 
@@ -61,16 +94,24 @@ export type LeaveStatus = 'idle' | 'leaving' | 'failed';
   `,
 })
 export class MembershipCard {
-  /** Whether the Member looking is the Admin, who cannot leave. */
+  /** Whether the Member looking is the Admin, who cannot leave but can delete the Group. */
   readonly admin = input.required<boolean>();
   readonly status = input<LeaveStatus>('idle');
   /** The Member confirmed: the page asks the API to take them out. */
   readonly leave = output();
+  readonly deleteStatus = input<DeleteStatus>('idle');
+  /** The Admin confirmed: the page asks the API to delete the Group. */
+  readonly deleteGroup = output();
 
   protected readonly confirming = signal(false);
 
   protected confirm(): void {
     this.confirming.set(false);
     this.leave.emit();
+  }
+
+  protected confirmDelete(): void {
+    this.confirming.set(false);
+    this.deleteGroup.emit();
   }
 }

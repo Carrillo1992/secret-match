@@ -39,7 +39,7 @@ class GroupExclusionsTest {
 
     {
         rosters.put(GROUP, roster(false));
-        rosters.put(OTHER_GROUP, new Roster(new MemberId(LUIS), List.of(member(LUIS, "Luis")), false));
+        rosters.put(OTHER_GROUP, new Roster("Otro grupo", new MemberId(LUIS), List.of(member(LUIS, "Luis")), false));
     }
 
     @Test
@@ -163,6 +163,7 @@ class GroupExclusionsTest {
 
     private static Roster roster(boolean finished) {
         return new Roster(
+                "Navidad",
                 new MemberId(CARMEN),
                 List.of(member(CARMEN, "Abuela Carmen"), member(LUIS, "Luis"), member(MARTA, "Marta")),
                 finished);

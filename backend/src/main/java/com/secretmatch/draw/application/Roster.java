@@ -6,13 +6,15 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A Group's Admin and Members, as the Draw module needs them.
+ * A Group's name, Admin and Members, as the Draw module needs them.
  *
+ * @param groupName the Group's name, for the emails the Draw module sends
  * @param finished whether the Group's Exchange Date is over, which makes it read-only
  */
-public record Roster(MemberId admin, List<Member> members, boolean finished) {
+public record Roster(String groupName, MemberId admin, List<Member> members, boolean finished) {
 
     public Roster {
+        Objects.requireNonNull(groupName, "groupName");
         Objects.requireNonNull(admin, "admin");
         members = List.copyOf(members);
     }

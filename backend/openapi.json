@@ -190,6 +190,62 @@
         "tags" : [ "groups" ]
       }
     },
+    "/api/v1/groups/{groupId}/draw" : {
+      "get" : {
+        "description" : "Only their own Receiver. A 404 until the Draw is made.",
+        "operationId" : "draw",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrawResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The Group's Draw as the signed-in Member sees it",
+        "tags" : [ "draw" ]
+      },
+      "post" : {
+        "description" : "Only the Admin can, once, with at least 4 Members. Every Member is emailed. The answer is the Draw as the Admin sees it: their own Receiver.",
+        "operationId" : "runDraw",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrawResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Run the Group's Draw",
+        "tags" : [ "draw" ]
+      }
+    },
     "/api/v1/groups/{groupId}/exclusions" : {
       "get" : {
         "description" : "Only the Admin can see them, oldest first. Anyone else gets a 404.",
@@ -755,6 +811,16 @@
         },
         "required" : [ "displayName" ]
       },
+      "DrawResponse" : {
+        "type" : "object",
+        "properties" : {
+          "myReceiver" : {
+            "$ref" : "#/components/schemas/ReceiverResponse",
+            "description" : "Who the signed-in Member gives a gift to."
+          }
+        },
+        "required" : [ "myReceiver" ]
+      },
       "EditGroupRequest" : {
         "type" : "object",
         "properties" : {
@@ -980,6 +1046,20 @@
           }
         },
         "required" : [ "newPassword", "token" ]
+      },
+      "ReceiverResponse" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Identifies the Member in the Group."
+          }
+        },
+        "required" : [ "displayName", "id" ]
       },
       "SignInRequest" : {
         "type" : "object",

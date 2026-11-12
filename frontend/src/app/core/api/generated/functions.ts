@@ -25,6 +25,10 @@ export type { RegenerateInviteLink$Params as RegenerateInviteLink$Params } from 
 export { regenerateInviteLink as regenerateInviteLink } from './fn/groups/regenerate-invite-link';
 export type { RemoveMember$Params as RemoveMember$Params } from './fn/groups/remove-member';
 export { removeMember as removeMember } from './fn/groups/remove-member';
+export type { Draw$Params as Draw$Params } from './fn/draw/draw';
+export { draw as draw } from './fn/draw/draw';
+export type { RunDraw$Params as RunDraw$Params } from './fn/draw/run-draw';
+export { runDraw as runDraw } from './fn/draw/run-draw';
 export type { GroupExclusions$Params as GroupExclusions$Params } from './fn/exclusions/group-exclusions';
 export { groupExclusions as groupExclusions } from './fn/exclusions/group-exclusions';
 export type { CreateExclusion$Params as CreateExclusion$Params } from './fn/exclusions/create-exclusion';

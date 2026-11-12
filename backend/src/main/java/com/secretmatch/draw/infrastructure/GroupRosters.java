@@ -31,6 +31,7 @@ class GroupRosters implements Rosters {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("a Group without an Admin"));
         return new Roster(
+                group.name(),
                 admin,
                 group.members().stream()
                         .map(member -> new Roster.Member(new MemberId(member.id()), member.displayName()))

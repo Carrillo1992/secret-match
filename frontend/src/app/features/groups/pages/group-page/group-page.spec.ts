@@ -29,6 +29,11 @@ const navidad = {
 const REGENERATE_URL = 'http://api.test/api/v1/groups/g-1/invite-link';
 const MEMBERS_URL = 'http://api.test/api/v1/groups/g-1/members';
 const EXCLUSIONS_URL = 'http://api.test/api/v1/groups/g-1/exclusions';
+const DRAW_URL = 'http://api.test/api/v1/groups/g-1/draw';
+const NOT_DRAWN = {
+  body: { type: 'urn:secretmatch:problem:draw-not-found', status: 404 },
+  init: { status: 404, statusText: 'Not Found' },
+};
 /** The same Group as its Admin, Abuela Carmen, sees it, with Marta in it too. */
 const asAdmin = {
   ...navidad,
@@ -64,6 +69,10 @@ describe('GroupPage', () => {
   afterEach(() => {
     // The Admin's page always loads the Exclusions; tests about something else answer with none.
     http.match(EXCLUSIONS_URL).forEach((request) => request.flush([]));
+    // Every page asks for the Draw; tests about something else answer that it is not made yet.
+    http
+      .match((request) => request.url === DRAW_URL && request.method === 'GET')
+      .forEach((request) => request.flush(NOT_DRAWN.body, NOT_DRAWN.init));
     http.verify();
   });
 
@@ -860,6 +869,120 @@ describe('GroupPage', () => {
       expect(rows()).toHaveLength(1);
       expect(button('Quitar')).toBeUndefined();
       expect(button('Añadir exclusión')).toBeUndefined();
+    });
+  });
+
+  describe('the Draw', () => {
+    /** Carmen's Group with four Members: enough for a Draw. */
+    const withFour = {
+      ...asAdmin,
+      members: [
+        ...asAdmin.members,
+        { id: 'u-pedro', displayName: 'Pedro', admin: false, you: false },
+      ],
+    };
+    const section = () => page().querySelector('section[aria-labelledby="group-draw"]');
+    const button = (label: string) =>
+      [...(section()?.querySelectorAll('button') ?? [])].find((b) =>
+        b.textContent?.includes(label),
+      );
+    const open = async (group: object, draw: 'not-drawn' | object) => {
+      http.expectOne(GROUP_URL).flush(group);
+      await settle();
+      const request = http.expectOne((r) => r.url === DRAW_URL && r.method === 'GET');
+      if (draw === 'not-drawn') {
+        request.flush(NOT_DRAWN.body, NOT_DRAWN.init);
+      } else {
+        request.flush(draw);
+      }
+      await settle();
+    };
+    const runDraw = async () => {
+      button('Sortear')?.click();
+      await settle();
+      button('Sí, sortear')?.click();
+      await settle();
+      return http.expectOne((r) => r.url === DRAW_URL && r.method === 'POST');
+    };
+
+    it('tells a Member before the Draw that they will be emailed, with nothing to press', async () => {
+      await open(navidad, 'not-drawn');
+
+      expect(text(section())).toContain('El sorteo aún no está hecho');
+      expect(button('Sortear')).toBeUndefined();
+    });
+
+    it('shows each Member their own Receiver once the Draw is made', async () => {
+      await open(navidad, { myReceiver: { id: 'u-marta', displayName: 'Marta' } });
+
+      expect(text(section())).toContain('Te toca regalar a Marta');
+    });
+
+    it('lets the Admin run the Draw after confirming, then shows their Receiver', async () => {
+      await open(withFour, 'not-drawn');
+
+      const request = await runDraw();
+      request.flush(
+        { myReceiver: { id: 'u-pedro', displayName: 'Pedro' } },
+        { status: 201, statusText: 'Created' },
+      );
+      await settle();
+
+      expect(text(section())).toContain('Te toca regalar a Pedro');
+      expect(button('Sortear')).toBeUndefined();
+    });
+
+    it('does not draw when the Admin cancels the confirmation', async () => {
+      await open(withFour, 'not-drawn');
+
+      button('Sortear')?.click();
+      await settle();
+      button('Cancelar')?.click();
+      await settle();
+
+      http.expectNone((r) => r.url === DRAW_URL && r.method === 'POST');
+      expect(button('Sortear')).toBeDefined();
+    });
+
+    it('explains to the Admin that a Draw needs at least 4 Members', async () => {
+      await open(asAdmin, 'not-drawn');
+
+      expect(text(section())).toContain('al menos 4 miembros');
+      expect(button('Sortear')?.disabled).toBe(true);
+    });
+
+    it('tells the Admin, without naming anyone, when the Exclusions leave no Draw', async () => {
+      await open(withFour, 'not-drawn');
+
+      const request = await runDraw();
+      request.flush(
+        { type: 'urn:secretmatch:problem:no-valid-draw', status: 422 },
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
+      await settle();
+
+      const alert = section()?.querySelector('[role="alert"]');
+      expect(text(alert)).toContain('exclusiones');
+      expect(text(alert)).not.toMatch(/Luis|Marta|Pedro|Carmen/);
+      expect(button('Sortear')).toBeDefined();
+    });
+
+    it('offers a retry when the Draw cannot be loaded', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+      http
+        .expectOne((r) => r.url === DRAW_URL && r.method === 'GET')
+        .error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      button('Reintentar')?.click();
+      await settle();
+      http
+        .expectOne((r) => r.url === DRAW_URL && r.method === 'GET')
+        .flush({ myReceiver: { id: 'u-marta', displayName: 'Marta' } });
+      await settle();
+
+      expect(text(section())).toContain('Te toca regalar a Marta');
     });
   });
 });

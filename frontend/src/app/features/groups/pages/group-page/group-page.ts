@@ -36,6 +36,8 @@ import {
   ExclusionsListing,
   NewExclusion,
 } from '../../components/exclusions-card/exclusions-card';
+import { DrawCard, DrawState, RunStatus } from '../../components/draw-card/draw-card';
+import { DrawApi } from '../../data-access/draw-api';
 import { Exclusion, ExclusionsApi } from '../../data-access/exclusions-api';
 import { longExchangeDate } from '../../data-access/group-format';
 import { GroupEdit, GroupsApi } from '../../data-access/groups-api';
@@ -52,6 +54,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
     Button,
     StatusHeader,
     TextLink,
+    DrawCard,
     InviteLinkCard,
     MembersCard,
     ExclusionsCard,
@@ -66,6 +69,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
 export class GroupPage {
   private readonly groupsApi = inject(GroupsApi);
   private readonly exclusionsApi = inject(ExclusionsApi);
+  private readonly drawApi = inject(DrawApi);
   private readonly router = inject(Router);
   private readonly origin = inject(DOCUMENT).location.origin;
   private readonly groupId = toSignal(
@@ -101,6 +105,42 @@ export class GroupPage {
   protected readonly removal = signal<Removal | null>(null);
 
   protected readonly editStatus = signal<EditStatus>('idle');
+
+  /** Asked for once the Group is found: a Group the User cannot see has no Draw for them either. */
+  private readonly drawOutcome = resource({
+    params: () => (this.group() ? this.groupId() : undefined),
+    loader: ({ params }) => this.drawApi.draw(params),
+  });
+  protected readonly drawState = computed<DrawState>(() => {
+    if (this.drawOutcome.isLoading() || !this.drawOutcome.hasValue()) {
+      return { status: 'loading' };
+    }
+    return this.drawOutcome.value();
+  });
+  protected readonly runStatus = signal<RunStatus>('idle');
+
+  /** Once the API agrees, the Admin sees their own Receiver, like every other Member. */
+  protected async runDraw(): Promise<void> {
+    this.runStatus.set('drawing');
+    const outcome = await this.drawApi.run(this.groupId());
+    switch (outcome.status) {
+      case 'drawn':
+        this.drawOutcome.set(outcome);
+        this.runStatus.set('idle');
+        return;
+      case 'already-drawn':
+        // Drawn meanwhile, e.g. from another tab: show that Draw.
+        this.runStatus.set('idle');
+        this.drawOutcome.reload();
+        return;
+      default:
+        this.runStatus.set(outcome.status);
+    }
+  }
+
+  protected reloadDraw(): void {
+    this.drawOutcome.reload();
+  }
 
   /** Only the Admin's page asks for the Exclusions: nobody else may know anything about them. */
   private readonly exclusionsOutcome = resource({

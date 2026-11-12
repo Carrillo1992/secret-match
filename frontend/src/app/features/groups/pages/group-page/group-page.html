@@ -31,6 +31,17 @@
       </section>
     }
 
+    <app-draw-card
+      class="mt-6"
+      [state]="drawState()"
+      [admin]="group.admin"
+      [memberCount]="group.members.length"
+      [finished]="group.finished"
+      [runStatus]="runStatus()"
+      (run)="runDraw()"
+      (retry)="reloadDraw()"
+    />
+
     <app-group-details-card
       class="mt-6"
       [group]="group"

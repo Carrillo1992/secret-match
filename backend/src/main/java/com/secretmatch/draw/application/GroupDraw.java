@@ -79,10 +79,10 @@ public class GroupDraw {
             throw new DrawAlreadyMadeException();
         }
         Set<MemberId> members = roster.members().stream().map(Roster.Member::id).collect(Collectors.toSet());
-        Set<Exclusion> rules = exclusions.inGroup(groupId).stream()
+        Set<Exclusion> groupExclusions = exclusions.inGroup(groupId).stream()
                 .map(StoredExclusion::exclusion)
                 .collect(Collectors.toSet());
-        switch (DrawEngine.draw(members, rules, random)) {
+        switch (DrawEngine.draw(members, groupExclusions, random)) {
             case DrawResult.Drawn drawn -> {
                 // Another request drew it between the check above and now.
                 if (!draws.add(groupId, drawn.assignments(), clock.instant())) {

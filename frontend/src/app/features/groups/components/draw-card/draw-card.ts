@@ -3,17 +3,13 @@ import { LucideGift, LucideShuffle } from '@lucide/angular';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
-import { Receiver } from '../../data-access/draw-api';
+import { DrawOutcome } from '../../data-access/draw-api';
 
-/** A Draw needs at least 4 Members (ADR 0001). */
-export const MINIMUM_MEMBERS = 4;
+/** A Draw needs at least 4 Members (ADR 0001); the API refuses fewer too. */
+const MINIMUM_MEMBERS = 4;
 
 /** The Group's Draw as the page knows it. */
-export type DrawState =
-  | { readonly status: 'loading' }
-  | { readonly status: 'drawn'; readonly receiver: Receiver }
-  | { readonly status: 'not-drawn' }
-  | { readonly status: 'failed' };
+export type DrawState = { readonly status: 'loading' } | DrawOutcome;
 
 /** Where the Admin's request to run the Draw stands, as the page tells it. */
 export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';

@@ -133,8 +133,11 @@ export class GroupPage {
         this.runStatus.set('idle');
         this.drawOutcome.reload();
         return;
-      default:
-        this.runStatus.set(outcome.status);
+      case 'no-valid-draw':
+        this.runStatus.set('no-valid-draw');
+        return;
+      case 'failed':
+        this.runStatus.set('failed');
     }
   }
 

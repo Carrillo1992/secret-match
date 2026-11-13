@@ -157,7 +157,7 @@ export class ProfilePage {
     this.passwordState.set(hadPassword ? 'saved' : 'created');
   }
 
-  /** Once deleted, the session ends and the User leaves the signed-in area. */
+  /** Once deleted, the session ends and the User lands on the landing page, which says it is done. */
   protected async deleteAccount(): Promise<void> {
     this.deleteState.set('deleting');
     const outcome = await this.profileApi.deleteAccount();
@@ -166,6 +166,6 @@ export class ProfilePage {
       return;
     }
     await this.session.endDeletedSession();
-    await this.router.navigateByUrl('/');
+    await this.router.navigateByUrl('/', { state: { accountDeleted: true } });
   }
 }

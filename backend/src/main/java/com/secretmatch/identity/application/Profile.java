@@ -8,6 +8,7 @@ import com.secretmatch.identity.domain.SessionId;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
 import com.secretmatch.identity.domain.WrongPasswordException;
+import com.secretmatch.notification.application.EmailRequested;
 import java.time.Clock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -72,7 +73,7 @@ public class Profile {
     /**
      * Deletes the User's account with everything of theirs: the Groups they are the Admin of go with them (their
      * other Members are emailed), and they leave every other Group, whatever its state. Every Session of theirs ends,
-     * and they can no longer sign in.
+     * and they can no longer sign in. They are emailed that it is done.
      *
      * @throws com.secretmatch.shared.domain.DomainException if another module refuses it ({@link
      *     UserDeletionRequested}), e.g. while they are in a Group whose Draw is made and whose Exchange Date has not
@@ -81,10 +82,21 @@ public class Profile {
      */
     @Transactional
     public void deleteAccount(UserId id) {
-        existing(id);
+        User user = existing(id);
         events.publishEvent(new UserDeletionRequested(id.value()));
         events.publishEvent(new UserDeleted(id.value()));
         users.delete(id);
+        emailAccountDeleted(user);
+    }
+
+    /** "Your account was deleted", to the User who deleted it: sent once it is done, so they know it worked. */
+    private void emailAccountDeleted(User user) {
+        events.publishEvent(
+                new EmailRequested(user.email().value(), "Hemos borrado tu cuenta de SecretMatch", """
+                Hemos borrado tu cuenta de SecretMatch, como pediste. Has salido de todos tus grupos, y los que \
+                administrabas se han borrado.
+
+                Si algún día quieres volver, puedes crear una cuenta nueva.""", "/"));
     }
 
     private User existing(UserId id) {

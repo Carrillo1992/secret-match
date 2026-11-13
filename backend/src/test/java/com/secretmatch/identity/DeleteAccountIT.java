@@ -1,6 +1,7 @@
 package com.secretmatch.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.secretmatch.MutableClock;
 import com.secretmatch.RecordingEmailSender;
@@ -65,6 +66,7 @@ class DeleteAccountIT {
         User luis = signedInUser("Luis");
         String groupId = createGroup(carmen, "Navidad", "2026-12-24");
         joinGroup(luis, carmen, groupId);
+        mail.clear();
 
         deleteAccount(luis).expectStatus().isNoContent();
 
@@ -85,6 +87,10 @@ class DeleteAccountIT {
                 .isEqualTo("urn:secretmatch:problem:session-expired");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM users WHERE email = ?", Long.class, luis.email()))
                 .isZero();
+        assertThat(mail.sent()).singleElement().satisfies(email -> {
+            assertThat(email.to()).isEqualTo(luis.email());
+            assertThat(email.subject()).isEqualTo("Hemos borrado tu cuenta de SecretMatch");
+        });
     }
 
     @Test
@@ -107,9 +113,12 @@ class DeleteAccountIT {
         JsonNode stillThere =
                 json(get(luis, "/api/v1/groups/" + othersGroup).expectStatus().isOk());
         assertThat(stillThere.get("members").size()).isEqualTo(1);
-        assertThat(mail.sent()).extracting(OutgoingEmail::to).containsExactlyInAnyOrder(luis.email(), marta.email());
         assertThat(mail.sent())
-                .allSatisfy(email -> assertThat(email.subject()).isEqualTo("Se ha borrado el grupo «Navidad»"));
+                .extracting(OutgoingEmail::to, OutgoingEmail::subject)
+                .containsExactlyInAnyOrder(
+                        tuple(luis.email(), "Se ha borrado el grupo «Navidad»"),
+                        tuple(marta.email(), "Se ha borrado el grupo «Navidad»"),
+                        tuple(carmen.email(), "Hemos borrado tu cuenta de SecretMatch"));
     }
 
     @Test

@@ -2,7 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { authInterceptor } from '../../../../core/auth/auth.interceptor';
@@ -214,6 +214,10 @@ describe('ProfilePage', () => {
       await settle();
 
       expect(harness.routeNativeElement?.textContent).toContain('Otra página');
+      // The landing page reads it to say the account is gone.
+      expect(TestBed.inject(Router).lastSuccessfulNavigation()?.extras.state).toEqual({
+        accountDeleted: true,
+      });
     });
 
     it('explains the refusal while the User is in a drawn Group that has not finished', async () => {

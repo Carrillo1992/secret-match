@@ -20,7 +20,7 @@ import { CurrentUser } from '../../../../core/auth/current-user';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
-import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
+import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { USER_RULES } from '../../../../core/auth/user-rules';
@@ -34,7 +34,7 @@ type DeleteState = 'idle' | 'confirming' | 'deleting' | Exclude<DeleteAccountOut
 
 /**
  * "Tu perfil": the signed-in User changes their display name and their password, and can delete
- * their account behind an inline confirmation.
+ * their account after confirming it in a dialog.
  */
 @Component({
   selector: 'app-profile-page',
@@ -43,7 +43,7 @@ type DeleteState = 'idle' | 'confirming' | 'deleting' | Exclude<DeleteAccountOut
     Alert,
     AppShell,
     Button,
-    ConfirmPanel,
+    ConfirmDialog,
     Field,
     ReactiveFormsModule,
     RouterLink,

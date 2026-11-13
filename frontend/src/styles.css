@@ -38,6 +38,9 @@
   --color-sage-soft: #d6e4d2;
   --color-clay: #e8a486;
 
+  /* Dims the page behind a modal dialog */
+  --color-scrim: rgb(59 34 25 / 0.55);
+
   --font-sans: 'Nunito Sans Variable', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Outfit Variable', ui-sans-serif, system-ui, sans-serif;
 
@@ -85,6 +88,7 @@
     --color-sage: #55704f;
     --color-sage-soft: #45573f;
     --color-clay: #8a4a33;
+    --color-scrim: rgb(0 0 0 / 0.65);
 
     --shadow-sheet: 0 -8px 30px -12px rgb(0 0 0 / 0.6);
     --shadow-card: 0 2px 4px rgb(0 0 0 / 0.3), 0 24px 48px -16px rgb(0 0 0 / 0.7);

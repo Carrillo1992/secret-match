@@ -191,16 +191,36 @@ describe('ProfilePage', () => {
   describe('deleting the account', () => {
     const accountDeletion = () =>
       http.expectOne((request) => request.url === ME_URL && request.method === 'DELETE');
+    /** The confirmation dialog, only while it is open. */
+    const openDialog = () => page().querySelector<HTMLDialogElement>('dialog[open]');
 
-    it('asks to confirm first, and cancelling sends nothing', async () => {
+    it('asks to confirm in a dialog first, and cancelling closes it and sends nothing', async () => {
       await loaded();
+      expect(openDialog()).toBeNull();
 
       await press('Borrar mi cuenta');
 
-      expect(page().textContent).toContain('¿Borrar tu cuenta?');
+      const dialog = openDialog();
+      expect(dialog?.getAttribute('aria-labelledby')).toBeTruthy();
+      const title = page().querySelector(`#${dialog?.getAttribute('aria-labelledby')}`);
+      expect(title?.textContent).toContain('¿Borrar tu cuenta?');
+      expect(dialog?.textContent).toContain('No se puede deshacer');
       await press('Cancelar');
-      expect(page().textContent).not.toContain('¿Borrar tu cuenta?');
+      expect(openDialog()).toBeNull();
       http.expectNone((request) => request.method === 'DELETE');
+    });
+
+    it('closes the dialog with Escape, like any other cancel', async () => {
+      await loaded();
+      await press('Borrar mi cuenta');
+
+      // What a browser does on Escape: a cancellable `cancel` event, then the dialog closes.
+      openDialog()?.dispatchEvent(new Event('cancel', { cancelable: true }));
+      await settle();
+
+      expect(openDialog()).toBeNull();
+      await press('Borrar mi cuenta');
+      expect(openDialog()).toBeTruthy();
     });
 
     it('deletes it once confirmed, ends the session and leaves the signed-in area', async () => {
@@ -231,7 +251,7 @@ describe('ProfilePage', () => {
       );
       await settle();
 
-      const alert = page().querySelector('[role="alert"]')?.textContent ?? '';
+      const alert = openDialog()?.querySelector('[role="alert"]')?.textContent ?? '';
       expect(alert).toContain('cancele el sorteo');
       expect(alert).toContain('fecha del intercambio');
       http.expectNone(SIGN_OUT_URL);
@@ -245,10 +265,14 @@ describe('ProfilePage', () => {
       accountDeletion().flush(null, { status: 500, statusText: 'Server Error' });
       await settle();
 
-      expect(page().querySelector('[role="alert"]')?.textContent).toContain(
+      expect(openDialog()?.querySelector('[role="alert"]')?.textContent).toContain(
         'No hemos podido borrar tu cuenta',
       );
-      expect(button('Borrar mi cuenta')).toBeTruthy();
+      expect(button('Sí, borrar mi cuenta').disabled).toBe(false);
+      // Closing it and asking again starts without the old error.
+      await press('Cancelar');
+      await press('Borrar mi cuenta');
+      expect(openDialog()?.querySelector('[role="alert"]')).toBeNull();
     });
   });
 });

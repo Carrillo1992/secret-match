@@ -63,4 +63,9 @@ class JpaUsers implements Users {
     public void save(User user) {
         repository.save(UserEntity.from(user));
     }
+
+    @Override
+    public void delete(UserId id) {
+        repository.deleteUser(id.value());
+    }
 }

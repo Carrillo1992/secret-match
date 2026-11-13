@@ -1,5 +1,6 @@
 package com.secretmatch.draw.application;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,4 +13,7 @@ public interface Rosters {
      * @return empty if there is no such Group or {@code viewer} is not one of its Members
      */
     Optional<Roster> of(UUID groupId, UUID viewer);
+
+    /** The Groups this User is a Member of whose Exchange Date has not passed. */
+    List<UUID> unfinishedGroupsOf(UUID member);
 }

@@ -2,7 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { authInterceptor } from '../../../../core/auth/auth.interceptor';
@@ -11,6 +11,7 @@ import { ProfilePage } from './profile-page';
 const ME_URL = 'http://api.test/api/v1/users/me';
 const DISPLAY_NAME_URL = `${ME_URL}/display-name`;
 const PASSWORD_URL = `${ME_URL}/password`;
+const SIGN_OUT_URL = 'http://api.test/api/v1/sessions/current';
 
 @Component({ template: '<h1>Otra página</h1>' })
 class Stub {}
@@ -27,6 +28,7 @@ describe('ProfilePage', () => {
         provideRouter([
           { path: 'profile', component: ProfilePage },
           { path: 'home', component: Stub },
+          { path: '', component: Stub },
         ]),
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
@@ -184,5 +186,93 @@ describe('ProfilePage', () => {
     expect(errorFor('Contraseña actual')).toContain('Escribe tu contraseña actual');
     expect(errorFor('Nueva contraseña')).toContain('al menos 8 caracteres');
     http.expectNone(PASSWORD_URL);
+  });
+
+  describe('deleting the account', () => {
+    const accountDeletion = () =>
+      http.expectOne((request) => request.url === ME_URL && request.method === 'DELETE');
+    /** The confirmation dialog, only while it is open. */
+    const openDialog = () => page().querySelector<HTMLDialogElement>('dialog[open]');
+
+    it('asks to confirm in a dialog first, and cancelling closes it and sends nothing', async () => {
+      await loaded();
+      expect(openDialog()).toBeNull();
+
+      await press('Borrar mi cuenta');
+
+      const dialog = openDialog();
+      expect(dialog?.getAttribute('aria-labelledby')).toBeTruthy();
+      const title = page().querySelector(`#${dialog?.getAttribute('aria-labelledby')}`);
+      expect(title?.textContent).toContain('¿Borrar tu cuenta?');
+      expect(dialog?.textContent).toContain('No se puede deshacer');
+      await press('Cancelar');
+      expect(openDialog()).toBeNull();
+      http.expectNone((request) => request.method === 'DELETE');
+    });
+
+    it('closes the dialog with Escape, like any other cancel', async () => {
+      await loaded();
+      await press('Borrar mi cuenta');
+
+      // What a browser does on Escape: a cancellable `cancel` event, then the dialog closes.
+      openDialog()?.dispatchEvent(new Event('cancel', { cancelable: true }));
+      await settle();
+
+      expect(openDialog()).toBeNull();
+      await press('Borrar mi cuenta');
+      expect(openDialog()).toBeTruthy();
+    });
+
+    it('deletes it once confirmed, ends the session and leaves the signed-in area', async () => {
+      await loaded();
+      await press('Borrar mi cuenta');
+
+      await press('Sí, borrar mi cuenta');
+      accountDeletion().flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+      http.expectOne(SIGN_OUT_URL).flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+
+      expect(harness.routeNativeElement?.textContent).toContain('Otra página');
+      // The landing page reads it to say the account is gone.
+      expect(TestBed.inject(Router).lastSuccessfulNavigation()?.extras.state).toEqual({
+        accountDeleted: true,
+      });
+    });
+
+    it('explains the refusal while the User is in a drawn Group that has not finished', async () => {
+      await loaded();
+      await press('Borrar mi cuenta');
+
+      await press('Sí, borrar mi cuenta');
+      accountDeletion().flush(
+        JSON.stringify({ type: 'urn:secretmatch:problem:account-in-draw', status: 422 }),
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
+      await settle();
+
+      const alert = openDialog()?.querySelector('[role="alert"]')?.textContent ?? '';
+      expect(alert).toContain('cancele el sorteo');
+      expect(alert).toContain('fecha del intercambio');
+      http.expectNone(SIGN_OUT_URL);
+    });
+
+    it('says so when the account could not be deleted', async () => {
+      await loaded();
+      await press('Borrar mi cuenta');
+
+      await press('Sí, borrar mi cuenta');
+      accountDeletion().flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(openDialog()?.querySelector('[role="alert"]')?.textContent).toContain(
+        'No hemos podido borrar tu cuenta',
+      );
+      expect(button('Sí, borrar mi cuenta').disabled).toBe(false);
+      // Closing it and asking again starts without the old error.
+      await press('Cancelar');
+      await press('Borrar mi cuenta');
+      expect(openDialog()?.querySelector('[role="alert"]')).toBeNull();
+    });
   });
 });

@@ -1,5 +1,10 @@
 <app-sheet-layout>
   <div class="flex flex-col items-center gap-6 text-center">
+    @if (accountDeleted) {
+      <p appAlert="success" data-testid="account-deleted" class="w-full">
+        Tu cuenta se ha borrado. Te hemos enviado un email para confirmarlo.
+      </p>
+    }
     <div class="flex flex-col gap-2">
       <h1 class="font-display text-4xl font-bold tracking-tight">SecretMatch</h1>
       <p class="text-lg text-ink-muted">Tu amigo invisible, sin papelitos.</p>

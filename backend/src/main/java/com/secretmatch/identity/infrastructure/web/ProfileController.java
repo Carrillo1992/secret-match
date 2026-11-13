@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,5 +51,16 @@ class ProfileController {
                 AccessTokenClaims.userId(accessToken),
                 AccessTokenClaims.sessionId(accessToken),
                 new ChangePasswordCommand(request.currentPassword(), request.newPassword()));
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Delete the signed-in User's account",
+            description = "Refused (account-in-draw) while the User is in a Group whose Draw is made and whose"
+                    + " Exchange Date has not passed. Otherwise the Groups they are the Admin of are deleted, and"
+                    + " their other Members emailed; they leave every other Group, and all their Sessions end.")
+    void deleteAccount(@AuthenticationPrincipal Jwt accessToken) {
+        profile.deleteAccount(AccessTokenClaims.userId(accessToken));
     }
 }

@@ -626,6 +626,17 @@
       }
     },
     "/api/v1/users/me" : {
+      "delete" : {
+        "description" : "Refused (account-in-draw) while the User is in a Group whose Draw is made and whose Exchange Date has not passed. Otherwise the Groups they are the Admin of are deleted, and their other Members emailed; they leave every other Group, and all their Sessions end.",
+        "operationId" : "deleteAccount",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Delete the signed-in User's account",
+        "tags" : [ "profile" ]
+      },
       "get" : {
         "operationId" : "currentUser",
         "responses" : {

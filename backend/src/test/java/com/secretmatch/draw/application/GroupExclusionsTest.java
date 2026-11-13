@@ -187,6 +187,15 @@ class GroupExclusionsTest {
             return Optional.ofNullable(byGroup.get(groupId))
                     .filter(roster -> roster.member(new MemberId(viewer)).isPresent());
         }
+
+        @Override
+        public List<UUID> unfinishedGroupsOf(UUID member) {
+            return byGroup.entrySet().stream()
+                    .filter(entry -> !entry.getValue().finished()
+                            && entry.getValue().member(new MemberId(member)).isPresent())
+                    .map(Map.Entry::getKey)
+                    .toList();
+        }
     }
 
     private static final class InMemoryExclusions implements Exclusions {

@@ -76,6 +76,19 @@ export class AuthSession {
     return true;
   }
 
+  /**
+   * Forgets the session of an account that was just deleted. Its Sessions already ended in the API;
+   * signing out there too only clears the refresh cookie, so a failure there changes nothing.
+   */
+  async endDeletedSession(): Promise<void> {
+    this.token.set(null);
+    try {
+      await this.api.invoke(signOut);
+    } catch {
+      // The cookie left behind no longer works: its session was deleted with the account.
+    }
+  }
+
   private async requestRefresh(): Promise<boolean> {
     try {
       const { accessToken } = await this.api.invoke(refresh);

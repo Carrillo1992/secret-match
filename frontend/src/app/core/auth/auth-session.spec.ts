@@ -213,6 +213,17 @@ describe('AuthSession', () => {
       await expect(done).resolves.toBe(false);
       expect(session.isSignedIn()).toBe(true);
     });
+
+    it('forgets the session of a deleted account even when the API cannot clear the cookie', async () => {
+      await signedIn();
+
+      const done = session.endDeletedSession();
+      expect(session.isSignedIn()).toBe(false);
+      http.expectOne(SIGN_OUT_URL).error(new ProgressEvent('error'), { status: 0 });
+
+      await expect(done).resolves.toBeUndefined();
+      expect(session.isSignedIn()).toBe(false);
+    });
   });
 
   describe('the guard', () => {

@@ -175,6 +175,52 @@
         </div>
       </form>
     </section>
+
+    <section
+      aria-labelledby="profile-delete-title"
+      class="mt-6 rounded-card bg-surface p-5 shadow-card"
+    >
+      <h2 id="profile-delete-title" class="font-display text-lg font-semibold">Borrar tu cuenta</h2>
+      <p class="mt-1.5 text-ink-muted">
+        Saldrás de todos tus grupos y se borrarán tus datos. Los grupos que administras se borrarán
+        para todos.
+      </p>
+
+      @if (deleteState() === 'in-draw') {
+        <p appAlert class="mt-4">
+          Estás en un grupo con el sorteo hecho cuya fecha del intercambio aún no ha pasado. Pide al
+          administrador que cancele el sorteo o espera a que pase la fecha del intercambio.
+        </p>
+      } @else if (deleteState() === 'failed') {
+        <p appAlert class="mt-4">No hemos podido borrar tu cuenta. Inténtalo de nuevo.</p>
+      }
+
+      @if (deleteState() === 'confirming') {
+        <app-confirm-panel
+          class="mt-4"
+          question="¿Borrar tu cuenta?"
+          confirmLabel="Sí, borrar mi cuenta"
+          returnFocusTo="delete-account"
+          (confirmed)="deleteAccount()"
+          (cancelled)="deleteState.set('idle')"
+        >
+          No se puede deshacer. A los miembros de los grupos que administras les avisaremos por
+          email.
+        </app-confirm-panel>
+      } @else {
+        <button
+          id="delete-account"
+          type="button"
+          appButton="secondary"
+          class="mt-4"
+          [disabled]="deleteState() === 'deleting'"
+          (click)="deleteState.set('confirming')"
+        >
+          <svg lucideTrash2 [size]="18"></svg>
+          {{ deleteState() === 'deleting' ? 'Borrando…' : 'Borrar mi cuenta' }}
+        </button>
+      }
+    </section>
   } @else {
     <p appAlert class="mt-6">No hemos podido cargar tu perfil. Inténtalo de nuevo.</p>
     <button type="button" appButton="secondary" class="mt-4" (click)="user.reload()">

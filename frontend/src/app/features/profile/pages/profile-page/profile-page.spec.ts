@@ -11,6 +11,7 @@ import { ProfilePage } from './profile-page';
 const ME_URL = 'http://api.test/api/v1/users/me';
 const DISPLAY_NAME_URL = `${ME_URL}/display-name`;
 const PASSWORD_URL = `${ME_URL}/password`;
+const SIGN_OUT_URL = 'http://api.test/api/v1/sessions/current';
 
 @Component({ template: '<h1>Otra página</h1>' })
 class Stub {}
@@ -27,6 +28,7 @@ describe('ProfilePage', () => {
         provideRouter([
           { path: 'profile', component: ProfilePage },
           { path: 'home', component: Stub },
+          { path: '', component: Stub },
         ]),
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
@@ -184,5 +186,65 @@ describe('ProfilePage', () => {
     expect(errorFor('Contraseña actual')).toContain('Escribe tu contraseña actual');
     expect(errorFor('Nueva contraseña')).toContain('al menos 8 caracteres');
     http.expectNone(PASSWORD_URL);
+  });
+
+  describe('deleting the account', () => {
+    const accountDeletion = (method = 'DELETE') =>
+      http.expectOne((request) => request.url === ME_URL && request.method === method);
+
+    it('asks to confirm first, and cancelling sends nothing', async () => {
+      await loaded();
+
+      await press('Borrar mi cuenta');
+
+      expect(page().textContent).toContain('¿Borrar tu cuenta?');
+      await press('Cancelar');
+      expect(page().textContent).not.toContain('¿Borrar tu cuenta?');
+      http.expectNone((request) => request.method === 'DELETE');
+    });
+
+    it('deletes it once confirmed, ends the session and leaves the signed-in area', async () => {
+      await loaded();
+      await press('Borrar mi cuenta');
+
+      await press('Sí, borrar mi cuenta');
+      accountDeletion().flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+      http.expectOne(SIGN_OUT_URL).flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+
+      expect(harness.routeNativeElement?.textContent).toContain('Otra página');
+    });
+
+    it('explains the refusal while the User is in a drawn Group that has not finished', async () => {
+      await loaded();
+      await press('Borrar mi cuenta');
+
+      await press('Sí, borrar mi cuenta');
+      accountDeletion().flush(
+        JSON.stringify({ type: 'urn:secretmatch:problem:account-in-draw', status: 422 }),
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
+      await settle();
+
+      const alert = page().querySelector('[role="alert"]')?.textContent ?? '';
+      expect(alert).toContain('cancele el sorteo');
+      expect(alert).toContain('fecha del intercambio');
+      http.expectNone(SIGN_OUT_URL);
+    });
+
+    it('says so when the account could not be deleted', async () => {
+      await loaded();
+      await press('Borrar mi cuenta');
+
+      await press('Sí, borrar mi cuenta');
+      accountDeletion().flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(page().querySelector('[role="alert"]')?.textContent).toContain(
+        'No hemos podido borrar tu cuenta',
+      );
+      expect(button('Borrar mi cuenta')).toBeTruthy();
+    });
   });
 });

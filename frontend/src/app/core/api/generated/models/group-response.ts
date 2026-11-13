@@ -13,6 +13,11 @@ export interface GroupResponse {
    * In euros; absent when the Group has no budget.
    */
   budget?: number;
+
+  /**
+   * Whether its Draw is made: from then on nobody joins it, leaves it or is removed from it, its Invite Link no longer works and its Exclusions cannot change.
+   */
+  drawn: boolean;
   exchangeDate: string;
 
   /**

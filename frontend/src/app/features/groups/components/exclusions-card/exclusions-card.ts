@@ -51,7 +51,7 @@ export type NewExclusion = readonly [string, string];
 /**
  * The Group's Exclusions, for its Admin only (ADR 0001): the pairs with a quiet "Quitar" each,
  * which removes at once, and "Añadir exclusión", which opens an inline form with two selects in
- * place (#27, option B). A finished Group's Exclusions are only listed.
+ * place (#27, option B). The Exclusions of a finished Group, or of a drawn one (#29), are only listed.
  */
 @Component({
   selector: 'app-exclusions-card',
@@ -105,7 +105,7 @@ export type NewExclusion = readonly [string, string];
                   <span class="sr-only">y</span>
                   <span>{{ exclusion.members[1].displayName }}</span>
                 </span>
-                @if (!finished()) {
+                @if (!frozen()) {
                   <button
                     type="button"
                     appLink
@@ -122,7 +122,13 @@ export type NewExclusion = readonly [string, string];
             }
           </ul>
 
-          @if (!finished()) {
+          @if (drawn() && !finished()) {
+            <p class="mt-3 text-sm text-ink-muted">
+              El sorteo ya está hecho, así que las exclusiones ya no se pueden cambiar.
+            </p>
+          }
+
+          @if (!frozen()) {
             @if (members().length < 2) {
               <p class="mt-3 text-sm text-ink-muted">
                 Cuando haya al menos dos personas en el grupo, podrás añadir exclusiones.
@@ -222,6 +228,9 @@ export class ExclusionsCard {
   readonly listing = input.required<ExclusionsListing>();
   /** A finished Group is read-only: its Exclusions are only listed. */
   readonly finished = input.required<boolean>();
+  /** A drawn Group's Exclusions are frozen (ADR 0001): they are only listed. */
+  readonly drawn = input.required<boolean>();
+  protected readonly frozen = computed(() => this.finished() || this.drawn());
   readonly addition = input<Addition | null>(null);
   readonly removal = input<ExclusionRemoval | null>(null);
   readonly add = output<NewExclusion>();

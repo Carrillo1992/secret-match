@@ -30,7 +30,8 @@ import {
   notBefore,
 } from '../../data-access/group-details-form';
 import { notBlank } from '../../../../shared/forms/validators';
-import { earliestExchangeDate, euros, longExchangeDate } from '../../data-access/group-format';
+import { euros } from '../../../../shared/format/euros';
+import { earliestExchangeDate, longExchangeDate } from '../../data-access/group-format';
 import { Group, GroupEdit } from '../../data-access/groups-api';
 
 /** Where the Admin's last edit stands, as the page tells it. */

@@ -20,7 +20,7 @@ import { Chip } from '../../../../shared/ui/chip/chip';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
-import { euros } from '../../../groups/data-access/group-format';
+import { euros } from '../../../../shared/format/euros';
 import { SaveStatus, WishForm } from '../../components/wish-form/wish-form';
 import { PRIORITY_LABELS } from '../../data-access/wish-rules';
 import { Wish, WishInput, WishlistApi } from '../../data-access/wishlist-api';

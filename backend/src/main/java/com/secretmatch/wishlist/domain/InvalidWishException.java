@@ -22,7 +22,9 @@ public class InvalidWishException extends DomainException {
 
     static InvalidWishException price() {
         return new InvalidWishException(
-                "invalid-wish-price", "A Wish's price must be an amount in euros from 0 to 999999.99, to the cent.");
+                "invalid-wish-price",
+                "A Wish's price must be an amount in euros from 0 to below " + Wish.PRICE_LIMIT.toPlainString()
+                        + ", to the cent.");
     }
 
     static InvalidWishException notes() {

@@ -257,7 +257,7 @@ class WishlistIT {
     }
 
     @Test
-    @DisplayName("leaving the Group or deleting it is not blocked by Wishes, and takes them along")
+    @DisplayName("leaving, being removed or deleting the Group is not blocked by Wishes, and takes them along")
     void wishesDoNotBlockLeavingOrDeleting() {
         Family family = family();
         addedWishId(family.luis(), family, "Bufanda");
@@ -267,6 +267,17 @@ class WishlistIT {
                 .expectStatus()
                 .isNoContent();
         get(family.carmen(), wishlistOf(family, family.luisId())).expectStatus().isNotFound();
+        delete(family.carmen(), "/api/v1/groups/" + family.groupId() + "/members/" + family.martaId())
+                .expectStatus()
+                .isNoContent();
+        get(family.carmen(), wishlistOf(family, family.martaId()))
+                .expectStatus()
+                .isNotFound();
+        joinGroup(family.marta(), family.carmen(), family.groupId());
+        assertThat(json(get(family.carmen(), wishlistOf(family, family.martaId())))
+                        .get("wishes"))
+                .as("a removed Member who joins again starts with an empty Wishlist")
+                .isEmpty();
         // A Wish left behind would break its foreign key to the Group's Members, so the deletion itself would
         // fail: a 204 means none is left.
         delete(family.carmen(), "/api/v1/groups/" + family.groupId())

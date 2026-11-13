@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { RouterLink } from '@angular/router';
 import { LucideCalendar, LucideChevronRight } from '@lucide/angular';
 import { Chip } from '../../../../shared/ui/chip/chip';
-import { euros, memberCount, shortExchangeDate } from '../../data-access/group-format';
+import { euros } from '../../../../shared/format/euros';
+import { memberCount, shortExchangeDate } from '../../data-access/group-format';
 import { GroupSummary } from '../../data-access/groups-api';
 
 /** One of the User's Groups in "Mis grupos": the whole card links to the Group's page. */

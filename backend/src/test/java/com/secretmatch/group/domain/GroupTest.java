@@ -145,7 +145,8 @@ class GroupTest {
                 CREATOR,
                 List.of(CREATOR, GUEST),
                 FIRST_CODE,
-                NOW);
+                NOW,
+                false);
 
         assertThatThrownBy(() -> group.regenerateInviteLink(GUEST, new InviteCode("second-code"), NOW))
                 .isInstanceOf(AdminOnlyException.class)
@@ -184,7 +185,8 @@ class GroupTest {
                 CREATOR,
                 List.of(CREATOR, GUEST, OTHER_GUEST),
                 FIRST_CODE,
-                NOW);
+                NOW,
+                false);
     }
 
     @Test
@@ -317,7 +319,8 @@ class GroupTest {
                 CREATOR,
                 List.of(CREATOR, GUEST, OTHER_GUEST),
                 FIRST_CODE,
-                NOW);
+                NOW,
+                false);
     }
 
     @ParameterizedTest(name = "Exchange Date {0}: still open at {1}, finished at {2}")
@@ -391,5 +394,47 @@ class GroupTest {
     @DisplayName("the Admin can still delete a finished Group")
     void finishedGroupCanBeDeleted() {
         assertThat(exchangingOn(CHRISTMAS_EVE).authoriseDeletion(CREATOR)).containsExactly(GUEST, OTHER_GUEST);
+    }
+
+    // ---------- a drawn Group ----------
+
+    @Test
+    @DisplayName("a new Group has no Draw yet, and marking it drawn changes nothing else")
+    void markedDrawn() {
+        Group group = withGuests();
+
+        Group drawn = group.markDrawn();
+
+        assertThat(group.isDrawn()).isFalse();
+        assertThat(drawn.isDrawn()).isTrue();
+        assertThat(drawn.members()).isEqualTo(group.members());
+        assertThat(drawn.inviteCode()).isEqualTo(group.inviteCode());
+    }
+
+    @Test
+    @DisplayName("on a drawn Group nobody joins, leaves or is removed, and its Invite Link cannot be regenerated")
+    void drawnGroupIsFrozen() {
+        Group drawn = withGuests().markDrawn();
+
+        assertThatThrownBy(() -> drawn.authoriseJoin(NOW))
+                .isInstanceOf(GroupDrawnException.class)
+                .extracting(e -> ((GroupDrawnException) e).code())
+                .isEqualTo("group-drawn");
+        assertThatThrownBy(() -> drawn.removeMember(GUEST, GUEST, NOW)).isInstanceOf(GroupDrawnException.class);
+        assertThatThrownBy(() -> drawn.removeMember(CREATOR, OTHER_GUEST, NOW)).isInstanceOf(GroupDrawnException.class);
+        assertThatThrownBy(() -> drawn.regenerateInviteLink(CREATOR, new InviteCode("second-code"), NOW))
+                .isInstanceOf(GroupDrawnException.class);
+    }
+
+    @Test
+    @DisplayName("the Admin can still edit and delete a drawn Group")
+    void drawnGroupCanBeEditedAndDeleted() {
+        Group drawn = withGuests().markDrawn();
+
+        Group edited = drawn.edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, NOW);
+
+        assertThat(edited.name().value()).isEqualTo("Nochebuena");
+        assertThat(edited.isDrawn()).isTrue();
+        assertThat(drawn.authoriseDeletion(CREATOR)).containsExactly(GUEST, OTHER_GUEST);
     }
 }

@@ -3,6 +3,7 @@ package com.secretmatch.draw.application;
 import com.secretmatch.draw.domain.Exclusion;
 import com.secretmatch.draw.domain.ExclusionNotFoundException;
 import com.secretmatch.draw.domain.ExclusionsNotFoundException;
+import com.secretmatch.draw.domain.GroupDrawnException;
 import com.secretmatch.draw.domain.GroupFinishedException;
 import com.secretmatch.draw.domain.InvalidExclusionException;
 import com.secretmatch.draw.domain.MemberId;
@@ -10,6 +11,7 @@ import com.secretmatch.group.application.GroupDeleted;
 import com.secretmatch.group.application.MembershipEnded;
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -51,6 +53,7 @@ public class GroupExclusions {
      *
      * @throws ExclusionsNotFoundException if there is no such Group or {@code admin} is not its Admin
      * @throws GroupFinishedException if the Group is finished
+     * @throws GroupDrawnException if the Group's Draw is made
      * @throws InvalidExclusionException if both are the same Member, or one is not a Member of the Group
      */
     @Transactional
@@ -73,6 +76,7 @@ public class GroupExclusions {
      *
      * @throws ExclusionsNotFoundException if there is no such Group or {@code admin} is not its Admin
      * @throws GroupFinishedException if the Group is finished
+     * @throws GroupDrawnException if the Group's Draw is made
      * @throws ExclusionNotFoundException if the Group has no such Exclusion
      */
     @Transactional
@@ -96,17 +100,24 @@ public class GroupExclusions {
     }
 
     private Roster adminView(UUID groupId, UUID admin) {
-        return rosters.of(groupId, admin)
-                .filter(roster -> roster.admin().equals(new MemberId(admin)))
-                .orElseThrow(ExclusionsNotFoundException::new);
+        return adminOnly(rosters.of(groupId, admin), admin);
     }
 
+    /** Locked, so a Draw being made at the same moment either waits for this change or is seen by it. */
     private Roster adminChange(UUID groupId, UUID admin) {
-        Roster roster = adminView(groupId, admin);
+        Roster roster = adminOnly(rosters.lockedOf(groupId, admin), admin);
         if (roster.finished()) {
             throw new GroupFinishedException();
         }
+        if (roster.drawn()) {
+            throw new GroupDrawnException();
+        }
         return roster;
+    }
+
+    private static Roster adminOnly(Optional<Roster> roster, UUID admin) {
+        return roster.filter(found -> found.admin().equals(new MemberId(admin)))
+                .orElseThrow(ExclusionsNotFoundException::new);
     }
 
     private static ExclusionDetails detailsOf(StoredExclusion stored, Roster roster) {

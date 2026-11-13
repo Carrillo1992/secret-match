@@ -16,4 +16,15 @@ public interface Rosters {
 
     /** The Groups this User is a Member of whose Exchange Date has not passed. */
     List<UUID> unfinishedGroupsOf(UUID member);
+
+    /**
+     * Like {@link #of}, but first locks the Group until the transaction ends, so nobody joins or leaves it, and
+     * no other change that reads it this way runs, meanwhile.
+     *
+     * @return empty if there is no such Group or {@code viewer} is not one of its Members
+     */
+    Optional<Roster> lockedOf(UUID groupId, UUID viewer);
+
+    /** Records that the Group's Draw is made, which freezes who is in it. Call it after {@link #lockedOf}. */
+    void markDrawn(UUID groupId);
 }

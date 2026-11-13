@@ -51,4 +51,7 @@ public interface Groups {
 
     /** Stores the Group's current Invite Link code; the previous one stops matching. */
     void saveInviteCode(Group group);
+
+    /** Stores that the Group's Draw is made. */
+    void saveDrawn(Group group);
 }

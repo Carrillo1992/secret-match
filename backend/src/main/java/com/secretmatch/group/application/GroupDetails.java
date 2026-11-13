@@ -8,8 +8,8 @@ import java.util.UUID;
 /**
  * What a Member sees of their Group. {@code budget} is {@code null} when the Group has none; the Admin comes
  * first among the Members, the rest in the order they joined. {@code inviteCode} is the code of its Invite
- * Link, {@code admin} says whether the Member looking is its Admin, and {@code finished} whether its Exchange
- * Date is over, which makes it read-only.
+ * Link, {@code admin} says whether the Member looking is its Admin, {@code finished} whether its Exchange
+ * Date is over, which makes it read-only, and {@code drawn} whether its Draw is made, which freezes who is in it.
  */
 public record GroupDetails(
         UUID id,
@@ -19,7 +19,8 @@ public record GroupDetails(
         List<Member> members,
         String inviteCode,
         boolean admin,
-        boolean finished) {
+        boolean finished,
+        boolean drawn) {
 
     public GroupDetails {
         members = List.copyOf(members);

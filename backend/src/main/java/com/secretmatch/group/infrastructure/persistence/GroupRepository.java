@@ -74,4 +74,8 @@ interface GroupRepository extends JpaRepository<GroupEntity, UUID> {
     @Modifying
     @Query("UPDATE GroupEntity g SET g.inviteCode = :inviteCode WHERE g.id = :groupId")
     int updateInviteCode(UUID groupId, String inviteCode);
+
+    @Modifying
+    @Query("UPDATE GroupEntity g SET g.drawn = true WHERE g.id = :groupId")
+    int markDrawn(UUID groupId);
 }

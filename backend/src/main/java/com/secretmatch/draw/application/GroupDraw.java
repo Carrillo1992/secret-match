@@ -59,7 +59,8 @@ public class GroupDraw {
     }
 
     /**
-     * Draws the Group and stores every Assignment at once. Every Member is emailed once it is stored.
+     * Draws the Group and stores every Assignment at once, which freezes who is in it and its Exclusions. Every
+     * Member is emailed once it is stored.
      *
      * @return the Admin's own Receiver
      * @throws GroupNotFoundException if there is no such Group or {@code admin} is not one of its Members
@@ -71,7 +72,8 @@ public class GroupDraw {
      */
     @Transactional
     public MyReceiver run(UUID groupId, UUID admin) {
-        Roster roster = rosters.of(groupId, admin).orElseThrow(GroupNotFoundException::new);
+        // Locked, so nobody joins or leaves, and no Exclusion changes, while it is drawn.
+        Roster roster = rosters.lockedOf(groupId, admin).orElseThrow(GroupNotFoundException::new);
         if (!roster.admin().equals(new MemberId(admin))) {
             throw new AdminOnlyException();
         }
@@ -91,6 +93,7 @@ public class GroupDraw {
                 if (!draws.add(groupId, drawn.assignments(), clock.instant())) {
                     throw new DrawAlreadyMadeException();
                 }
+                rosters.markDrawn(groupId);
             }
             case DrawResult.NoValidDraw noValidDraw -> throw new NoValidDrawException();
         }

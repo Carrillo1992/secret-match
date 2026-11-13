@@ -25,13 +25,12 @@ import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { USER_RULES } from '../../../../core/auth/user-rules';
 import { maxUtf8Bytes, notBlank } from '../../../../shared/forms/validators';
-import { Me, ProfileApi } from '../../data-access/profile-api';
+import { DeleteAccountOutcome, Me, ProfileApi } from '../../data-access/profile-api';
 
 type FormState = 'idle' | 'sending' | 'saved' | 'failed';
 /** `created`: a User who had no password (Google only) set their first one. */
 type PasswordState = FormState | 'wrong-password' | 'created';
-/** `in-draw`: refused while the User is in a drawn Group that has not finished. */
-type DeleteState = 'idle' | 'confirming' | 'deleting' | 'in-draw' | 'failed';
+type DeleteState = 'idle' | 'confirming' | 'deleting' | Exclude<DeleteAccountOutcome, 'deleted'>;
 
 /**
  * "Tu perfil": the signed-in User changes their display name and their password, and can delete

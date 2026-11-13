@@ -189,8 +189,8 @@ describe('ProfilePage', () => {
   });
 
   describe('deleting the account', () => {
-    const accountDeletion = (method = 'DELETE') =>
-      http.expectOne((request) => request.url === ME_URL && request.method === method);
+    const accountDeletion = () =>
+      http.expectOne((request) => request.url === ME_URL && request.method === 'DELETE');
 
     it('asks to confirm first, and cancelling sends nothing', async () => {
       await loaded();

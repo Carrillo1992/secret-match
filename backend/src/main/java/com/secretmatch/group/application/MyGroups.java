@@ -152,11 +152,10 @@ public class MyGroups {
     public void removeMember(GroupId id, MemberId by, MemberId member) {
         Group group = memberView(id, by);
         group.removeMember(by, member, clock.instant());
-        if (!groups.removeMember(group.id(), member)) {
+        if (!endMembership(group.id(), member)) {
             // Removed at the same moment by another request, which did the rest.
             return;
         }
-        events.publishEvent(new MembershipEnded(group.id().value(), member.value()));
         if (!by.equals(member)) {
             emailRemovedMember(group, member);
         }
@@ -192,10 +191,23 @@ public class MyGroups {
         for (Group group : groups.findWithMember(user)) {
             if (group.admin().equals(user)) {
                 delete(group.id(), user);
-            } else if (groups.removeMember(group.id(), user)) {
-                events.publishEvent(new MembershipEnded(group.id().value(), user.value()));
+            } else {
+                endMembership(group.id(), user);
             }
         }
+    }
+
+    /**
+     * Removes the Member and lets the other modules delete what they had in the Group.
+     *
+     * @return {@code false} if they were not a Member any more: another request removed them a moment ago
+     */
+    private boolean endMembership(GroupId group, MemberId member) {
+        if (!groups.removeMember(group, member)) {
+            return false;
+        }
+        events.publishEvent(new MembershipEnded(group.value(), member.value()));
+        return true;
     }
 
     /** Catalogue email 7: "the Group was deleted", to each Member but the Admin. */

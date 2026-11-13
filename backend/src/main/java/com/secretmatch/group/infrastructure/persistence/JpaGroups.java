@@ -38,8 +38,8 @@ class JpaGroups implements Groups {
     }
 
     @Override
-    public Optional<Group> findByInviteCode(InviteCode code) {
-        return repository.findByInviteCode(code.value()).map(GroupEntity::toDomain);
+    public Optional<GroupId> findIdByInviteCode(InviteCode code) {
+        return repository.findIdByInviteCode(code.value()).map(GroupId::new);
     }
 
     @Override

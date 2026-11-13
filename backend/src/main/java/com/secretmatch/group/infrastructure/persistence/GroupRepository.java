@@ -22,8 +22,8 @@ interface GroupRepository extends JpaRepository<GroupEntity, UUID> {
             """)
     List<GroupEntity> findWithMember(UUID userId);
 
-    @EntityGraph(attributePaths = "members")
-    Optional<GroupEntity> findByInviteCode(String inviteCode);
+    @Query("SELECT g.id FROM GroupEntity g WHERE g.inviteCode = :inviteCode")
+    Optional<UUID> findIdByInviteCode(String inviteCode);
 
     /**
      * Inserts the Member row directly instead of saving the whole Group, so two Users joining at once do not

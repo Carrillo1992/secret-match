@@ -42,14 +42,13 @@ public class InviteLinks {
      */
     @Transactional
     public GroupId join(String inviteCode, MemberId user) {
-        Group found = InviteCode.parse(inviteCode)
-                .flatMap(groups::findByInviteCode)
-                .orElseThrow(InviteLinkInvalidException::new);
-        // Then read it again under the lock, so a Draw being made at the same moment either waits for this join
-        // or is seen by it: nobody joins a drawn Group.
-        groups.lock(found.id());
-        Group group = groups.findById(found.id())
-                .filter(locked -> locked.inviteCode().equals(found.inviteCode()))
+        InviteCode code = InviteCode.parse(inviteCode).orElseThrow(InviteLinkInvalidException::new);
+        GroupId id = groups.findIdByInviteCode(code).orElseThrow(InviteLinkInvalidException::new);
+        // Locked before it is first read, so a Draw being made at the same moment either waits for this join or is
+        // seen by it: nobody joins a drawn Group. The code is checked again in case it was regenerated meanwhile.
+        groups.lock(id);
+        Group group = groups.findById(id)
+                .filter(locked -> locked.inviteCode().equals(code))
                 .orElseThrow(InviteLinkInvalidException::new);
         if (group.hasMember(user)) {
             return group.id();

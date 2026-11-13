@@ -303,18 +303,27 @@ class DrawIT {
                 if (!path.getValue().has("get")) {
                     continue;
                 }
-                String uri = path.getKey().replace("{groupId}", family.groupId());
-                assertThat(uri).as("a GET this test cannot fill in").doesNotContain("{");
-                String body =
-                        get(member, uri).expectBody(String.class).returnResult().getResponseBody();
-                if (uri.endsWith("/draw")) {
-                    assertThat(json(body).at("/myReceiver/id").asString()).isEqualTo(own);
-                } else {
-                    assertThat(String.valueOf(body))
-                            .as(uri)
-                            .doesNotContainIgnoringCase("receiver")
-                            .doesNotContainIgnoringCase("giver")
-                            .doesNotContainIgnoringCase("assignment");
+                String inGroup = path.getKey().replace("{groupId}", family.groupId());
+                List<String> uris = inGroup.contains("{memberId}")
+                        ? family.ids().stream()
+                                .map(id -> inGroup.replace("{memberId}", id))
+                                .toList()
+                        : List.of(inGroup);
+                for (String uri : uris) {
+                    assertThat(uri).as("a GET this test cannot fill in").doesNotContain("{");
+                    String body = get(member, uri)
+                            .expectBody(String.class)
+                            .returnResult()
+                            .getResponseBody();
+                    if (uri.endsWith("/draw")) {
+                        assertThat(json(body).at("/myReceiver/id").asString()).isEqualTo(own);
+                    } else {
+                        assertThat(String.valueOf(body))
+                                .as(uri)
+                                .doesNotContainIgnoringCase("receiver")
+                                .doesNotContainIgnoringCase("giver")
+                                .doesNotContainIgnoringCase("assignment");
+                    }
                 }
             }
         }

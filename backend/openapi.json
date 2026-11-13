@@ -404,6 +404,156 @@
         "tags" : [ "groups" ]
       }
     },
+    "/api/v1/groups/{groupId}/members/{memberId}/wishlist" : {
+      "get" : {
+        "description" : "Any Member of the Group can read any Wishlist in it, before and after the Draw. Anyone else gets a 404.",
+        "operationId" : "wishlist",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "memberId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WishlistResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "A Member's Wishlist",
+        "tags" : [ "wishlists" ]
+      }
+    },
+    "/api/v1/groups/{groupId}/wishes" : {
+      "post" : {
+        "operationId" : "addWish",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WishRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WishResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "summary" : "Add a Wish to your own Wishlist in the Group",
+        "tags" : [ "wishlists" ]
+      }
+    },
+    "/api/v1/groups/{groupId}/wishes/{wishId}" : {
+      "delete" : {
+        "description" : "Only the Wish's owner can.",
+        "operationId" : "deleteWish",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "wishId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Delete one of your Wishes",
+        "tags" : [ "wishlists" ]
+      },
+      "put" : {
+        "description" : "Every field is replaced: one left out is cleared. Only the Wish's owner can.",
+        "operationId" : "editWish",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "wishId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WishRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WishResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Replace one of your Wishes",
+        "tags" : [ "wishlists" ]
+      }
+    },
     "/api/v1/memberships" : {
       "post" : {
         "description" : "A User who is a Member already just gets the Group back. A code that matches no Group's current Invite Link is a 404 that says nothing about any Group.",
@@ -1105,6 +1255,100 @@
           }
         },
         "required" : [ "signUpId" ]
+      },
+      "WishRequest" : {
+        "type" : "object",
+        "properties" : {
+          "link" : {
+            "type" : "string",
+            "description" : "An http or https address. Leave it out for none.",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "price" : {
+            "type" : "number",
+            "description" : "Approximately, in euros, to the cent. Leave it out for none.",
+            "minimum" : 0
+          },
+          "priority" : {
+            "type" : "string",
+            "description" : "MEDIUM when left out.",
+            "enum" : [ "HIGH", "MEDIUM", "LOW" ]
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "title" ]
+      },
+      "WishResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Identifies the Wish, to change it."
+          },
+          "link" : {
+            "type" : "string",
+            "description" : "Always an http or https address."
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "price" : {
+            "type" : "number",
+            "description" : "Approximately, in euros."
+          },
+          "priority" : {
+            "type" : "string",
+            "enum" : [ "HIGH", "MEDIUM", "LOW" ]
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "priority", "title" ]
+      },
+      "WishlistOwnerResponse" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "you" : {
+            "type" : "boolean",
+            "description" : "Whether it is the signed-in Member's own Wishlist, which only they can change."
+          }
+        },
+        "required" : [ "displayName", "id", "you" ]
+      },
+      "WishlistResponse" : {
+        "type" : "object",
+        "properties" : {
+          "owner" : {
+            "$ref" : "#/components/schemas/WishlistOwnerResponse"
+          },
+          "wishes" : {
+            "type" : "array",
+            "description" : "High priority first, the oldest first within a priority.",
+            "items" : {
+              "$ref" : "#/components/schemas/WishResponse"
+            }
+          }
+        },
+        "required" : [ "owner", "wishes" ]
       }
     }
   }

@@ -1,0 +1,120 @@
+package com.secretmatch.wishlist.application;
+
+import com.secretmatch.group.application.GroupDeleted;
+import com.secretmatch.group.application.MembershipEnded;
+import com.secretmatch.wishlist.domain.GroupNotFoundException;
+import com.secretmatch.wishlist.domain.MemberId;
+import com.secretmatch.wishlist.domain.NotYourWishException;
+import com.secretmatch.wishlist.domain.Wish;
+import com.secretmatch.wishlist.domain.WishNotFoundException;
+import com.secretmatch.wishlist.domain.WishlistNotFoundException;
+import java.time.Clock;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Each Member keeps their own Wishlist in a Group, and every Member of the Group can read every Wishlist in it.
+ * To someone outside the Group every use case here answers as if there were no such Group. Nothing here records
+ * who read which Wishlist.
+ */
+@Service
+public class MemberWishlists {
+
+    private static final Comparator<StoredWish> HIGH_PRIORITY_FIRST =
+            Comparator.comparing(stored -> stored.wish().priority());
+
+    private final Wishes wishes;
+    private final GroupMembers groupMembers;
+    private final Clock clock;
+
+    MemberWishlists(Wishes wishes, GroupMembers groupMembers, Clock clock) {
+        this.wishes = wishes;
+        this.groupMembers = groupMembers;
+        this.clock = clock;
+    }
+
+    /**
+     * A Member's Wishlist: high priority Wishes first, and the oldest first within a priority.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code viewer} is not one of its Members
+     * @throws WishlistNotFoundException if {@code owner} is not a Member of the Group
+     */
+    @Transactional(readOnly = true)
+    public WishlistDetails wishlistOf(UUID groupId, UUID viewer, UUID owner) {
+        GroupMember member = membersSeenBy(groupId, viewer).stream()
+                .filter(candidate -> candidate.id().value().equals(owner))
+                .findFirst()
+                .orElseThrow(WishlistNotFoundException::new);
+        List<StoredWish> ordered = wishes.of(groupId, member.id()).stream()
+                .sorted(HIGH_PRIORITY_FIRST)
+                .toList();
+        return new WishlistDetails(
+                new WishlistDetails.Owner(owner, member.displayName(), owner.equals(viewer)), ordered);
+    }
+
+    /**
+     * Adds a Wish to {@code owner}'s own Wishlist in the Group.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     */
+    @Transactional
+    public StoredWish addWish(UUID groupId, UUID owner, Wish wish) {
+        membersSeenBy(groupId, owner);
+        return wishes.add(groupId, new MemberId(owner), wish, clock.instant());
+    }
+
+    /**
+     * Replaces what one of {@code owner}'s Wishes says.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws WishNotFoundException if the Group has no such Wish
+     * @throws NotYourWishException if the Wish is on someone else's Wishlist
+     */
+    @Transactional
+    public StoredWish editWish(UUID groupId, UUID owner, UUID wishId, Wish wish) {
+        StoredWish current = ownWish(groupId, owner, wishId);
+        return wishes.replace(groupId, new StoredWish(current.id(), current.owner(), wish));
+    }
+
+    /**
+     * Deletes one of {@code owner}'s Wishes.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws WishNotFoundException if the Group has no such Wish
+     * @throws NotYourWishException if the Wish is on someone else's Wishlist
+     */
+    @Transactional
+    public void deleteWish(UUID groupId, UUID owner, UUID wishId) {
+        ownWish(groupId, owner, wishId);
+        wishes.remove(groupId, wishId);
+    }
+
+    /** A Member's Wishlist goes with their membership, in the same transaction. */
+    @EventListener
+    void on(MembershipEnded event) {
+        wishes.removeAllOf(event.groupId(), new MemberId(event.memberId()));
+    }
+
+    /** A deleted Group's Wishlists go with it, in the same transaction, before its Members' rows. */
+    @EventListener
+    void on(GroupDeleted event) {
+        wishes.removeAllIn(event.groupId());
+    }
+
+    private List<GroupMember> membersSeenBy(UUID groupId, UUID viewer) {
+        return groupMembers.of(groupId, viewer).orElseThrow(GroupNotFoundException::new);
+    }
+
+    private StoredWish ownWish(UUID groupId, UUID owner, UUID wishId) {
+        membersSeenBy(groupId, owner);
+        StoredWish stored = wishes.find(groupId, wishId).orElseThrow(WishNotFoundException::new);
+        if (!stored.owner().equals(new MemberId(owner))) {
+            throw new NotYourWishException();
+        }
+        return stored;
+    }
+}

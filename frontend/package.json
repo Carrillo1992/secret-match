@@ -2,7 +2,7 @@
   "name": "secret-match",
   "version": "0.0.0",
   "engines": {
-    "node": "24.x"
+    "node": "26.x"
   },
   "scripts": {
     "ng": "ng",

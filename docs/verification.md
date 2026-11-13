@@ -56,7 +56,7 @@ Coverage is a floor, not a goal. A test written only to raise the number (no mea
 
 ### Frontend
 
-Run from `frontend/` with Node 24, the version CI and the frontend image use (`frontend/.nvmrc`; `npm ci` warns with `EBADENGINE` on another major):
+Run from `frontend/` with Node 26, the version CI and the frontend image use (`frontend/.nvmrc`; `npm ci` warns with `EBADENGINE` on another major):
 
 | Command | What it covers |
 |---|---|

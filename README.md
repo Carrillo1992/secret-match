@@ -43,7 +43,7 @@ Working on one side only:
 |---|---|---|
 | API | `./mvnw spring-boot:run -Dspring-boot.run.profiles=local` | Java 21, PostgreSQL, Mailpit (`docker compose up mailpit`), the API variables in `.env.example` exported |
 | API tests | `./mvnw verify` | Java 21, Docker (Testcontainers) |
-| SPA | `npm start` | Node 22.22+/24.15+, API on http://localhost:8080 (`public/config.json`) |
+| SPA | `npm start` | Node 26 (`frontend/.nvmrc`), API on http://localhost:8080 (`public/config.json`) |
 | SPA tests | `npm test -- --watch=false` | Node |
 
 ## License

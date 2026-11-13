@@ -33,8 +33,8 @@ class WishlistController {
     @GetMapping(path = "/members/{memberId}/wishlist", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "A Member's Wishlist",
-            description = "Any Member of the Group can read any Wishlist in it, before and after the Draw. Anyone"
-                    + " else gets a 404.")
+            description = "Private: only its owner can read it, and once the Group has a Draw, the owner's Giver"
+                    + " too. Anyone else gets a 404, the same as for a Wishlist that does not exist.")
     WishlistResponse wishlist(
             @AuthenticationPrincipal Jwt accessToken, @PathVariable UUID groupId, @PathVariable UUID memberId) {
         return WishlistResponse.of(wishlists.wishlistOf(groupId, signedIn(accessToken), memberId));

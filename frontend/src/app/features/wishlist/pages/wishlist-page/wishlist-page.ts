@@ -26,9 +26,9 @@ import { PRIORITY_LABELS } from '../../data-access/wish-rules';
 import { Wish, WishInput, WishlistApi } from '../../data-access/wishlist-api';
 
 /**
- * A Member's Wishlist in a Group (#32, option A). Every Member of the Group reads it; only its
- * owner adds Wishes through the inline form, edits one in place with the same form, and deletes one
- * behind an inline confirmation.
+ * A Member's Wishlist in a Group (#32, option A). Private (ADR 0004): its owner reads and changes it
+ * (adding Wishes through the inline form, editing one in place with the same form, deleting one
+ * behind an inline confirmation), and once there is a Draw their Giver reads it, from the Draw card.
  */
 @Component({
   selector: 'app-wishlist-page',

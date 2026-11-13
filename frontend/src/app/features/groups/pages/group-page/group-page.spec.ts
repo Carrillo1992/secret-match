@@ -108,15 +108,16 @@ describe('GroupPage', () => {
     expect(backLink()).toBeDefined();
   });
 
-  it("links every Member to their Wishlist, yours as 'Tus deseos'", async () => {
+  it("links only to the Member's own Wishlist, never to anyone else's", async () => {
     http.expectOne(GROUP_URL).flush(navidad);
     await settle();
 
-    const [carmen, luis] = members().map((member) => member.querySelector('a'));
-    expect(carmen?.getAttribute('href')).toBe('/groups/g-1/members/u-carmen/wishlist');
-    expect(carmen?.getAttribute('aria-label')).toBe('Deseos de Abuela Carmen');
-    expect(luis?.getAttribute('href')).toBe('/groups/g-1/members/u-luis/wishlist');
-    expect(luis?.getAttribute('aria-label')).toBe('Tus deseos');
+    const wishlistLinks = [...page().querySelectorAll('a')]
+      .map((link) => link.getAttribute('href') ?? '')
+      .filter((href) => href.endsWith('/wishlist'));
+    expect(wishlistLinks).toEqual(['/groups/g-1/members/u-luis/wishlist']);
+    expect(text(page())).toContain('Escribir tus deseos');
+    expect(members().some((member) => member.querySelector('a'))).toBe(false);
   });
 
   it('says when the Group has no budget', async () => {
@@ -927,6 +928,9 @@ describe('GroupPage', () => {
       await open(navidad, { myReceiver: { id: 'u-marta', displayName: 'Marta' } });
 
       expect(text(section())).toContain('Te toca regalar a Marta');
+      const link = section()?.querySelector('a');
+      expect(text(link)).toBe('Ver sus deseos');
+      expect(link?.getAttribute('href')).toBe('/groups/g-1/members/u-marta/wishlist');
     });
 
     it('lets the Admin run the Draw after confirming, then shows their Receiver', async () => {

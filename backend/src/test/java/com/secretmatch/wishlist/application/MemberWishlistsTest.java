@@ -30,30 +30,69 @@ class MemberWishlistsTest {
     private static final UUID OTHER_GROUP = UUID.fromString("00000000-0000-0000-0000-00000000000b");
     private static final UUID CARMEN = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID LUIS = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID MARTA = UUID.fromString("00000000-0000-0000-0000-000000000003");
     private static final UUID STRANGER = UUID.fromString("00000000-0000-0000-0000-000000000009");
 
     private final InMemoryWishes stored = new InMemoryWishes();
     private final FakeGroupMembers members = new FakeGroupMembers();
-    private final MemberWishlists wishlists =
-            new MemberWishlists(stored, members, Clock.fixed(Instant.parse("2026-12-01T10:00:00Z"), ZoneOffset.UTC));
+    private final FakeReceivers receivers = new FakeReceivers();
+    private final MemberWishlists wishlists = new MemberWishlists(
+            stored, members, receivers, Clock.fixed(Instant.parse("2026-12-01T10:00:00Z"), ZoneOffset.UTC));
 
     {
-        members.put(GROUP, List.of(member(CARMEN, "Abuela Carmen"), member(LUIS, "Luis")));
+        members.put(GROUP, List.of(member(CARMEN, "Abuela Carmen"), member(LUIS, "Luis"), member(MARTA, "Marta")));
         members.put(OTHER_GROUP, List.of(member(LUIS, "Luis")));
     }
 
     @Test
-    @DisplayName("a Member adds Wishes to their own Wishlist, and any Member of the Group reads it with their name")
-    void anyMemberReadsAWishlist() {
+    @DisplayName("a Member adds Wishes to their own Wishlist and reads it, before any Draw")
+    void ownerReadsTheirWishlist() {
         StoredWish added = wishlists.addWish(GROUP, LUIS, wish("Bufanda", Priority.MEDIUM));
 
-        WishlistDetails seenByCarmen = wishlists.wishlistOf(GROUP, CARMEN, LUIS);
-        WishlistDetails seenByLuis = wishlists.wishlistOf(GROUP, LUIS, LUIS);
+        WishlistDetails own = wishlists.wishlistOf(GROUP, LUIS, LUIS);
 
-        assertThat(seenByCarmen.owner()).isEqualTo(new WishlistDetails.Owner(LUIS, "Luis", false));
-        assertThat(seenByCarmen.wishes()).containsExactly(added);
-        assertThat(seenByLuis.owner().you()).isTrue();
-        assertThat(wishlists.wishlistOf(GROUP, LUIS, CARMEN).wishes()).isEmpty();
+        assertThat(own.owner()).isEqualTo(new WishlistDetails.Owner(LUIS, "Luis", true));
+        assertThat(own.wishes()).containsExactly(added);
+        assertThat(wishlists.wishlistOf(GROUP, CARMEN, CARMEN).wishes()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("before the Draw nobody but the owner can read a Wishlist, the Admin included")
+    void beforeTheDrawAWishlistIsPrivate() {
+        wishlists.addWish(GROUP, LUIS, wish("Bufanda", Priority.MEDIUM));
+
+        assertThatThrownBy(() -> wishlists.wishlistOf(GROUP, CARMEN, LUIS))
+                .isInstanceOf(WishlistNotFoundException.class);
+        assertThatThrownBy(() -> wishlists.wishlistOf(GROUP, MARTA, LUIS))
+                .isInstanceOf(WishlistNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("after the Draw the owner's Giver reads it too, and nobody else does")
+    void afterTheDrawTheGiverReadsIt() {
+        StoredWish added = wishlists.addWish(GROUP, LUIS, wish("Bufanda", Priority.MEDIUM));
+        receivers.draw(GROUP, Map.of(MARTA, LUIS, LUIS, CARMEN, CARMEN, MARTA));
+
+        WishlistDetails seenByGiver = wishlists.wishlistOf(GROUP, MARTA, LUIS);
+
+        assertThat(seenByGiver.owner()).isEqualTo(new WishlistDetails.Owner(LUIS, "Luis", false));
+        assertThat(seenByGiver.wishes()).containsExactly(added);
+        assertThatThrownBy(() -> wishlists.wishlistOf(GROUP, CARMEN, LUIS))
+                .as("the Admin, who is not Luis's Giver")
+                .isInstanceOf(WishlistNotFoundException.class);
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).wishes()).containsExactly(added);
+    }
+
+    @Test
+    @DisplayName("a Giver cannot change their Receiver's Wishes")
+    void theGiverOnlyReads() {
+        StoredWish added = wishlists.addWish(GROUP, LUIS, wish("Bufanda", Priority.MEDIUM));
+        receivers.draw(GROUP, Map.of(MARTA, LUIS, LUIS, CARMEN, CARMEN, MARTA));
+
+        assertThatThrownBy(() -> wishlists.editWish(GROUP, MARTA, added.id(), wish("Carbón", Priority.HIGH)))
+                .isInstanceOf(NotYourWishException.class);
+        assertThatThrownBy(() -> wishlists.deleteWish(GROUP, MARTA, added.id()))
+                .isInstanceOf(NotYourWishException.class);
     }
 
     @Test
@@ -64,7 +103,7 @@ class MemberWishlistsTest {
         wishlists.addWish(GROUP, LUIS, wish("Auriculares", Priority.HIGH));
         wishlists.addWish(GROUP, LUIS, wish("Taza", Priority.MEDIUM));
 
-        assertThat(wishlists.wishlistOf(GROUP, CARMEN, LUIS).wishes())
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).wishes())
                 .extracting(stored -> stored.wish().title())
                 .containsExactly("Auriculares", "Libro", "Taza", "Calcetines");
     }
@@ -74,7 +113,7 @@ class MemberWishlistsTest {
     void wishlistsArePerGroup() {
         wishlists.addWish(OTHER_GROUP, LUIS, wish("Bicicleta", Priority.HIGH));
 
-        assertThat(wishlists.wishlistOf(GROUP, CARMEN, LUIS).wishes()).isEmpty();
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).wishes()).isEmpty();
     }
 
     @Test
@@ -110,7 +149,7 @@ class MemberWishlistsTest {
 
         assertThat(result.id()).isEqualTo(added.id());
         assertThat(result.wish()).isEqualTo(edited);
-        assertThat(wishlists.wishlistOf(GROUP, CARMEN, LUIS).wishes()).containsExactly(result);
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).wishes()).containsExactly(result);
     }
 
     @Test
@@ -188,6 +227,22 @@ class MemberWishlistsTest {
             return Optional.ofNullable(groups.get(groupId))
                     .filter(members ->
                             members.stream().anyMatch(m -> m.id().value().equals(viewer)));
+        }
+    }
+
+    /** No Group has a Draw until {@link #draw} gives it one: each Giver to their Receiver. */
+    private static final class FakeReceivers implements Receivers {
+
+        private final Map<UUID, Map<UUID, UUID>> draws = new HashMap<>();
+
+        void draw(UUID groupId, Map<UUID, UUID> receiverByGiver) {
+            draws.put(groupId, receiverByGiver);
+        }
+
+        @Override
+        public Optional<MemberId> receiverOf(UUID groupId, UUID giver) {
+            return Optional.ofNullable(draws.getOrDefault(groupId, Map.of()).get(giver))
+                    .map(MemberId::new);
         }
     }
 

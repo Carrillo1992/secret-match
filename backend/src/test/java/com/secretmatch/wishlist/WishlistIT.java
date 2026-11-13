@@ -54,8 +54,8 @@ class WishlistIT {
     }
 
     @Test
-    @DisplayName("a Member adds a Wish with every field, and every Member of the Group reads it")
-    void memberAddsAWishAndTheGroupReadsIt() {
+    @DisplayName("a Member adds a Wish with every field and reads it back on their Wishlist")
+    void memberAddsAWishAndReadsItBack() {
         Family family = family();
 
         RestTestClient.ResponseSpec added = addWish(
@@ -76,16 +76,15 @@ class WishlistIT {
         assertThat(wish.get("price").decimalValue()).isEqualByComparingTo("49.90");
         assertThat(wish.get("notes").asString()).isEqualTo("Inalámbricos, negros");
         assertThat(wish.get("priority").asString()).isEqualTo("HIGH");
-        for (User reader : List.of(family.carmen(), family.marta(), family.luis())) {
-            JsonNode wishlist = json(get(reader, wishlistOf(family, family.luisId())));
-            assertThat(wishlist.get("owner").get("displayName").asString()).isEqualTo("Luis");
-            assertThat(wishlist.get("wishes")).hasSize(1);
-            assertThat(wishlist.get("wishes").get(0)).isEqualTo(wish);
-        }
+        JsonNode wishlist = json(get(family.luis(), wishlistOf(family, family.luisId())));
+        assertThat(wishlist.get("owner").get("displayName").asString()).isEqualTo("Luis");
+        assertThat(wishlist.get("owner").get("you").asBoolean()).isTrue();
+        assertThat(wishlist.get("wishes")).hasSize(1);
+        assertThat(wishlist.get("wishes").get(0)).isEqualTo(wish);
     }
 
     @Test
-    @DisplayName("a Wish with only a title is medium priority, and the Wishlist says whether it is yours")
+    @DisplayName("a Wish with only a title is medium priority, and its absent fields are left out")
     void defaultsAndOwnership() {
         Family family = family();
         addWish(family.luis(), family, Map.of("title", "Calcetines"))
@@ -93,14 +92,11 @@ class WishlistIT {
                 .isCreated();
 
         JsonNode own = json(get(family.luis(), wishlistOf(family, family.luisId())));
-        JsonNode others = json(get(family.marta(), wishlistOf(family, family.luisId())));
 
         JsonNode wish = own.get("wishes").get(0);
         assertThat(wish.get("priority").asString()).isEqualTo("MEDIUM");
         assertThat(wish.has("link")).as("an absent link is left out").isFalse();
-        assertThat(own.get("owner").get("you").asBoolean()).isTrue();
-        assertThat(others.get("owner").get("you").asBoolean()).isFalse();
-        assertThat(json(get(family.luis(), wishlistOf(family, family.martaId())))
+        assertThat(json(get(family.marta(), wishlistOf(family, family.martaId())))
                         .get("wishes"))
                 .isEmpty();
     }
@@ -113,7 +109,7 @@ class WishlistIT {
         addWish(family.luis(), family, Map.of("title", "Libro"));
         addWish(family.luis(), family, Map.of("title", "Auriculares", "priority", "HIGH"));
 
-        assertThat(titlesIn(json(get(family.carmen(), wishlistOf(family, family.luisId())))))
+        assertThat(titlesIn(json(get(family.luis(), wishlistOf(family, family.luisId())))))
                 .containsExactly("Auriculares", "Libro", "Calcetines");
     }
 
@@ -129,13 +125,12 @@ class WishlistIT {
                 .expectBody()
                 .jsonPath("$.title")
                 .isEqualTo("Bufanda roja");
-        assertThat(titlesIn(json(get(family.marta(), wishlistOf(family, family.luisId())))))
+        assertThat(titlesIn(json(get(family.luis(), wishlistOf(family, family.luisId())))))
                 .containsExactly("Bufanda roja");
 
         delete(family.luis(), wishesOf(family) + "/" + id).expectStatus().isNoContent();
 
-        assertThat(json(get(family.marta(), wishlistOf(family, family.luisId())))
-                        .get("wishes"))
+        assertThat(json(get(family.luis(), wishlistOf(family, family.luisId()))).get("wishes"))
                 .isEmpty();
         delete(family.luis(), wishesOf(family) + "/" + id)
                 .expectStatus()
@@ -188,8 +183,29 @@ class WishlistIT {
                 .jsonPath("$.type")
                 .isEqualTo("urn:secretmatch:problem:wishlist-not-found");
 
-        assertThat(titlesIn(json(get(family.carmen(), wishlistOf(family, family.luisId())))))
+        assertThat(titlesIn(json(get(family.luis(), wishlistOf(family, family.luisId())))))
                 .containsExactly("Bufanda");
+    }
+
+    @Test
+    @DisplayName("before the Draw a Wishlist is private: every other Member, the Admin included, gets a 404")
+    void beforeTheDrawOnlyTheOwnerReads() {
+        Family family = family();
+        addedWishId(family.luis(), family, "Bufanda");
+        JsonNode noSuchWishlist =
+                json(get(family.carmen(), wishlistOf(family, UUID.randomUUID().toString())));
+
+        for (User other : List.of(family.carmen(), family.marta())) {
+            RestTestClient.ResponseSpec refused = get(other, wishlistOf(family, family.luisId()));
+            refused.expectStatus().isNotFound();
+            JsonNode problem = json(refused);
+            assertThat(problem.get("type").asString())
+                    .as("the same answer as for a Wishlist that does not exist")
+                    .isEqualTo(noSuchWishlist.get("type").asString())
+                    .isEqualTo("urn:secretmatch:problem:wishlist-not-found");
+            assertThat(problem.get("detail").asString())
+                    .isEqualTo(noSuchWishlist.get("detail").asString());
+        }
     }
 
     @Test
@@ -237,11 +253,12 @@ class WishlistIT {
     }
 
     @Test
-    @DisplayName("Wishlists can still be read and changed after the Draw")
-    void worksAfterTheDraw() {
+    @DisplayName("after the Draw the owner's Giver reads the Wishlist, nobody else does, and the owner still edits it")
+    void afterTheDrawTheGiverReadsIt() {
         Family family = family();
         String id = addedWishId(family.luis(), family, "Bufanda");
-        joinGroup(signedInUser("Pablo"), family.carmen(), family.groupId());
+        User pablo = signedInUser("Pablo");
+        joinGroup(pablo, family.carmen(), family.groupId());
         post(family.carmen(), "/api/v1/groups/" + family.groupId() + "/draw", Map.of())
                 .expectStatus()
                 .is2xxSuccessful();
@@ -252,8 +269,32 @@ class WishlistIT {
         addWish(family.luis(), family, Map.of("title", "Guantes"))
                 .expectStatus()
                 .isCreated();
-        assertThat(titlesIn(json(get(family.marta(), wishlistOf(family, family.luisId())))))
-                .containsExactly("Bufanda roja", "Guantes");
+
+        List<User> others = List.of(family.carmen(), family.marta(), pablo);
+        List<User> givers = others.stream()
+                .filter(member -> json(get(member, "/api/v1/groups/" + family.groupId() + "/draw"))
+                        .at("/myReceiver/id")
+                        .asString()
+                        .equals(family.luisId()))
+                .toList();
+        assertThat(givers).hasSize(1);
+        User giver = givers.getFirst();
+        JsonNode seenByGiver = json(get(giver, wishlistOf(family, family.luisId())));
+        assertThat(titlesIn(seenByGiver)).containsExactly("Bufanda roja", "Guantes");
+        assertThat(seenByGiver.get("owner").get("you").asBoolean()).isFalse();
+        put(giver, wishesOf(family) + "/" + id, Map.of("title", "Carbón"))
+                .expectStatus()
+                .isEqualTo(422);
+        for (User other : others) {
+            if (other != giver) {
+                get(other, wishlistOf(family, family.luisId()))
+                        .expectStatus()
+                        .isNotFound()
+                        .expectBody()
+                        .jsonPath("$.type")
+                        .isEqualTo("urn:secretmatch:problem:wishlist-not-found");
+            }
+        }
     }
 
     @Test
@@ -274,7 +315,7 @@ class WishlistIT {
                 .expectStatus()
                 .isNotFound();
         joinGroup(family.marta(), family.carmen(), family.groupId());
-        assertThat(json(get(family.carmen(), wishlistOf(family, family.martaId())))
+        assertThat(json(get(family.marta(), wishlistOf(family, family.martaId())))
                         .get("wishes"))
                 .as("a removed Member who joins again starts with an empty Wishlist")
                 .isEmpty();

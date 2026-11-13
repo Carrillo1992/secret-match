@@ -99,7 +99,7 @@ _Avoid_: Unveiling, unmasking, opening
 ### Wishlist
 
 **Wishlist**:
-What a Member would like to receive in a specific Group: their Wishes, Preferences and Don't List. Visible to every Member of that Group.
+What a Member would like to receive in a specific Group: their Wishes, Preferences and Don't List. Private: only its owner and, once the Draw is made, their Giver can read it (ADR 0004).
 _Avoid_: Gift list, registry, letter
 
 **Wish**:

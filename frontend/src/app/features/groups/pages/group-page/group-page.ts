@@ -9,7 +9,12 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideChevronLeft, LucideCircleCheck, LucideSearchX } from '@lucide/angular';
+import {
+  LucideChevronLeft,
+  LucideChevronRight,
+  LucideCircleCheck,
+  LucideSearchX,
+} from '@lucide/angular';
 import { map } from 'rxjs';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
@@ -61,6 +66,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
     MembershipCard,
     GroupDetailsCard,
     LucideChevronLeft,
+    LucideChevronRight,
     LucideCircleCheck,
     LucideSearchX,
   ],
@@ -91,6 +97,8 @@ export class GroupPage {
     const result = this.result();
     return result?.status === 'found' ? result.group : undefined;
   });
+  /** The Member looking, whose own Wishlist the page links to. */
+  protected readonly you = computed(() => this.group()?.members.find((member) => member.you));
   protected readonly longExchangeDate = longExchangeDate;
   protected readonly notFound = computed(() => this.result()?.status === 'not-found');
 

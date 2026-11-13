@@ -17,9 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Each Member keeps their own Wishlist in a Group, and every Member of the Group can read every Wishlist in it.
- * To someone outside the Group every use case here answers as if there were no such Group. Nothing here records
- * who read which Wishlist.
+ * Each Member keeps their own Wishlist in a Group. It is private: only its owner reads it, and once the Group has a
+ * Draw, so does the owner's Giver (ADR 0004). To anyone else it does not exist, and to someone outside the Group
+ * neither does the Group. Nothing here records who read which Wishlist.
  */
 @Service
 public class MemberWishlists {
@@ -29,23 +29,31 @@ public class MemberWishlists {
 
     private final Wishes wishes;
     private final GroupMembers groupMembers;
+    private final Receivers receivers;
     private final Clock clock;
 
-    MemberWishlists(Wishes wishes, GroupMembers groupMembers, Clock clock) {
+    MemberWishlists(Wishes wishes, GroupMembers groupMembers, Receivers receivers, Clock clock) {
         this.wishes = wishes;
         this.groupMembers = groupMembers;
+        this.receivers = receivers;
         this.clock = clock;
     }
 
     /**
-     * A Member's Wishlist: high priority Wishes first, and the oldest first within a priority.
+     * A Member's Wishlist, for its owner or their Giver: high priority Wishes first, and the oldest first within a
+     * priority.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code viewer} is not one of its Members
-     * @throws WishlistNotFoundException if {@code owner} is not a Member of the Group
+     * @throws WishlistNotFoundException if {@code owner} is not a Member of the Group, or {@code viewer} is neither
+     *     {@code owner} nor their Giver: the two look the same, so nobody learns who gives to whom
      */
     @Transactional(readOnly = true)
     public WishlistDetails wishlistOf(UUID groupId, UUID viewer, UUID owner) {
-        GroupMember member = membersSeenBy(groupId, viewer).stream()
+        List<GroupMember> members = membersSeenBy(groupId, viewer);
+        if (!viewer.equals(owner) && !isGiverOf(groupId, viewer, owner)) {
+            throw new WishlistNotFoundException();
+        }
+        GroupMember member = members.stream()
                 .filter(candidate -> candidate.id().value().equals(owner))
                 .findFirst()
                 .orElseThrow(WishlistNotFoundException::new);
@@ -103,6 +111,13 @@ public class MemberWishlists {
     @EventListener
     void on(GroupDeleted event) {
         wishes.removeAllIn(event.groupId());
+    }
+
+    private boolean isGiverOf(UUID groupId, UUID viewer, UUID owner) {
+        return receivers
+                .receiverOf(groupId, viewer)
+                .filter(receiver -> receiver.value().equals(owner))
+                .isPresent();
     }
 
     private List<GroupMember> membersSeenBy(UUID groupId, UUID viewer) {

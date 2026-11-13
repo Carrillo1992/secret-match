@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { LucideGift, LucideShuffle } from '@lucide/angular';
+import { RouterLink } from '@angular/router';
+import { LucideChevronRight, LucideGift, LucideShuffle } from '@lucide/angular';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
+import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { DrawOutcome } from '../../data-access/draw-api';
 
 /** A Draw needs at least 4 Members (ADR 0001); the API refuses fewer too. */
@@ -16,13 +18,22 @@ export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';
 
 /**
  * The Group's Draw, at the top of its page (#28, option A): the Admin runs it behind an inline
- * confirmation; once it is made, each Member sees their own Receiver. A plain view until the
- * envelope Reveal (#30).
+ * confirmation; once it is made, each Member sees their own Receiver, with a link to the Receiver's
+ * Wishlist, which only their Giver can open (#32). A plain view until the envelope Reveal (#30).
  */
 @Component({
   selector: 'app-draw-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Alert, Button, ConfirmPanel, LucideGift, LucideShuffle],
+  imports: [
+    Alert,
+    Button,
+    ConfirmPanel,
+    RouterLink,
+    TextLink,
+    LucideChevronRight,
+    LucideGift,
+    LucideShuffle,
+  ],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-draw" class="rounded-card bg-surface p-5 shadow-card">
@@ -55,6 +66,15 @@ export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';
             </strong>
           </p>
           <p class="mt-2 text-ink-muted">Nadie más lo sabe. 🤫</p>
+          <a
+            [routerLink]="['members', receiverId(), 'wishlist']"
+            appLink
+            standalone
+            class="mt-2 gap-0.5"
+          >
+            Ver sus deseos
+            <svg lucideChevronRight [size]="18"></svg>
+          </a>
         }
         @case ('not-drawn') {
           @if (finished()) {
@@ -131,6 +151,10 @@ export class DrawCard {
   protected readonly minimum = MINIMUM_MEMBERS;
   protected readonly confirming = signal(false);
   protected readonly enoughMembers = computed(() => this.memberCount() >= MINIMUM_MEMBERS);
+  protected readonly receiverId = computed(() => {
+    const state = this.state();
+    return state.status === 'drawn' ? state.receiver.id : '';
+  });
   protected readonly receiver = computed(() => {
     const state = this.state();
     return state.status === 'drawn' ? state.receiver.displayName : '';

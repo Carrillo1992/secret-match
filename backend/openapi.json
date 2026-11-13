@@ -406,7 +406,7 @@
     },
     "/api/v1/groups/{groupId}/members/{memberId}/wishlist" : {
       "get" : {
-        "description" : "Any Member of the Group can read any Wishlist in it, before and after the Draw. Anyone else gets a 404.",
+        "description" : "Private: only its owner can read it, and once the Group has a Draw, the owner's Giver too. Anyone else gets a 404, the same as for a Wishlist that does not exist.",
         "operationId" : "wishlist",
         "parameters" : [ {
           "in" : "path",

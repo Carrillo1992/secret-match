@@ -42,6 +42,17 @@
       (retry)="reloadDraw()"
     />
 
+    <section aria-labelledby="my-wishlist" class="mt-6 rounded-card bg-surface p-5 shadow-card">
+      <h2 id="my-wishlist" class="font-display text-lg font-semibold">Tu lista de deseos</h2>
+      <p class="mt-1.5 text-ink-muted">Solo la verá quien te regale, cuando se haga el sorteo.</p>
+      @if (you(); as you) {
+        <a [routerLink]="['members', you.id, 'wishlist']" appLink standalone class="mt-2 gap-0.5">
+          {{ group.finished ? 'Ver tus deseos' : 'Escribir tus deseos' }}
+          <svg lucideChevronRight [size]="18"></svg>
+        </a>
+      }
+    </section>
+
     <app-group-details-card
       class="mt-6"
       [group]="group"

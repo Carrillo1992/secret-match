@@ -15,6 +15,7 @@ import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -103,8 +104,19 @@ public class GroupDraw {
      */
     @Transactional(readOnly = true)
     public MyReceiver myReceiver(UUID groupId, UUID member) {
-        Roster roster = rosters.of(groupId, member).orElseThrow(DrawNotFoundException::new);
-        return receiverOf(groupId, roster, new MemberId(member));
+        return findMyReceiver(groupId, member).orElseThrow(DrawNotFoundException::new);
+    }
+
+    /**
+     * The Member's Receiver in the Group's Draw.
+     *
+     * @return empty if the Group has no Draw, there is no such Group, or {@code member} is not one of its Members
+     */
+    @Transactional(readOnly = true)
+    public Optional<MyReceiver> findMyReceiver(UUID groupId, UUID member) {
+        MemberId giver = new MemberId(member);
+        return rosters.of(groupId, member)
+                .flatMap(roster -> draws.receiverOf(groupId, giver).map(receiver -> receiverIn(roster, receiver)));
     }
 
     /** A deleted Group's Draw goes with it, in the same transaction, before its Members' rows. */
@@ -133,6 +145,10 @@ public class GroupDraw {
 
     private MyReceiver receiverOf(UUID groupId, Roster roster, MemberId giver) {
         MemberId receiver = draws.receiverOf(groupId, giver).orElseThrow(DrawNotFoundException::new);
+        return receiverIn(roster, receiver);
+    }
+
+    private static MyReceiver receiverIn(Roster roster, MemberId receiver) {
         Roster.Member member = roster.member(receiver)
                 .orElseThrow(() -> new IllegalStateException("a Receiver who is not in the Group"));
         return new MyReceiver(member.id().value(), member.displayName());

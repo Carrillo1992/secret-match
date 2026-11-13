@@ -16,9 +16,9 @@
     </h1>
     <p class="mt-1.5 text-ink-muted">
       @if (wishlist.owner.you) {
-        Todo el grupo puede ver tu lista. Nadie sabe quién la mira.
+        Solo la verá quien te regale, cuando se haga el sorteo.
       } @else {
-        Todo el grupo puede ver esta lista. Nadie sabe quién la mira.
+        Solo la ves tú, porque te toca regalarle. Nadie más del grupo puede abrirla.
       }
     </p>
 
@@ -49,7 +49,7 @@
     @if (wishlist.wishes.length === 0) {
       <p class="mt-6 text-ink-muted">
         @if (wishlist.owner.you) {
-          Aún no has añadido deseos. Cuéntale al grupo qué te haría ilusión recibir.
+          Aún no has añadido deseos. Cuenta qué te haría ilusión recibir.
         } @else {
           {{ wishlist.owner.displayName }} aún no ha añadido deseos.
         }
@@ -109,7 +109,7 @@
                     (confirmed)="delete(wish)"
                     (cancelled)="confirmingDelete.set(null)"
                   >
-                    Desaparecerá de tu lista para todo el grupo.
+                    Desaparecerá de tu lista.
                   </app-confirm-panel>
                 } @else {
                   <div class="mt-3 flex justify-end gap-4">

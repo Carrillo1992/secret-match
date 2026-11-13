@@ -25,3 +25,7 @@ export type { ReceiverResponse } from './models/receiver-response';
 export type { SignInRequest } from './models/sign-in-request';
 export type { SignUpRequest } from './models/sign-up-request';
 export type { SignUpResponse } from './models/sign-up-response';
+export type { WishlistOwnerResponse } from './models/wishlist-owner-response';
+export type { WishlistResponse } from './models/wishlist-response';
+export type { WishRequest } from './models/wish-request';
+export type { WishResponse } from './models/wish-response';

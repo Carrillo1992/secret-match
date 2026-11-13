@@ -76,6 +76,13 @@ export const routes: Routes = [
       import('./features/groups/pages/group-page/group-page').then((m) => m.GroupPage),
   },
   {
+    path: 'groups/:groupId/members/:memberId/wishlist',
+    title: 'Lista de deseos · SecretMatch',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/wishlist/pages/wishlist-page/wishlist-page').then((m) => m.WishlistPage),
+  },
+  {
     path: 'profile',
     title: 'Tu perfil · SecretMatch',
     canActivate: [authGuard],

@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { LucideChevronRight } from '@lucide/angular';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
@@ -14,13 +16,13 @@ export interface Removal {
 }
 
 /**
- * Who is in the Group, the Admin first. The Admin gets a quiet "Quitar" on every other Member,
- * behind an inline confirmation under that Member's row.
+ * Who is in the Group, the Admin first. Every row links to that Member's Wishlist (#32). The Admin
+ * gets a quiet "Quitar" on every other Member, behind an inline confirmation under that Member's row.
  */
 @Component({
   selector: 'app-members-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Alert, Chip, ConfirmPanel, TextLink],
+  imports: [Alert, Chip, ConfirmPanel, RouterLink, TextLink, LucideChevronRight],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-members" class="rounded-card bg-surface p-5 shadow-card">
@@ -55,13 +57,23 @@ export interface Removal {
               @if (member.admin) {
                 <span appChip>Admin</span>
               }
+              <a
+                [routerLink]="['members', member.id, 'wishlist']"
+                appLink
+                standalone
+                class="ml-auto shrink-0 gap-0.5"
+                [attr.aria-label]="member.you ? 'Tus deseos' : 'Deseos de ' + member.displayName"
+              >
+                Deseos
+                <svg lucideChevronRight [size]="18"></svg>
+              </a>
               @if (canRemove() && !member.admin && confirming()?.id !== member.id) {
                 <button
                   [id]="'remove-' + member.id"
                   type="button"
                   appLink
                   standalone
-                  class="ml-auto shrink-0"
+                  class="shrink-0"
                   [attr.aria-label]="'Quitar a ' + member.displayName"
                   [disabled]="isRemoving(member)"
                   (click)="confirming.set(member)"

@@ -108,6 +108,17 @@ describe('GroupPage', () => {
     expect(backLink()).toBeDefined();
   });
 
+  it("links every Member to their Wishlist, yours as 'Tus deseos'", async () => {
+    http.expectOne(GROUP_URL).flush(navidad);
+    await settle();
+
+    const [carmen, luis] = members().map((member) => member.querySelector('a'));
+    expect(carmen?.getAttribute('href')).toBe('/groups/g-1/members/u-carmen/wishlist');
+    expect(carmen?.getAttribute('aria-label')).toBe('Deseos de Abuela Carmen');
+    expect(luis?.getAttribute('href')).toBe('/groups/g-1/members/u-luis/wishlist');
+    expect(luis?.getAttribute('aria-label')).toBe('Tus deseos');
+  });
+
   it('says when the Group has no budget', async () => {
     http.expectOne(GROUP_URL).flush({ ...navidad, budget: undefined });
     await settle();

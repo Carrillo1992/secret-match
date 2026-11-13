@@ -6,6 +6,7 @@ import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.GroupNotFoundException;
 import com.secretmatch.group.domain.InviteCode;
 import com.secretmatch.group.domain.MemberId;
+import com.secretmatch.identity.application.UserDeleted;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import java.security.SecureRandom;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,6 +72,12 @@ public class MyGroups {
                         group.admin().equals(user),
                         group.isFinished(now)))
                 .toList();
+    }
+
+    /** The Groups this User is a Member of, soonest Exchange Date first, for other modules. */
+    @Transactional(readOnly = true)
+    public List<GroupSummary> findGroupsOf(UUID user) {
+        return groupsOf(new MemberId(user));
     }
 
     /**
@@ -171,6 +179,23 @@ public class MyGroups {
         events.publishEvent(new GroupDeleted(group.id().value()));
         groups.delete(group.id());
         emailGroupDeleted(group, toTell);
+    }
+
+    /**
+     * A User deleting their account takes the Groups they are the Admin of with them, emailing those Groups' other
+     * Members, and leaves every other Group. Finished Groups too: the read-only rule protects the exchange from its
+     * Members' changes, not from a User leaving SecretMatch.
+     */
+    @EventListener
+    void on(UserDeleted event) {
+        MemberId user = new MemberId(event.userId());
+        for (Group group : groups.findWithMember(user)) {
+            if (group.admin().equals(user)) {
+                delete(group.id(), user);
+            } else if (groups.removeMember(group.id(), user)) {
+                events.publishEvent(new MembershipEnded(group.id().value(), user.value()));
+            }
+        }
     }
 
     /** Catalogue email 7: "the Group was deleted", to each Member but the Admin. */

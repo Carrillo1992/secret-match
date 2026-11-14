@@ -2,9 +2,12 @@ package com.secretmatch.wishlist.application;
 
 import com.secretmatch.group.application.GroupDeleted;
 import com.secretmatch.group.application.MembershipEnded;
+import com.secretmatch.wishlist.domain.DontListEntry;
+import com.secretmatch.wishlist.domain.DontListEntryNotFoundException;
 import com.secretmatch.wishlist.domain.GroupNotFoundException;
 import com.secretmatch.wishlist.domain.MemberId;
 import com.secretmatch.wishlist.domain.NotYourWishException;
+import com.secretmatch.wishlist.domain.Preferences;
 import com.secretmatch.wishlist.domain.Wish;
 import com.secretmatch.wishlist.domain.WishNotFoundException;
 import com.secretmatch.wishlist.domain.WishlistNotFoundException;
@@ -28,12 +31,22 @@ public class MemberWishlists {
             Comparator.comparing(stored -> stored.wish().priority());
 
     private final Wishes wishes;
+    private final AllPreferences preferences;
+    private final DontListEntries dontLists;
     private final GroupMembers groupMembers;
     private final Receivers receivers;
     private final Clock clock;
 
-    MemberWishlists(Wishes wishes, GroupMembers groupMembers, Receivers receivers, Clock clock) {
+    MemberWishlists(
+            Wishes wishes,
+            AllPreferences preferences,
+            DontListEntries dontLists,
+            GroupMembers groupMembers,
+            Receivers receivers,
+            Clock clock) {
         this.wishes = wishes;
+        this.preferences = preferences;
+        this.dontLists = dontLists;
         this.groupMembers = groupMembers;
         this.receivers = receivers;
         this.clock = clock;
@@ -41,7 +54,7 @@ public class MemberWishlists {
 
     /**
      * A Member's Wishlist, for its owner or their Giver: high priority Wishes first, and the oldest first within a
-     * priority.
+     * priority; their Preferences; and their Don't List, oldest first.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code viewer} is not one of its Members
      * @throws WishlistNotFoundException if {@code owner} is not a Member of the Group, or {@code viewer} is neither
@@ -61,7 +74,10 @@ public class MemberWishlists {
                 .sorted(HIGH_PRIORITY_FIRST)
                 .toList();
         return new WishlistDetails(
-                new WishlistDetails.Owner(owner, member.displayName(), owner.equals(viewer)), ordered);
+                new WishlistDetails.Owner(owner, member.displayName(), owner.equals(viewer)),
+                ordered,
+                preferences.of(groupId, member.id()),
+                dontLists.of(groupId, member.id()));
     }
 
     /**
@@ -101,16 +117,62 @@ public class MemberWishlists {
         wishes.remove(groupId, wishId);
     }
 
+    /**
+     * Writes {@code owner}'s own Preferences in the Group, replacing what they said before; {@link Preferences#NONE}
+     * clears them.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     */
+    @Transactional
+    public Preferences editPreferences(UUID groupId, UUID owner, Preferences written) {
+        membersSeenBy(groupId, owner);
+        preferences.save(groupId, new MemberId(owner), written);
+        return written;
+    }
+
+    /**
+     * Adds an entry to {@code owner}'s own Don't List in the Group.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     */
+    @Transactional
+    public StoredDontListEntry addDontListEntry(UUID groupId, UUID owner, DontListEntry entry) {
+        membersSeenBy(groupId, owner);
+        return dontLists.add(groupId, new MemberId(owner), entry, clock.instant());
+    }
+
+    /**
+     * Removes an entry from {@code owner}'s own Don't List.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws DontListEntryNotFoundException if the Group has no such entry, or it is on someone else's Don't
+     *     List: the two look the same, so nobody but its owner can tell it exists
+     */
+    @Transactional
+    public void deleteDontListEntry(UUID groupId, UUID owner, UUID entryId) {
+        membersSeenBy(groupId, owner);
+        dontLists
+                .find(groupId, entryId)
+                .filter(entry -> entry.owner().equals(new MemberId(owner)))
+                .orElseThrow(DontListEntryNotFoundException::new);
+        dontLists.remove(groupId, entryId);
+    }
+
     /** A Member's Wishlist goes with their membership, in the same transaction. */
     @EventListener
     void on(MembershipEnded event) {
-        wishes.removeAllOf(event.groupId(), new MemberId(event.memberId()));
+        MemberId member = new MemberId(event.memberId());
+        wishes.removeAllOf(event.groupId(), member);
+        preferences.removeAllOf(event.groupId(), member);
+        dontLists.removeAllOf(event.groupId(), member);
     }
 
     /** A deleted Group's Wishlists go with it, in the same transaction, before its Members' rows. */
     @EventListener
     void on(GroupDeleted event) {
         wishes.removeAllIn(event.groupId());
+        preferences.removeAllIn(event.groupId());
+        dontLists.removeAllIn(event.groupId());
     }
 
     private boolean isGiverOf(UUID groupId, UUID viewer, UUID owner) {

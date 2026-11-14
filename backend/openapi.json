@@ -190,6 +190,74 @@
         "tags" : [ "groups" ]
       }
     },
+    "/api/v1/groups/{groupId}/dont-list" : {
+      "post" : {
+        "operationId" : "addDontListEntry",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DontListEntryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DontListEntryResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "summary" : "Add an entry to your own Don't List in the Group",
+        "tags" : [ "wishlists" ]
+      }
+    },
+    "/api/v1/groups/{groupId}/dont-list/{entryId}" : {
+      "delete" : {
+        "description" : "Only its owner can; to anyone else it does not exist (404).",
+        "operationId" : "deleteDontListEntry",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "entryId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Remove an entry from your own Don't List",
+        "tags" : [ "wishlists" ]
+      }
+    },
     "/api/v1/groups/{groupId}/draw" : {
       "get" : {
         "description" : "Only their own Receiver. A 404 until the Draw is made.",
@@ -438,6 +506,45 @@
           }
         },
         "summary" : "A Member's Wishlist",
+        "tags" : [ "wishlists" ]
+      }
+    },
+    "/api/v1/groups/{groupId}/preferences" : {
+      "put" : {
+        "description" : "Replaces what they said before; blank or left out clears them.",
+        "operationId" : "editPreferences",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PreferencesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PreferencesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Write your own Preferences in the Group",
         "tags" : [ "wishlists" ]
       }
     },
@@ -972,6 +1079,30 @@
         },
         "required" : [ "displayName" ]
       },
+      "DontListEntryRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "description" : "What the Member does not want, 1 to 100 characters."
+          }
+        },
+        "required" : [ "text" ]
+      },
+      "DontListEntryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Identifies the entry, to remove it."
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "text" ]
+      },
       "DrawResponse" : {
         "type" : "object",
         "properties" : {
@@ -1212,6 +1343,24 @@
         },
         "required" : [ "newPassword", "token" ]
       },
+      "PreferencesRequest" : {
+        "type" : "object",
+        "properties" : {
+          "preferences" : {
+            "type" : "string",
+            "description" : "Tastes, sizes and hobbies, up to 2000 characters. Blank or left out clears them."
+          }
+        }
+      },
+      "PreferencesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "preferences" : {
+            "type" : "string",
+            "description" : "Left out when there are none."
+          }
+        }
+      },
       "ReceiverResponse" : {
         "type" : "object",
         "properties" : {
@@ -1352,8 +1501,19 @@
       "WishlistResponse" : {
         "type" : "object",
         "properties" : {
+          "dontList" : {
+            "type" : "array",
+            "description" : "What the Member does not want to receive, oldest first.",
+            "items" : {
+              "$ref" : "#/components/schemas/DontListEntryResponse"
+            }
+          },
           "owner" : {
             "$ref" : "#/components/schemas/WishlistOwnerResponse"
+          },
+          "preferences" : {
+            "type" : "string",
+            "description" : "Tastes, sizes and hobbies. Left out when there are none."
           },
           "wishes" : {
             "type" : "array",
@@ -1363,7 +1523,7 @@
             }
           }
         },
-        "required" : [ "owner", "wishes" ]
+        "required" : [ "dontList", "owner", "wishes" ]
       }
     }
   }

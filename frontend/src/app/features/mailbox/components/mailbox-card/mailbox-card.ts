@@ -92,6 +92,7 @@ const LOADING: ThreadState = { status: 'loading' };
                 [state]="thread(mailbox)"
                 [side]="mailbox.side"
                 [author]="title(mailbox)"
+                [finished]="finished()"
                 (retry)="retryMessages.emit(mailbox.id)"
               />
               @if (finished()) {

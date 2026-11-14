@@ -25,7 +25,8 @@ const DAY = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', ti
 /**
  * One conversation of the Mailbox card (#36, option B): the Messages grouped by day, mine on the
  * right and theirs on the left, each with a screen-reader-only author; or an envelope inviting to
- * write that restates the anonymity when there are none.
+ * write that restates the anonymity when there are none (once the Group is finished, only saying
+ * there were none).
  */
 @Component({
   selector: 'app-mailbox-thread',
@@ -65,9 +66,13 @@ const DAY = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', ti
                 />
               </g>
             </svg>
-            <p class="mt-3 font-display text-lg font-semibold">Aún no hay mensajes</p>
+            <p class="mt-3 font-display text-lg font-semibold">
+              {{ finished() ? 'No hubo mensajes' : 'Aún no hay mensajes' }}
+            </p>
             <p class="mt-1.5 max-w-xs text-ink-muted">
-              @if (side() === 'GIVER') {
+              @if (finished()) {
+                Este buzón se quedó en blanco.
+              } @else if (side() === 'GIVER') {
                 Pregúntale lo que quieras: no sabrá que eres tú. 🤫
               } @else {
                 Escribe a quien te regala: lo leerá sin que sepas quién es.
@@ -116,6 +121,8 @@ export class MailboxThread {
   readonly side = input.required<MailboxSide>();
   /** Who wrote the other side's Messages, for screen readers: "Con Lucía", or "Tu Giver". */
   readonly author = input.required<string>();
+  /** Whether the Group is finished: an empty conversation then invites nobody to write. */
+  readonly finished = input(false);
   /** The Messages could not be loaded: the page asks for them again. */
   readonly retry = output();
 

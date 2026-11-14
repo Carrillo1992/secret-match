@@ -165,6 +165,7 @@ describe('MailboxCard', () => {
     expect(text(panel('m-1')?.querySelector('[role="status"]'))).toBe(
       'No se ha enviado: el grupo acaba de finalizar y ya solo se pueden leer los mensajes.',
     );
+    expect(text(panel('m-1'))).toContain('No hubo mensajes');
   });
 
   it('offers to retry when the Mailboxes cannot be loaded', async () => {

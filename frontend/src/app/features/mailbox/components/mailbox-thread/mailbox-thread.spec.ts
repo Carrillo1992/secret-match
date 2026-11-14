@@ -25,6 +25,15 @@ describe('MailboxThread', () => {
     (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
   const bubbles = (element: HTMLElement) => [...element.querySelectorAll('p[data-message]')];
 
+  it('does not invite to write in an empty Mailbox once the Group is finished', async () => {
+    const fixture = await render({ status: 'loaded', messages: [], fresh: 0 });
+    fixture.componentRef.setInput('finished', true);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(text(element)).toBe('No hubo mensajes Este buzón se quedó en blanco.');
+  });
+
   it('groups the Messages by day under a date separator', async () => {
     const element = (await render(conversation)).nativeElement as HTMLElement;
 

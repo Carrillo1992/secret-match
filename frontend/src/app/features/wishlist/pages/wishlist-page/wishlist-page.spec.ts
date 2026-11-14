@@ -70,7 +70,8 @@ describe('WishlistPage', () => {
     http.verify();
   });
 
-  const page = () => harness.routeNativeElement as HTMLElement;
+  // The page itself, without the layout's header (wordmark, Preferences menu).
+  const page = () => harness.routeNativeElement?.querySelector('main') as HTMLElement;
   /** Spaces normalised: currency amounts are formatted with a no-break space before the €. */
   const text = (element: Element | null | undefined) =>
     (element?.textContent ?? '').replace(/\s+/g, ' ').trim();

@@ -38,7 +38,12 @@ describe('JoinPage', () => {
 
   afterEach(() => http.verify());
 
-  const page = () => harness.routeNativeElement as HTMLElement;
+  // The page itself, without the layout's header (wordmark, Preferences menu); the Group page
+  // stub it lands on has no layout.
+  const page = () => {
+    const route = harness.routeNativeElement as HTMLElement;
+    return route.querySelector<HTMLElement>('main') ?? route;
+  };
   const text = (element: Element | null | undefined) =>
     (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
   const settle = async () => {

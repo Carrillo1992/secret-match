@@ -129,6 +129,18 @@ public class MyGroups {
     }
 
     /**
+     * Records that the Group's Draw is cancelled, which unfreezes who is in it. The Draw module calls it in the
+     * transaction that deletes the Draw, after {@link #lockGroup}.
+     *
+     * @throws GroupNotFoundException if there is no such Group
+     */
+    @Transactional
+    public void markDrawCancelled(UUID groupId) {
+        Group group = groups.findById(new GroupId(groupId)).orElseThrow(GroupNotFoundException::new);
+        groups.saveDrawn(group.cancelDraw());
+    }
+
+    /**
      * Replaces the Group's name, budget and Exchange Date. Nobody is emailed: the Members see the change on the
      * Group page.
      *

@@ -181,6 +181,14 @@ public final class Group {
     }
 
     /**
+     * The same Group once its Draw is cancelled: back to how it was before the Draw, so Members join, leave and
+     * are removed again, its Invite Link works again, and it can be drawn again.
+     */
+    public Group cancelDraw() {
+        return new Group(id, name, exchangeDate, budget, admin, members, inviteCode, createdAt, false);
+    }
+
+    /**
      * Checks that {@code by} may delete the Group, in any state, finished included.
      *
      * @return the Members to tell it is gone: everyone but the Admin, who deletes it

@@ -103,6 +103,33 @@ public class GroupDraw {
     }
 
     /**
+     * Cancels the Group's Draw: every Assignment is deleted and the Group is no longer drawn, so it can be joined,
+     * left and drawn again. Every Member is emailed once it is committed.
+     *
+     * @throws GroupNotFoundException if there is no such Group or {@code admin} is not one of its Members
+     * @throws AdminOnlyException if {@code admin} is not its Admin
+     * @throws GroupFinishedException if the Group is finished
+     * @throws DrawNotFoundException if the Group has no Draw
+     */
+    @Transactional
+    public void cancel(UUID groupId, UUID admin) {
+        Roster roster = rosters.lockedOf(groupId, admin).orElseThrow(GroupNotFoundException::new);
+        if (!roster.admin().equals(new MemberId(admin))) {
+            throw new AdminOnlyException();
+        }
+        if (roster.finished()) {
+            throw new GroupFinishedException();
+        }
+        if (!draws.existsIn(groupId)) {
+            throw new DrawNotFoundException();
+        }
+        draws.removeIn(groupId);
+        rosters.markDrawCancelled(groupId);
+        events.publishEvent(new DrawCancelled(groupId));
+        emailDrawCancelled(groupId, roster);
+    }
+
+    /**
      * The signed-in Member's Receiver in the Group's Draw.
      *
      * @throws DrawNotFoundException if the Group has no Draw, there is no such Group, or {@code member} is not one
@@ -176,6 +203,25 @@ public class GroupDraw {
                 Ya está hecho el sorteo del grupo «%s».
 
                 Entra para descubrir a quién le haces el regalo.""".formatted(groupName);
+        emailEveryMember(groupId, roster, subject, message);
+    }
+
+    /**
+     * Catalogue email 4: "the Draw is cancelled, the previous Assignments no longer count", to every Member. It
+     * names nobody.
+     */
+    private void emailDrawCancelled(UUID groupId, Roster roster) {
+        String groupName = roster.groupName();
+        String subject = "Se ha cancelado el sorteo de «%s»".formatted(groupName);
+        String message = """
+                Se ha cancelado el sorteo del grupo «%s»: las asignaciones anteriores ya no cuentan.
+
+                El administrador del grupo puede volver a hacer el sorteo; cuando lo haga, te avisaremos para que \
+                descubras a quién le haces el regalo.""".formatted(groupName);
+        emailEveryMember(groupId, roster, subject, message);
+    }
+
+    private void emailEveryMember(UUID groupId, Roster roster, String subject, String message) {
         for (Roster.Member member : roster.members()) {
             String to = users.emailOf(member.id().value())
                     .orElseThrow(() -> new IllegalStateException("a Member has no User"));

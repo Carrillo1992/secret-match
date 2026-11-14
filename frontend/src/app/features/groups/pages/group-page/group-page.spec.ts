@@ -1050,6 +1050,107 @@ describe('GroupPage', () => {
 
       expect(text(section())).toContain('Te toca regalar a Marta');
     });
+
+    describe('cancelling it', () => {
+      const PEDRO = { myReceiver: { id: 'u-pedro', displayName: 'Pedro' } };
+      const drawnWithFour = { ...withFour, drawn: true };
+      const anywhere = (label: string) =>
+        [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
+      const cancelDraw = async () => {
+        button('Anular el sorteo')?.click();
+        await settle();
+        button('Sí, anular')?.click();
+        await settle();
+        return http.expectOne((r) => r.url === DRAW_URL && r.method === 'DELETE');
+      };
+      /** The page asks for the Group again, which the API now answers as not drawn. */
+      const answerRefresh = async () => {
+        http.expectOne(GROUP_URL).flush(withFour);
+        await settle();
+      };
+
+      it('is offered to the Admin of a drawn Group that is not finished', async () => {
+        await open(drawnWithFour, PEDRO);
+
+        expect(button('Anular el sorteo')).toBeDefined();
+      });
+
+      it('is never offered to a regular Member', async () => {
+        await open({ ...navidad, drawn: true }, PEDRO);
+
+        expect(button('Anular el sorteo')).toBeUndefined();
+      });
+
+      it('is not offered once the Group is finished', async () => {
+        await open({ ...drawnWithFour, finished: true }, PEDRO);
+
+        expect(button('Anular el sorteo')).toBeUndefined();
+      });
+
+      it('does nothing when the Admin cancels the confirmation', async () => {
+        await open(drawnWithFour, PEDRO);
+
+        button('Anular el sorteo')?.click();
+        await settle();
+        expect(text(section())).toContain('¿Anular el sorteo?');
+        button('Cancelar')?.click();
+        await settle();
+
+        http.expectNone((r) => r.url === DRAW_URL && r.method === 'DELETE');
+        expect(text(section())).toContain('Te toca regalar a Pedro');
+        expect(button('Anular el sorteo')).toBeDefined();
+      });
+
+      it('reopens the whole Group after the Admin confirms', async () => {
+        await open(drawnWithFour, PEDRO);
+
+        const request = await cancelDraw();
+        request.flush(null, { status: 204, statusText: 'No Content' });
+        await settle();
+        await answerRefresh();
+        http.expectOne(EXCLUSIONS_URL).flush([]);
+        await settle();
+
+        expect(text(section())).not.toContain('Pedro');
+        expect(button('Sortear')).toBeDefined();
+        expect(page().querySelector('section[aria-labelledby="group-invite"]')).not.toBeNull();
+        expect(anywhere('Quitar')).toBeDefined();
+        expect(anywhere('Añadir exclusión')).toBeDefined();
+        expect(document.activeElement?.id).toBe('group-draw');
+      });
+
+      it('shows the Group as not drawn when the Draw was already cancelled elsewhere', async () => {
+        await open(drawnWithFour, PEDRO);
+
+        const request = await cancelDraw();
+        // An endpoint without a response body is read as text, so its problems arrive as JSON text.
+        request.flush(JSON.stringify(NOT_DRAWN.body), NOT_DRAWN.init);
+        await settle();
+        await answerRefresh();
+
+        expect(text(section())).not.toContain('Pedro');
+        expect(button('Sortear')).toBeDefined();
+        expect(section()?.querySelector('[role="alert"]')).toBeNull();
+      });
+
+      it('says so when the Draw could not be cancelled, and keeps it', async () => {
+        await open(drawnWithFour, PEDRO);
+
+        const request = await cancelDraw();
+        request.flush(
+          JSON.stringify({ type: 'urn:secretmatch:problem:group-finished', status: 422 }),
+          { status: 422, statusText: 'Unprocessable Content' },
+        );
+        await settle();
+
+        http.expectNone(GROUP_URL);
+        expect(text(section()?.querySelector('[role="alert"]'))).toContain(
+          'No hemos podido anular el sorteo',
+        );
+        expect(text(section())).toContain('Te toca regalar a Pedro');
+        expect(button('Anular el sorteo')).toBeDefined();
+      });
+    });
   });
 
   describe('the Mailbox', () => {

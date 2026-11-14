@@ -39,6 +39,8 @@
       [finished]="group.finished"
       [runStatus]="runStatus()"
       (run)="runDraw()"
+      [cancelStatus]="cancelStatus()"
+      (cancelDraw)="cancelDraw()"
       (retry)="reloadDraw()"
     />
 

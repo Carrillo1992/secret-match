@@ -437,4 +437,22 @@ class GroupTest {
         assertThat(edited.isDrawn()).isTrue();
         assertThat(drawn.authoriseDeletion(CREATOR)).containsExactly(GUEST, OTHER_GUEST);
     }
+
+    @Test
+    @DisplayName("once its Draw is cancelled a Group can be joined, left and given a new Invite Link again")
+    void cancelledDrawUnfreezesTheGroup() {
+        Group drawn = withGuests().markDrawn();
+
+        Group reopened = drawn.cancelDraw();
+
+        assertThat(reopened.isDrawn()).isFalse();
+        assertThat(reopened.members()).isEqualTo(drawn.members());
+        assertThat(reopened.inviteCode()).isEqualTo(drawn.inviteCode());
+        reopened.authoriseJoin(NOW);
+        assertThat(reopened.removeMember(GUEST, GUEST, NOW).members()).containsExactly(CREATOR, OTHER_GUEST);
+        assertThat(reopened.removeMember(CREATOR, OTHER_GUEST, NOW).members()).containsExactly(CREATOR, GUEST);
+        assertThat(reopened.regenerateInviteLink(CREATOR, new InviteCode("second-code"), NOW)
+                        .inviteCode())
+                .isEqualTo(new InviteCode("second-code"));
+    }
 }

@@ -43,7 +43,7 @@ import {
   ExclusionsListing,
   NewExclusion,
 } from '../../components/exclusions-card/exclusions-card';
-import { DrawCard, DrawState, RunStatus } from '../../components/draw-card/draw-card';
+import { CancelStatus, DrawCard, DrawState, RunStatus } from '../../components/draw-card/draw-card';
 import { DrawApi } from '../../data-access/draw-api';
 import { Exclusion, ExclusionsApi } from '../../data-access/exclusions-api';
 import { longExchangeDate } from '../../data-access/group-format';
@@ -155,6 +155,32 @@ export class GroupPage {
       case 'failed':
         this.runStatus.set('failed');
     }
+  }
+
+  protected readonly cancelStatus = signal<CancelStatus>('idle');
+
+  /**
+   * Once there is no Draw any more (cancelled now, or already from another tab), the whole page goes
+   * back to the Group before its Draw: the Group is asked for again, quietly, so it is no longer
+   * drawn and shows whoever is in it now.
+   */
+  protected async cancelDraw(): Promise<void> {
+    this.cancelStatus.set('cancelling');
+    const outcome = await this.drawApi.cancel(this.groupId());
+    if (outcome.status === 'failed') {
+      this.cancelStatus.set('failed');
+      return;
+    }
+    const refreshed = await this.groupsApi.group(this.groupId());
+    const group = this.group();
+    if (refreshed.status === 'found') {
+      this.outcome.set(refreshed);
+    } else if (group) {
+      this.outcome.set({ status: 'found', group: { ...group, drawn: false } });
+    }
+    this.drawOutcome.set({ status: 'not-drawn' });
+    this.runStatus.set('idle');
+    this.cancelStatus.set('idle');
   }
 
   protected reloadDraw(): void {

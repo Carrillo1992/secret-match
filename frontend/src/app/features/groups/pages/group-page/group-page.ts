@@ -148,10 +148,27 @@ export class GroupPage {
     return state.status === 'drawn' && envelopeWasOpened(this.groupId(), state.receiver.id);
   });
 
+  /** The Receiver whose envelope was opened during this visit. */
+  private readonly openedNow = signal<string | null>(null);
+
+  /**
+   * Whether the Member may see their Receiver's name outside the Reveal, as in the Mailbox: only
+   * once the envelope is opened, so nothing spoils it. Kept apart from envelopeAlreadyOpened, which
+   * must not flip mid-opening or the Reveal would skip its animation.
+   */
+  protected readonly receiverRevealed = computed(() => {
+    const state = this.drawState();
+    return (
+      state.status === 'drawn' &&
+      (this.openedNow() === state.receiver.id || this.envelopeAlreadyOpened())
+    );
+  });
+
   protected rememberEnvelope(): void {
     const state = this.drawState();
     if (state.status === 'drawn') {
       rememberOpenedEnvelope(this.groupId(), state.receiver.id);
+      this.openedNow.set(state.receiver.id);
     }
   }
 

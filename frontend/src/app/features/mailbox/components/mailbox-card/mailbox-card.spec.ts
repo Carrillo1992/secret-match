@@ -24,6 +24,7 @@ describe('MailboxCard', () => {
     fixture.componentRef.setInput('mailboxes', mailboxes);
     fixture.componentRef.setInput('threads', threads);
     fixture.componentRef.setInput('selected', selectedId);
+    fixture.componentRef.setInput('receiverRevealed', true);
     selected = [];
     retriedMessages = [];
     retriedMailboxes = 0;
@@ -51,6 +52,15 @@ describe('MailboxCard', () => {
         .innerHTML.replace(/<!--.*?-->/g, '')
         .trim(),
     ).toBe('');
+  });
+
+  it('does not name the Receiver until the envelope is opened', async () => {
+    await render(both, { 'm-1': empty, 'm-2': empty });
+    fixture.componentRef.setInput('receiverRevealed', false);
+    await fixture.whenStable();
+
+    expect(tabs().map(text)).toEqual(['Tu Receiver', 'Tu Giver']);
+    expect(text(element())).not.toContain('Lucía');
   });
 
   it('shows one tab per Mailbox, never naming the Giver', async () => {

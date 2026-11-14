@@ -5,6 +5,7 @@ import com.secretmatch.group.application.MyGroups;
 import com.secretmatch.mailbox.application.GroupMember;
 import com.secretmatch.mailbox.application.GroupMembers;
 import com.secretmatch.mailbox.domain.MemberId;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +34,11 @@ class GroupMembersOfGroups implements GroupMembers {
     @Override
     public Optional<Boolean> isFinished(UUID groupId, UUID viewer) {
         return groups.findGroup(groupId, viewer).map(GroupDetails::finished);
+    }
+
+    @Override
+    public Optional<ZoneId> timeZoneOf(UUID groupId, UUID viewer) {
+        return groups.findGroup(groupId, viewer).map(group -> ZoneId.of(group.timeZone()));
     }
 
     private static List<GroupMember> membersOf(GroupDetails group) {

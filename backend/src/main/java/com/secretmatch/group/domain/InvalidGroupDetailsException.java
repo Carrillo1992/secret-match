@@ -2,7 +2,7 @@ package com.secretmatch.group.domain;
 
 import com.secretmatch.shared.domain.DomainException;
 
-/** A Group name, Exchange Date or budget that breaks its rules. */
+/** A Group name, Exchange Date, budget or Time Zone that breaks its rules. */
 public class InvalidGroupDetailsException extends DomainException {
 
     private InvalidGroupDetailsException(String code, String message) {
@@ -23,5 +23,10 @@ public class InvalidGroupDetailsException extends DomainException {
     static InvalidGroupDetailsException budget() {
         return new InvalidGroupDetailsException(
                 "invalid-budget", "The budget must be an amount in euros from 0 to 999999.99, to the cent.");
+    }
+
+    static InvalidGroupDetailsException timeZone() {
+        return new InvalidGroupDetailsException(
+                "invalid-time-zone", "The Time Zone must be an IANA time zone id, such as Europe/Madrid.");
     }
 }

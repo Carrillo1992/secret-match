@@ -188,7 +188,7 @@ class FinishedGroupIT {
                 .uri("/api/v1/groups/" + groupId)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessTokens.get(by.email()))
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("name", name, "exchangeDate", "2026-12-24"))
+                .body(Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", "UTC"))
                 .exchange();
     }
 
@@ -222,8 +222,8 @@ class FinishedGroupIT {
 
     /** "Navidad" on Christmas Eve 2026. */
     private String createGroup(User admin) {
-        RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", "Navidad", "exchangeDate", "2026-12-24"));
+        RestTestClient.ResponseSpec created = post(
+                admin, "/api/v1/groups", Map.of("name", "Navidad", "exchangeDate", "2026-12-24", "timeZone", "UTC"));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

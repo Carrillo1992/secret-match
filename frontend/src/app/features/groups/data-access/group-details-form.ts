@@ -33,12 +33,14 @@ export function groupDetailsInput(form: {
   name: string;
   exchangeDate: string;
   budget: string;
+  timeZone: string;
 }): GroupEdit {
   const name = form.name.trim();
   const amount = form.budget.trim();
+  const { exchangeDate, timeZone } = form;
   return amount
-    ? { name, exchangeDate: form.exchangeDate, budget: Number(amount.replace(',', '.')) }
-    : { name, exchangeDate: form.exchangeDate };
+    ? { name, exchangeDate, budget: Number(amount.replace(',', '.')), timeZone }
+    : { name, exchangeDate, timeZone };
 }
 
 /** A budget as the form shows it: `30` → "30", `25.5` → "25,50", none → "". */

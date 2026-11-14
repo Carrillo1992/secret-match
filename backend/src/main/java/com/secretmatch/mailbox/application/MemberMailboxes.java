@@ -14,7 +14,7 @@ import com.secretmatch.mailbox.domain.UserId;
 import com.secretmatch.notification.application.EmailRequested;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -97,8 +97,9 @@ public class MemberMailboxes {
     public List<MailboxMessage> messagesIn(UUID mailboxId, UUID member) {
         Mailbox mailbox = openTo(mailboxId, member);
         MemberId me = new MemberId(member);
+        ZoneId timeZone = timeZoneOf(mailbox, me);
         return mailboxes.messagesIn(mailbox.id()).stream()
-                .map(stored -> seenBy(me, stored))
+                .map(stored -> seenBy(me, stored, timeZone))
                 .toList();
     }
 
@@ -124,7 +125,7 @@ public class MemberMailboxes {
         MemberId me = new MemberId(author);
         StoredMessage sent = mailboxes.addMessage(mailbox.id(), me, new MessageText(text), clock.instant());
         mailbox.otherSideOf(me).ifPresent(recipient -> emailNewMessage(mailbox, me, recipient));
-        return seenBy(me, sent);
+        return seenBy(me, sent, timeZoneOf(mailbox, me));
     }
 
     /** A deleted Group's Mailboxes go with it, in the same transaction, before its Members' rows. */
@@ -199,6 +200,16 @@ public class MemberMailboxes {
     }
 
     /**
+     * The Time Zone the Mailbox's Message dates are cut in: always its Group's, the same for both sides, so the
+     * caller cannot pick one and watch where a date flips (ADR 0001).
+     */
+    private ZoneId timeZoneOf(Mailbox mailbox, MemberId side) {
+        return groupMembers
+                .timeZoneOf(mailbox.groupId().value(), side.value())
+                .orElseThrow(() -> new IllegalStateException("a Mailbox side outside its Group"));
+    }
+
+    /**
      * Opens the Mailboxes in one order shared by every request, so two Members listing theirs at once never wait
      * for each other's rows in opposite orders (a deadlock).
      */
@@ -226,8 +237,8 @@ public class MemberMailboxes {
                 .orElseThrow(() -> new IllegalStateException("a Receiver who is not in the Group"));
     }
 
-    private static MailboxMessage seenBy(MemberId viewer, StoredMessage stored) {
+    private static MailboxMessage seenBy(MemberId viewer, StoredMessage stored, ZoneId timeZone) {
         return new MailboxMessage(
-                viewer.equals(stored.author()), stored.text(), LocalDate.ofInstant(stored.sentAt(), ZoneOffset.UTC));
+                viewer.equals(stored.author()), stored.text(), LocalDate.ofInstant(stored.sentAt(), timeZone));
     }
 }

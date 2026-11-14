@@ -91,6 +91,34 @@ class EditGroupIT {
     }
 
     @Test
+    @DisplayName("before the Draw the Admin changes the Time Zone, and one that is not an IANA id is refused")
+    void adminChangesTheTimeZone() {
+        User carmen = signedInUser("Abuela Carmen");
+        String groupId = createGroup(carmen);
+        Map<String, Object> inTokyo = details("Navidad", "2026-12-24", "25");
+        inTokyo.put("timeZone", "Asia/Tokyo");
+        Map<String, Object> nowhere = details("Navidad", "2026-12-24", "25");
+        nowhere.put("timeZone", "Nowhere/Land");
+
+        edit(carmen, groupId, inTokyo)
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.timeZone")
+                .isEqualTo("Asia/Tokyo");
+        edit(carmen, groupId, nowhere)
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody()
+                .jsonPath("$.type")
+                .isEqualTo("urn:secretmatch:problem:invalid-time-zone");
+        get(carmen, "/api/v1/groups/" + groupId)
+                .expectBody()
+                .jsonPath("$.timeZone")
+                .isEqualTo("Asia/Tokyo");
+    }
+
+    @Test
     @DisplayName("leaving the budget out takes it away")
     void budgetLeftOutIsRemoved() {
         User carmen = signedInUser("Abuela Carmen");
@@ -199,6 +227,7 @@ class EditGroupIT {
     private static Map<String, Object> details(String name, String exchangeDate, String budget) {
         Map<String, Object> body = new HashMap<>();
         body.put("name", name);
+        body.put("timeZone", "UTC");
         if (exchangeDate != null) {
             body.put("exchangeDate", exchangeDate);
         }
@@ -229,8 +258,10 @@ class EditGroupIT {
 
     /** "Navidad" on Christmas Eve, with a budget of 25 euros. */
     private String createGroup(User admin) {
-        RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", "Navidad", "exchangeDate", "2026-12-24", "budget", 25));
+        RestTestClient.ResponseSpec created = post(
+                admin,
+                "/api/v1/groups",
+                Map.of("name", "Navidad", "exchangeDate", "2026-12-24", "budget", 25, "timeZone", "UTC"));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

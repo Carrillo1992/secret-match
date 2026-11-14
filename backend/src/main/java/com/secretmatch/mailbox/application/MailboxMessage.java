@@ -6,7 +6,7 @@ import java.util.Objects;
 
 /**
  * A Message as either side of its Mailbox sees it: whether they wrote it, what it says and only the date it was
- * sent, in UTC, never the time (ADR 0001).
+ * sent, in the Group's Time Zone, never the time (ADR 0001).
  */
 public record MailboxMessage(boolean mine, MessageText text, LocalDate sentOn) {
 

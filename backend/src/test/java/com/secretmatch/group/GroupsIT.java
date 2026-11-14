@@ -7,6 +7,7 @@ import com.secretmatch.RecordingEmailSender;
 import com.secretmatch.TestPostgres;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -86,6 +87,34 @@ class GroupsIT {
                 .isEqualTo("Abuela Carmen")
                 .jsonPath("$.members[0].admin")
                 .isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("a new Group keeps the Time Zone its Admin picked, and one that is not an IANA id is refused")
+    void groupKeepsItsTimeZone() {
+        String carmen = signedInUser("Abuela Carmen");
+        Map<String, Object> inNewYork = group("Navidad", "2026-12-24", null);
+        inNewYork.put("timeZone", "America/New_York");
+
+        String groupId = json(createGroup(carmen, inNewYork)).get("id").asString();
+
+        get(carmen, "/api/v1/groups/" + groupId)
+                .expectBody()
+                .jsonPath("$.timeZone")
+                .isEqualTo("America/New_York");
+        for (String notAnIanaId : List.of("Mars/Olympus", "+05:00", "EST")) {
+            Map<String, Object> invalid = group("Navidad", "2026-12-24", null);
+            invalid.put("timeZone", notAnIanaId);
+            createGroup(carmen, invalid)
+                    .expectStatus()
+                    .isEqualTo(422)
+                    .expectBody()
+                    .jsonPath("$.type")
+                    .isEqualTo("urn:secretmatch:problem:invalid-time-zone");
+        }
+        Map<String, Object> withoutTimeZone = group("Navidad", "2026-12-24", null);
+        withoutTimeZone.remove("timeZone");
+        createGroup(carmen, withoutTimeZone).expectStatus().isBadRequest();
     }
 
     @Test
@@ -213,6 +242,7 @@ class GroupsIT {
         Map<String, Object> body = new HashMap<>();
         body.put("name", name);
         body.put("exchangeDate", exchangeDate);
+        body.put("timeZone", "UTC");
         if (budget != null) {
             body.put("budget", new java.math.BigDecimal(budget));
         }

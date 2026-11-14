@@ -153,7 +153,7 @@
         "tags" : [ "groups" ]
       },
       "put" : {
-        "description" : "Only the Admin can, also after the Draw. The details replace the current ones; a changed Exchange Date must be after today. Nobody is emailed.",
+        "description" : "Only the Admin can, also after the Draw, except changing the Time Zone, which the Draw freezes. The details replace the current ones; a changed Exchange Date must be after today. Nobody is emailed.",
         "operationId" : "edit",
         "parameters" : [ {
           "in" : "path",
@@ -186,7 +186,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Edit the Group's name, budget and Exchange Date",
+        "summary" : "Edit the Group's name, budget, Exchange Date and Time Zone",
         "tags" : [ "groups" ]
       }
     },
@@ -1170,9 +1170,16 @@
             "type" : "string",
             "maxLength" : 80,
             "minLength" : 0
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "IANA time zone id, e.g. Europe/Madrid: the day each Mailbox Message shows is cut in it.",
+            "example" : "Europe/Madrid",
+            "maxLength" : 64,
+            "minLength" : 0
           }
         },
-        "required" : [ "exchangeDate", "name" ]
+        "required" : [ "exchangeDate", "name", "timeZone" ]
       },
       "CurrentUserResponse" : {
         "type" : "object",
@@ -1252,9 +1259,16 @@
             "type" : "string",
             "maxLength" : 80,
             "minLength" : 0
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "IANA time zone id, e.g. Europe/Madrid: the day each Mailbox Message shows is cut in it.",
+            "example" : "Europe/Madrid",
+            "maxLength" : 64,
+            "minLength" : 0
           }
         },
-        "required" : [ "exchangeDate", "name" ]
+        "required" : [ "exchangeDate", "name", "timeZone" ]
       },
       "ExcludedMemberResponse" : {
         "type" : "object",
@@ -1339,9 +1353,13 @@
           },
           "name" : {
             "type" : "string"
+          },
+          "timeZone" : {
+            "type" : "string",
+            "description" : "IANA time zone id the day of each Mailbox Message is cut in; frozen by the Draw."
           }
         },
-        "required" : [ "admin", "drawn", "exchangeDate", "finished", "id", "inviteCode", "members", "name" ]
+        "required" : [ "admin", "drawn", "exchangeDate", "finished", "id", "inviteCode", "members", "name", "timeZone" ]
       },
       "GroupSummaryResponse" : {
         "type" : "object",

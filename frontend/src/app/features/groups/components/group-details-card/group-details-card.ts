@@ -64,11 +64,11 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
   template: `
     <section aria-labelledby="group-details" class="rounded-card bg-surface p-5 shadow-card">
       @if (editing()) {
-        <h2 id="group-details" class="font-display text-lg font-semibold">Editar grupo</h2>
+        <h2 id="group-details" class="font-display text-lg font-semibold" i18n>Editar grupo</h2>
 
         <form class="mt-4 flex flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()" novalidate>
           <div class="flex flex-col gap-1.5">
-            <label for="edit-group-name" class="font-bold">Nombre</label>
+            <label for="edit-group-name" class="font-bold" i18n>Nombre</label>
             <input
               id="edit-group-name"
               type="text"
@@ -84,16 +84,18 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
             @if (showsError(form.controls.name)) {
               <p id="edit-group-name-error" class="text-sm font-semibold text-danger">
                 @if (form.controls.name.hasError('maxlength')) {
-                  El nombre puede tener como mucho {{ nameMaxLength }} caracteres.
+                  <ng-container i18n
+                    >El nombre puede tener como mucho {{ nameMaxLength }} caracteres.</ng-container
+                  >
                 } @else {
-                  Escribe un nombre para el grupo.
+                  <ng-container i18n>Escribe un nombre para el grupo.</ng-container>
                 }
               </p>
             }
           </div>
 
           <div class="flex flex-col gap-1.5">
-            <label for="edit-group-date" class="font-bold">Fecha del intercambio</label>
+            <label for="edit-group-date" class="font-bold" i18n>Fecha del intercambio</label>
             <input
               id="edit-group-date"
               type="date"
@@ -108,16 +110,16 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
             @if (showsError(form.controls.exchangeDate)) {
               <p id="edit-group-date-error" class="text-sm font-semibold text-danger">
                 @if (form.controls.exchangeDate.hasError('notInFuture')) {
-                  Elige una fecha a partir de mañana.
+                  <ng-container i18n>Elige una fecha a partir de mañana.</ng-container>
                 } @else {
-                  Elige la fecha del intercambio.
+                  <ng-container i18n>Elige la fecha del intercambio.</ng-container>
                 }
               </p>
             }
           </div>
 
           <div class="flex flex-col gap-1.5">
-            <label for="edit-group-budget" class="font-bold">
+            <label for="edit-group-budget" class="font-bold" i18n>
               Presupuesto <span class="font-normal text-ink-muted">(opcional)</span>
             </label>
             <div class="relative">
@@ -143,18 +145,18 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
               >
             </div>
             @if (showsError(form.controls.budget)) {
-              <p id="edit-group-budget-error" class="text-sm font-semibold text-danger">
+              <p id="edit-group-budget-error" class="text-sm font-semibold text-danger" i18n>
                 Escribe una cantidad en euros, por ejemplo 25 o 25,50.
               </p>
             } @else {
-              <p id="edit-group-budget-hint" class="text-sm text-ink-muted">
+              <p id="edit-group-budget-hint" class="text-sm text-ink-muted" i18n>
                 Orientativo, en euros por regalo. Déjalo vacío para quitarlo.
               </p>
             }
           </div>
 
           <div class="flex flex-col gap-1.5">
-            <label for="edit-group-time-zone" class="font-bold">Zona horaria</label>
+            <label for="edit-group-time-zone" class="font-bold" i18n>Zona horaria</label>
             <select
               id="edit-group-time-zone"
               formControlName="timeZone"
@@ -171,37 +173,50 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
             </select>
             <p id="edit-group-time-zone-hint" class="text-sm text-ink-muted">
               @if (group().drawn) {
-                El sorteo ya está hecho, así que la zona horaria ya no se puede cambiar.
+                <ng-container i18n
+                  >El sorteo ya está hecho, así que la zona horaria ya no se puede
+                  cambiar.</ng-container
+                >
               } @else {
-                Los mensajes del buzón muestran el día en esta zona. Podrás cambiarla hasta el
-                sorteo.
+                <ng-container i18n
+                  >Los mensajes del buzón muestran el día en esta zona. Podrás cambiarla hasta el
+                  sorteo.</ng-container
+                >
               }
             </p>
           </div>
 
-          <p class="text-sm text-ink-muted">
+          <p class="text-sm text-ink-muted" i18n>
             Los miembros verán el cambio en esta página; no les avisamos por email.
           </p>
 
           @if (submitted() && status() === 'exchange-date-not-in-future') {
-            <p appAlert>La fecha del intercambio tiene que ser a partir de mañana.</p>
+            <p appAlert i18n>La fecha del intercambio tiene que ser a partir de mañana.</p>
           } @else if (submitted() && status() === 'failed') {
-            <p appAlert>No hemos podido guardar los cambios. Inténtalo de nuevo en un momento.</p>
+            <p appAlert i18n>
+              No hemos podido guardar los cambios. Inténtalo de nuevo en un momento.
+            </p>
           }
 
           <button type="submit" appButton class="w-full" [disabled]="status() === 'saving'">
             <svg lucideCheck [size]="20"></svg>
-            {{ status() === 'saving' ? 'Guardando…' : 'Guardar cambios' }}
+            @if (status() === 'saving') {
+              <ng-container i18n>Guardando…</ng-container>
+            } @else {
+              <ng-container i18n>Guardar cambios</ng-container>
+            }
           </button>
-          <button type="button" appLink standalone class="self-center" (click)="cancel()">
+          <button type="button" appLink standalone class="self-center" (click)="cancel()" i18n>
             Cancelar
           </button>
         </form>
       } @else {
         <div class="flex items-center justify-between gap-3">
-          <h2 id="group-details" class="font-display text-lg font-semibold">Datos del grupo</h2>
+          <h2 id="group-details" class="font-display text-lg font-semibold" i18n>
+            Datos del grupo
+          </h2>
           @if (group().admin && !group().finished) {
-            <button id="edit-group" type="button" appLink standalone (click)="open()">
+            <button id="edit-group" type="button" appLink standalone (click)="open()" i18n>
               Editar
             </button>
           }
@@ -211,7 +226,7 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
           <div class="flex gap-3">
             <svg lucideCalendar [size]="20" class="mt-0.5 shrink-0 text-ink-muted"></svg>
             <div>
-              <dt class="font-bold">Fecha del intercambio</dt>
+              <dt class="font-bold" i18n>Fecha del intercambio</dt>
               <dd class="text-ink-muted">
                 <time [attr.datetime]="group().exchangeDate">{{ date(group().exchangeDate) }}</time>
               </dd>
@@ -220,12 +235,12 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
           <div class="flex gap-3">
             <svg lucideWallet [size]="20" class="mt-0.5 shrink-0 text-ink-muted"></svg>
             <div>
-              <dt class="font-bold">Presupuesto</dt>
+              <dt class="font-bold" i18n>Presupuesto</dt>
               <dd class="text-ink-muted">
                 @if (group().budget !== undefined) {
-                  {{ euros(group().budget ?? 0) }} por regalo
+                  <ng-container i18n>{{ euros(group().budget ?? 0) }} por regalo</ng-container>
                 } @else {
-                  Sin presupuesto
+                  <ng-container i18n>Sin presupuesto</ng-container>
                 }
               </dd>
             </div>
@@ -233,7 +248,7 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
           <div class="flex gap-3">
             <svg lucideGlobe [size]="20" class="mt-0.5 shrink-0 text-ink-muted"></svg>
             <div>
-              <dt class="font-bold">Zona horaria</dt>
+              <dt class="font-bold" i18n>Zona horaria</dt>
               <dd class="text-ink-muted">{{ timeZoneNote(group().timeZone) }}</dd>
             </div>
           </div>

@@ -65,9 +65,13 @@ export type NewExclusion = readonly [string, string];
         tabindex="-1"
         class="font-display text-lg font-semibold focus:outline-none"
       >
-        Exclusiones{{ count() === null ? '' : ' (' + count() + ')' }}
+        @if (count() === null) {
+          <ng-container i18n>Exclusiones</ng-container>
+        } @else {
+          <ng-container i18n>Exclusiones ({{ count() }})</ng-container>
+        }
       </h2>
-      <p class="mt-1.5 text-ink-muted">
+      <p class="mt-1.5 text-ink-muted" i18n>
         Estas parejas nunca se tocarán en el sorteo. Solo tú las ves.
       </p>
 
@@ -75,18 +79,20 @@ export type NewExclusion = readonly [string, string];
 
       @switch (listing().status) {
         @case ('loading') {
-          <p class="mt-3 text-ink-muted">Cargando…</p>
+          <p class="mt-3 text-ink-muted" i18n>Cargando…</p>
         }
         @case ('failed') {
-          <p appAlert class="mt-3">No hemos podido cargar las exclusiones. Inténtalo de nuevo.</p>
-          <button type="button" appButton="secondary" class="mt-4" (click)="retry.emit()">
+          <p appAlert class="mt-3" i18n>
+            No hemos podido cargar las exclusiones. Inténtalo de nuevo.
+          </p>
+          <button type="button" appButton="secondary" class="mt-4" (click)="retry.emit()" i18n>
             Reintentar
           </button>
         }
         @case ('loaded') {
           @if (removal(); as removal) {
             @if (removal.status === 'failed') {
-              <p appAlert class="mt-3">
+              <p appAlert class="mt-3" i18n>
                 No hemos podido quitar la exclusión entre {{ pair(removal.exclusion) }}. Inténtalo
                 de nuevo.
               </p>
@@ -94,15 +100,19 @@ export type NewExclusion = readonly [string, string];
           }
 
           @if (exclusions().length === 0) {
-            <p class="mt-3">Aún no hay exclusiones.</p>
+            <p class="mt-3" i18n>Aún no hay exclusiones.</p>
           }
-          <ul aria-label="Exclusiones" class="mt-3 flex flex-col gap-3 empty:hidden">
+          <ul
+            aria-label="Exclusiones"
+            i18n-aria-label
+            class="mt-3 flex flex-col gap-3 empty:hidden"
+          >
             @for (exclusion of exclusions(); track exclusion.id) {
               <li class="flex items-center gap-3">
                 <span class="flex min-w-0 flex-wrap items-center gap-x-2 break-words">
                   <span>{{ exclusion.members[0].displayName }}</span>
                   <svg lucideArrowLeftRight [size]="18" class="shrink-0 text-ink-muted"></svg>
-                  <span class="sr-only">y</span>
+                  <span class="sr-only" i18n>y</span>
                   <span>{{ exclusion.members[1].displayName }}</span>
                 </span>
                 @if (!frozen()) {
@@ -111,11 +121,15 @@ export type NewExclusion = readonly [string, string];
                     appLink
                     standalone
                     class="ml-auto shrink-0"
-                    [attr.aria-label]="'Quitar la exclusión entre ' + pair(exclusion)"
+                    [attr.aria-label]="removeLabel(exclusion)"
                     [disabled]="isRemoving(exclusion)"
                     (click)="removeNow(exclusion)"
                   >
-                    {{ isRemoving(exclusion) ? 'Quitando…' : 'Quitar' }}
+                    @if (isRemoving(exclusion)) {
+                      <ng-container i18n>Quitando…</ng-container>
+                    } @else {
+                      <ng-container i18n>Quitar</ng-container>
+                    }
                   </button>
                 }
               </li>
@@ -123,14 +137,14 @@ export type NewExclusion = readonly [string, string];
           </ul>
 
           @if (drawn() && !finished()) {
-            <p class="mt-3 text-sm text-ink-muted">
+            <p class="mt-3 text-sm text-ink-muted" i18n>
               El sorteo ya está hecho, así que las exclusiones ya no se pueden cambiar.
             </p>
           }
 
           @if (!frozen()) {
             @if (members().length < 2) {
-              <p class="mt-3 text-sm text-ink-muted">
+              <p class="mt-3 text-sm text-ink-muted" i18n>
                 Cuando haya al menos dos personas en el grupo, podrás añadir exclusiones.
               </p>
             } @else if (adding()) {
@@ -141,7 +155,7 @@ export type NewExclusion = readonly [string, string];
                 novalidate
               >
                 <div class="flex flex-col gap-1.5">
-                  <label for="exclusion-one" class="font-bold">Una persona</label>
+                  <label for="exclusion-one" class="font-bold" i18n>Una persona</label>
                   <select
                     id="exclusion-one"
                     formControlName="one"
@@ -151,19 +165,19 @@ export type NewExclusion = readonly [string, string];
                       showsError(form.controls.one) ? 'exclusion-one-error' : null
                     "
                   >
-                    <option value="">Elige…</option>
+                    <option value="" i18n>Elige…</option>
                     @for (member of members(); track member.id) {
                       <option [value]="member.id">{{ member.displayName }}</option>
                     }
                   </select>
                   @if (showsError(form.controls.one)) {
-                    <p id="exclusion-one-error" class="text-sm font-semibold text-danger">
+                    <p id="exclusion-one-error" class="text-sm font-semibold text-danger" i18n>
                       Elige a una persona.
                     </p>
                   }
                 </div>
                 <div class="flex flex-col gap-1.5">
-                  <label for="exclusion-other" class="font-bold">Y otra</label>
+                  <label for="exclusion-other" class="font-bold" i18n>Y otra</label>
                   <select
                     id="exclusion-other"
                     formControlName="other"
@@ -171,7 +185,7 @@ export type NewExclusion = readonly [string, string];
                     [attr.aria-invalid]="otherShowsError() || null"
                     [attr.aria-describedby]="otherShowsError() ? 'exclusion-other-error' : null"
                   >
-                    <option value="">Elige…</option>
+                    <option value="" i18n>Elige…</option>
                     @for (member of members(); track member.id) {
                       <option [value]="member.id">{{ member.displayName }}</option>
                     }
@@ -179,15 +193,17 @@ export type NewExclusion = readonly [string, string];
                   @if (otherShowsError()) {
                     <p id="exclusion-other-error" class="text-sm font-semibold text-danger">
                       @if (form.hasError('sameMember')) {
-                        Elige a alguien distinto de la primera persona.
+                        <ng-container i18n
+                          >Elige a alguien distinto de la primera persona.</ng-container
+                        >
                       } @else {
-                        Elige a otra persona.
+                        <ng-container i18n>Elige a otra persona.</ng-container>
                       }
                     </p>
                   }
                 </div>
                 @if (submitted() && addition()?.status === 'failed') {
-                  <p appAlert>
+                  <p appAlert i18n>
                     No hemos podido añadir la exclusión. Puede que el grupo haya cambiado: recarga
                     la página e inténtalo de nuevo.
                   </p>
@@ -198,9 +214,13 @@ export type NewExclusion = readonly [string, string];
                     appButton="secondary"
                     [disabled]="addition()?.status === 'adding'"
                   >
-                    {{ addition()?.status === 'adding' ? 'Añadiendo…' : 'Añadir' }}
+                    @if (addition()?.status === 'adding') {
+                      <ng-container i18n>Añadiendo…</ng-container>
+                    } @else {
+                      <ng-container i18n>Añadir</ng-container>
+                    }
                   </button>
-                  <button type="button" appLink standalone (click)="close()">Cancelar</button>
+                  <button type="button" appLink standalone (click)="close()" i18n>Cancelar</button>
                 </div>
               </form>
             } @else {
@@ -213,7 +233,7 @@ export type NewExclusion = readonly [string, string];
                 (click)="open()"
               >
                 <svg lucidePlus [size]="18"></svg>
-                Añadir exclusión
+                <ng-container i18n>Añadir exclusión</ng-container>
               </button>
             }
           }
@@ -265,16 +285,21 @@ export class ExclusionsCard {
   protected statusText(): string {
     const removal = this.removal();
     if (removal?.status === 'removed') {
-      return `Ya no hay exclusión entre ${this.pair(removal.exclusion)}.`;
+      return $localize`Ya no hay exclusión entre ${this.pair(removal.exclusion)}:pair:.`;
     }
     const addition = this.addition();
     return addition?.status === 'added'
-      ? `${this.pair(addition.exclusion)} nunca se tocarán en el sorteo.`
+      ? $localize`${this.pair(addition.exclusion)}:pair: nunca se tocarán en el sorteo.`
       : '';
   }
 
   protected pair(exclusion: Exclusion): string {
-    return exclusion.members.map((member) => member.displayName).join(' y ');
+    const [one, other] = exclusion.members.map((member) => member.displayName);
+    return $localize`${one}:one: y ${other}:other:`;
+  }
+
+  protected removeLabel(exclusion: Exclusion): string {
+    return $localize`Quitar la exclusión entre ${this.pair(exclusion)}:pair:`;
   }
 
   protected isRemoving(exclusion: Exclusion): boolean {

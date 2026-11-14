@@ -37,16 +37,16 @@ const DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', timeZon
   template: `
     @switch (state().status) {
       @case ('loading') {
-        <p role="status" class="py-8 text-center text-ink-muted">Cargando mensajes…</p>
+        <p role="status" class="py-8 text-center text-ink-muted" i18n>Cargando mensajes…</p>
       }
       @case ('failed') {
-        <p appAlert>No hemos podido cargar los mensajes. Inténtalo de nuevo.</p>
-        <button type="button" appButton="secondary" class="mt-4 w-full" (click)="retry.emit()">
+        <p appAlert i18n>No hemos podido cargar los mensajes. Inténtalo de nuevo.</p>
+        <button type="button" appButton="secondary" class="mt-4 w-full" (click)="retry.emit()" i18n>
           Reintentar
         </button>
       }
       @case ('not-found') {
-        <p class="text-ink-muted">
+        <p class="text-ink-muted" i18n>
           Este buzón ya no existe. Recarga la página para ver cómo está el grupo.
         </p>
       }
@@ -68,15 +68,23 @@ const DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', timeZon
               </g>
             </svg>
             <p class="mt-3 font-display text-lg font-semibold">
-              {{ finished() ? 'No hubo mensajes' : 'Aún no hay mensajes' }}
+              @if (finished()) {
+                <ng-container i18n>No hubo mensajes</ng-container>
+              } @else {
+                <ng-container i18n>Aún no hay mensajes</ng-container>
+              }
             </p>
             <p class="mt-1.5 max-w-xs text-ink-muted">
               @if (finished()) {
-                Este buzón se quedó en blanco.
+                <ng-container i18n>Este buzón se quedó en blanco.</ng-container>
               } @else if (side() === 'GIVER') {
-                Pregúntale lo que quieras: no sabrá que eres tú. 🤫
+                <ng-container i18n
+                  >Pregúntale lo que quieras: no sabrá que eres tú. 🤫</ng-container
+                >
               } @else {
-                Escribe a quien te regala: lo leerá sin que sepas quién es.
+                <ng-container i18n
+                  >Escribe a quien te regala: lo leerá sin que sepas quién es.</ng-container
+                >
               }
             </p>
           </div>
@@ -85,10 +93,11 @@ const DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', timeZon
           <div
             role="region"
             aria-label="Conversación"
+            i18n-aria-label
             tabindex="0"
             class="flex max-h-96 flex-col-reverse overflow-y-auto rounded-field pr-1 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <ol class="flex flex-col gap-2" aria-label="Mensajes">
+            <ol class="flex flex-col gap-2" aria-label="Mensajes" i18n-aria-label>
               @for (day of days(); track day.sentOn) {
                 <li class="my-2 flex items-center gap-3">
                   <span class="h-px flex-1 bg-line" aria-hidden="true"></span>
@@ -103,7 +112,7 @@ const DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', timeZon
                       [class]="item.message.mine ? mine : theirs"
                       [class.motion-safe:animate-pop]="item.fresh"
                     >
-                      <span class="sr-only">{{ item.message.mine ? 'Tú' : author() }}: </span
+                      <span class="sr-only">{{ item.message.mine ? you : author() }}: </span
                       >{{ item.message.text }}
                     </p>
                   </li>
@@ -127,6 +136,7 @@ export class MailboxThread {
   /** The Messages could not be loaded: the page asks for them again. */
   readonly retry = output();
 
+  protected readonly you = $localize`Tú`;
   protected readonly mine = 'bg-primary text-on-primary rounded-br-md';
   protected readonly theirs = 'bg-subtle text-ink rounded-bl-md';
 

@@ -60,18 +60,20 @@ export interface DontListRemoval {
           class="flex items-center gap-2 font-display text-lg font-semibold text-danger focus:outline-none"
         >
           <svg lucideBan [size]="20" class="shrink-0"></svg>
-          Nada de…
+          <ng-container i18n>Nada de…</ng-container>
         </h2>
 
         @if (canChange()) {
           <p role="status" class="mt-1.5 text-sm empty:hidden">{{ announcement() }}</p>
           @if (failedRemoval(); as entry) {
-            <p appAlert class="mt-3">
+            <p appAlert class="mt-3" i18n>
               No hemos podido quitar «{{ entry.text }}». Inténtalo de nuevo.
             </p>
           }
           @if (entries().length === 0) {
-            <p class="mt-1.5">Apunta lo que no quieres recibir, para que nadie te lo regale.</p>
+            <p class="mt-1.5" i18n>
+              Apunta lo que no quieres recibir, para que nadie te lo regale.
+            </p>
           }
         }
 
@@ -85,7 +87,7 @@ export interface DontListRemoval {
                   type="button"
                   [id]="removeButtonId(entry)"
                   class="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-danger transition-colors duration-200 hover:bg-surface focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-danger disabled:cursor-not-allowed disabled:opacity-60"
-                  [attr.aria-label]="'Quitar «' + entry.text + '»'"
+                  [attr.aria-label]="removeLabel(entry)"
                   [disabled]="isRemoving(entry)"
                   (click)="removeNow(entry)"
                 >
@@ -104,13 +106,16 @@ export interface DontListRemoval {
               (ngSubmit)="submit()"
               novalidate
             >
-              <label for="dont-list-entry-text" class="font-bold">¿Qué no quieres recibir?</label>
+              <label for="dont-list-entry-text" class="font-bold" i18n
+                >¿Qué no quieres recibir?</label
+              >
               <input
                 id="dont-list-entry-text"
                 type="text"
                 appField
                 formControlName="text"
                 placeholder="Por ejemplo: nada de chocolate"
+                i18n-placeholder
                 [attr.aria-invalid]="showsError() || null"
                 [attr.aria-describedby]="
                   showsError() ? 'dont-list-entry-error' : 'dont-list-entry-hint'
@@ -119,24 +124,28 @@ export interface DontListRemoval {
               @if (showsError()) {
                 <p id="dont-list-entry-error" class="text-sm font-semibold text-danger">
                   @if (form.controls.text.hasError('blank')) {
-                    Escribe qué no quieres recibir.
+                    <ng-container i18n>Escribe qué no quieres recibir.</ng-container>
                   } @else {
-                    Como mucho {{ maxLength }} caracteres.
+                    <ng-container i18n>Como mucho {{ maxLength }} caracteres.</ng-container>
                   }
                 </p>
               } @else {
-                <p id="dont-list-entry-hint" class="text-sm text-ink-muted">
+                <p id="dont-list-entry-hint" class="text-sm text-ink-muted" i18n>
                   Hasta {{ maxLength }} caracteres.
                 </p>
               }
               @if (submitted() && addition()?.status === 'failed') {
-                <p appAlert class="mt-1.5">No hemos podido añadirlo. Inténtalo de nuevo.</p>
+                <p appAlert class="mt-1.5" i18n>No hemos podido añadirlo. Inténtalo de nuevo.</p>
               }
               <div class="mt-2 flex flex-wrap items-center gap-4">
                 <button type="submit" appButton="secondary" [disabled]="isAdding()">
-                  {{ isAdding() ? 'Añadiendo…' : 'Añadir' }}
+                  @if (isAdding()) {
+                    <ng-container i18n>Añadiendo…</ng-container>
+                  } @else {
+                    <ng-container i18n>Añadir</ng-container>
+                  }
                 </button>
-                <button type="button" appLink standalone (click)="close()">Cancelar</button>
+                <button type="button" appLink standalone (click)="close()" i18n>Cancelar</button>
               </div>
             </form>
           } @else {
@@ -150,7 +159,7 @@ export interface DontListRemoval {
               (click)="open()"
             >
               <svg lucidePlus [size]="18"></svg>
-              Añadir
+              <ng-container i18n>Añadir</ng-container>
             </button>
           }
         }
@@ -188,7 +197,9 @@ export class DontListCard {
 
   protected readonly canChange = computed(() => this.owner() && this.editable());
   protected readonly listLabel = computed(() =>
-    this.owner() ? 'Lo que no quieres recibir' : `Lo que ${this.ownerName()} no quiere recibir`,
+    this.owner()
+      ? $localize`Lo que no quieres recibir`
+      : $localize`Lo que ${this.ownerName()}:name: no quiere recibir`,
   );
   protected readonly isAdding = computed(() => this.addition()?.status === 'adding');
   protected readonly failedRemoval = computed(() => {
@@ -201,7 +212,7 @@ export class DontListCard {
       const addition = this.addition();
       if (addition?.status === 'added' && untracked(this.formOpen)) {
         untracked(() => {
-          this.announcement.set(`Añadido «${addition.entry.text}».`);
+          this.announcement.set($localize`Añadido «${addition.entry.text}:text:».`);
           this.close();
         });
       }
@@ -216,6 +227,10 @@ export class DontListCard {
 
   protected removeButtonId(entry: DontListEntry): string {
     return `remove-dont-list-entry-${entry.id}`;
+  }
+
+  protected removeLabel(entry: DontListEntry): string {
+    return $localize`Quitar «${entry.text}:text:»`;
   }
 
   protected isRemoving(entry: DontListEntry): boolean {
@@ -263,7 +278,7 @@ export class DontListCard {
       this.focusOnceRendered(this.removeButtonId(removal.entry));
       return;
     }
-    this.announcement.set(`Quitado «${removal.entry.text}».`);
+    this.announcement.set($localize`Quitado «${removal.entry.text}:text:».`);
     // Focus goes to the entry that takes its place, else the one before, else "Añadir".
     const rest = this.entries();
     const neighbour = rest[Math.min(index, rest.length - 1)];

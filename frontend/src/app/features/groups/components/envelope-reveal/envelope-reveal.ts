@@ -39,7 +39,7 @@ const OPENING_MS = 1150;
   template: `
     <div aria-live="polite" class="sr-only">
       @if (phase() === 'revealed') {
-        Te toca regalar a {{ receiver().displayName }}
+        <ng-container i18n>Te toca regalar a {{ receiver().displayName }}</ng-container>
       }
     </div>
 
@@ -50,8 +50,8 @@ const OPENING_MS = 1150;
           [class]="{ 'motion-safe:animate-bob': phase() === 'closed' }"
           [state]="phase() === 'opening' ? 'opening' : 'closed'"
         />
-        <p class="mt-6 font-display text-lg font-semibold">Tienes un sobre cerrado</p>
-        <p class="mt-1.5 text-ink-muted">Dentro está la persona a la que vas a regalar.</p>
+        <p class="mt-6 font-display text-lg font-semibold" i18n>Tienes un sobre cerrado</p>
+        <p class="mt-1.5 text-ink-muted" i18n>Dentro está la persona a la que vas a regalar.</p>
         <button
           #openButton
           type="button"
@@ -59,7 +59,11 @@ const OPENING_MS = 1150;
           class="mt-6 w-full"
           (click)="phase() === 'closed' ? open() : skip()"
         >
-          {{ phase() === 'opening' ? 'Saltar animación' : 'Abrir el sobre' }}
+          @if (phase() === 'opening') {
+            <ng-container i18n>Saltar animación</ng-container>
+          } @else {
+            <ng-container i18n>Abrir el sobre</ng-container>
+          }
         </button>
       </div>
     } @else {
@@ -74,7 +78,7 @@ const OPENING_MS = 1150;
           class="relative -mt-10 w-full max-w-sm rounded-field bg-surface px-5 py-6 shadow-card"
           [class]="{ 'motion-safe:animate-letter-grow': entrance() }"
         >
-          <p class="text-ink-muted">Te toca regalar a</p>
+          <p class="text-ink-muted" i18n>Te toca regalar a</p>
           <h3
             #name
             tabindex="-1"
@@ -85,15 +89,17 @@ const OPENING_MS = 1150;
           </h3>
         </div>
         <div class="w-full" [class]="{ 'motion-safe:animate-reveal-rest': entrance() }">
-          <p class="mt-5 font-display text-lg font-semibold">¡Ya tienes a tu persona secreta!</p>
-          <p class="mt-1.5 text-ink-muted">Nadie más lo sabe. 🤫</p>
+          <p class="mt-5 font-display text-lg font-semibold" i18n>
+            ¡Ya tienes a tu persona secreta!
+          </p>
+          <p class="mt-1.5 text-ink-muted" i18n>Nadie más lo sabe. 🤫</p>
           <a appButton class="mt-6 w-full" [routerLink]="['members', receiver().id, 'wishlist']">
-            Ver sus deseos
+            <ng-container i18n>Ver sus deseos</ng-container>
             <svg lucideChevronRight [size]="20"></svg>
           </a>
           <button type="button" appLink standalone class="mt-2 gap-1.5" (click)="open()">
             <svg lucideRotateCcw [size]="16"></svg>
-            Volver a abrir el sobre
+            <ng-container i18n>Volver a abrir el sobre</ng-container>
           </button>
         </div>
       </div>

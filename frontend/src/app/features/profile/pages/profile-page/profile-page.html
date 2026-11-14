@@ -1,13 +1,13 @@
 <app-shell>
   <a routerLink="/home" appLink standalone class="gap-1">
     <svg lucideChevronLeft [size]="18"></svg>
-    Volver a mis grupos
+    <ng-container i18n>Volver a mis grupos</ng-container>
   </a>
 
-  <h1 class="mt-4 font-display text-3xl font-bold tracking-tight">Tu perfil</h1>
+  <h1 class="mt-4 font-display text-3xl font-bold tracking-tight" i18n>Tu perfil</h1>
 
   @if (user.isLoading() && !me()) {
-    <p role="status" class="mt-1.5 text-ink-muted">Cargando…</p>
+    <p role="status" class="mt-1.5 text-ink-muted" i18n>Cargando…</p>
   } @else if (me(); as me) {
     <p class="mt-1.5 break-words text-ink-muted">{{ me.email }}</p>
 
@@ -15,7 +15,7 @@
       aria-labelledby="profile-name-title"
       class="mt-6 rounded-card bg-surface p-5 shadow-card"
     >
-      <h2 id="profile-name-title" class="font-display text-lg font-semibold">Tu nombre</h2>
+      <h2 id="profile-name-title" class="font-display text-lg font-semibold" i18n>Tu nombre</h2>
       <form
         class="mt-4 flex flex-col gap-4"
         [formGroup]="nameForm"
@@ -24,7 +24,7 @@
       >
         <div class="flex flex-col gap-1.5">
           <!-- The card's title already says it; the label stays for screen readers. -->
-          <label for="profile-display-name" class="sr-only">Tu nombre</label>
+          <label for="profile-display-name" class="sr-only" i18n>Tu nombre</label>
           <input
             id="profile-display-name"
             type="text"
@@ -40,27 +40,31 @@
             "
           />
           @if (showsError(nameForm.controls.displayName, nameSubmitted())) {
-            <p id="profile-display-name-error" class="text-sm font-semibold text-danger">
+            <p id="profile-display-name-error" class="text-sm font-semibold text-danger" i18n>
               Escribe tu nombre.
             </p>
           } @else {
-            <p id="profile-display-name-hint" class="text-sm text-ink-muted">
+            <p id="profile-display-name-hint" class="text-sm text-ink-muted" i18n>
               Así te ven en tus grupos.
             </p>
           }
         </div>
 
         @if (nameState() === 'failed') {
-          <p appAlert>No hemos podido guardar tu nombre. Inténtalo de nuevo en un momento.</p>
+          <p appAlert i18n>No hemos podido guardar tu nombre. Inténtalo de nuevo en un momento.</p>
         }
 
         <div class="flex flex-col items-start gap-3">
           <button type="submit" appButton="secondary" [disabled]="nameState() === 'sending'">
-            {{ nameState() === 'sending' ? 'Guardando…' : 'Guardar nombre' }}
+            @if (nameState() === 'sending') {
+              <ng-container i18n>Guardando…</ng-container>
+            } @else {
+              <ng-container i18n>Guardar nombre</ng-container>
+            }
           </button>
           <div aria-live="polite" class="w-full">
             @if (nameState() === 'saved') {
-              <p appAlert="success">Nombre guardado.</p>
+              <p appAlert="success" i18n>Nombre guardado.</p>
             }
           </div>
         </div>
@@ -72,10 +76,14 @@
       class="mt-6 rounded-card bg-surface p-5 shadow-card"
     >
       <h2 id="profile-password-title" class="font-display text-lg font-semibold">
-        {{ hasPassword() ? 'Contraseña' : 'Crea una contraseña' }}
+        @if (hasPassword()) {
+          <ng-container i18n>Contraseña</ng-container>
+        } @else {
+          <ng-container i18n>Crea una contraseña</ng-container>
+        }
       </h2>
       @if (!hasPassword()) {
-        <p class="mt-1.5 text-ink-muted">
+        <p class="mt-1.5 text-ink-muted" i18n>
           Entras con Google. Con una contraseña también podrás entrar con tu correo.
         </p>
       }
@@ -87,7 +95,7 @@
       >
         @if (hasPassword()) {
           <div class="flex flex-col gap-1.5">
-            <label for="profile-current-password" class="font-bold">Contraseña actual</label>
+            <label for="profile-current-password" class="font-bold" i18n>Contraseña actual</label>
             <input
               id="profile-current-password"
               type="password"
@@ -107,11 +115,11 @@
               "
             />
             @if (showsError(passwordForm.controls.currentPassword, passwordSubmitted())) {
-              <p id="profile-current-password-error" class="text-sm font-semibold text-danger">
+              <p id="profile-current-password-error" class="text-sm font-semibold text-danger" i18n>
                 Escribe tu contraseña actual.
               </p>
             } @else if (passwordState() === 'wrong-password') {
-              <p id="profile-current-password-error" class="text-sm font-semibold text-danger">
+              <p id="profile-current-password-error" class="text-sm font-semibold text-danger" i18n>
                 Esa no es tu contraseña actual.
               </p>
             }
@@ -119,7 +127,7 @@
         }
 
         <div class="flex flex-col gap-1.5">
-          <label for="profile-new-password" class="font-bold">Nueva contraseña</label>
+          <label for="profile-new-password" class="font-bold" i18n>Nueva contraseña</label>
           <input
             id="profile-new-password"
             type="password"
@@ -138,13 +146,16 @@
           @if (showsError(passwordForm.controls.newPassword, passwordSubmitted())) {
             <p id="profile-new-password-error" class="text-sm font-semibold text-danger">
               @if (passwordForm.controls.newPassword.hasError('maxBytes')) {
-                La contraseña es demasiado larga.
+                <ng-container i18n>La contraseña es demasiado larga.</ng-container>
               } @else {
-                La contraseña debe tener al menos {{ rules.passwordMinLength }} caracteres.
+                <ng-container i18n
+                  >La contraseña debe tener al menos
+                  {{ rules.passwordMinLength }} caracteres.</ng-container
+                >
               }
             </p>
           } @else {
-            <p id="profile-new-password-hint" class="text-sm text-ink-muted">
+            <p id="profile-new-password-hint" class="text-sm text-ink-muted" i18n>
               Al menos {{ rules.passwordMinLength }} caracteres. Se cerrará la sesión en tus otros
               dispositivos.
             </p>
@@ -152,22 +163,26 @@
         </div>
 
         @if (passwordState() === 'failed') {
-          <p appAlert>No hemos podido guardar la contraseña. Inténtalo de nuevo en un momento.</p>
+          <p appAlert i18n>
+            No hemos podido guardar la contraseña. Inténtalo de nuevo en un momento.
+          </p>
         }
 
         <div class="flex flex-col items-start gap-3">
           <button type="submit" appButton="secondary" [disabled]="passwordState() === 'sending'">
             @if (passwordState() === 'sending') {
-              Guardando…
+              <ng-container i18n>Guardando…</ng-container>
+            } @else if (hasPassword()) {
+              <ng-container i18n>Cambiar contraseña</ng-container>
             } @else {
-              {{ hasPassword() ? 'Cambiar contraseña' : 'Crear contraseña' }}
+              <ng-container i18n>Crear contraseña</ng-container>
             }
           </button>
           <div aria-live="polite" class="w-full">
             @if (passwordState() === 'saved') {
-              <p appAlert="success">Contraseña cambiada. Las demás sesiones se han cerrado.</p>
+              <p appAlert="success" i18n>Contraseña cambiada. Las demás sesiones se han cerrado.</p>
             } @else if (passwordState() === 'created') {
-              <p appAlert="success">
+              <p appAlert="success" i18n>
                 Contraseña creada. Ya puedes entrar también con tu correo y esta contraseña.
               </p>
             }
@@ -180,8 +195,10 @@
       aria-labelledby="profile-delete-title"
       class="mt-6 rounded-card bg-surface p-5 shadow-card"
     >
-      <h2 id="profile-delete-title" class="font-display text-lg font-semibold">Borrar tu cuenta</h2>
-      <p class="mt-1.5 text-ink-muted">
+      <h2 id="profile-delete-title" class="font-display text-lg font-semibold" i18n>
+        Borrar tu cuenta
+      </h2>
+      <p class="mt-1.5 text-ink-muted" i18n>
         Saldrás de todos tus grupos y se borrarán tus datos. Los grupos que administras se borrarán
         para todos.
       </p>
@@ -194,35 +211,38 @@
         (click)="deleteState.set('confirming')"
       >
         <svg lucideTrash2 [size]="18"></svg>
-        Borrar mi cuenta
+        <ng-container i18n>Borrar mi cuenta</ng-container>
       </button>
 
       <app-confirm-dialog
         [open]="deleteState() !== 'idle'"
         question="¿Borrar tu cuenta?"
+        i18n-question
         confirmLabel="Sí, borrar mi cuenta"
+        i18n-confirmLabel
         busyLabel="Borrando…"
+        i18n-busyLabel
         [busy]="deleteState() === 'deleting'"
         (confirmed)="deleteAccount()"
         (cancelled)="deleteState.set('idle')"
       >
-        <p>
+        <p i18n>
           Saldrás de todos tus grupos y los que administras se borrarán para todos, avisando por
           email a sus miembros. No se puede deshacer.
         </p>
         @if (deleteState() === 'in-draw') {
-          <p appAlert>
+          <p appAlert i18n>
             Estás en un grupo con el sorteo hecho cuya fecha del intercambio aún no ha pasado. Pide
             al administrador que cancele el sorteo o espera a que pase la fecha del intercambio.
           </p>
         } @else if (deleteState() === 'failed') {
-          <p appAlert>No hemos podido borrar tu cuenta. Inténtalo de nuevo.</p>
+          <p appAlert i18n>No hemos podido borrar tu cuenta. Inténtalo de nuevo.</p>
         }
       </app-confirm-dialog>
     </section>
   } @else {
-    <p appAlert class="mt-6">No hemos podido cargar tu perfil. Inténtalo de nuevo.</p>
-    <button type="button" appButton="secondary" class="mt-4" (click)="user.reload()">
+    <p appAlert class="mt-6" i18n>No hemos podido cargar tu perfil. Inténtalo de nuevo.</p>
+    <button type="button" appButton="secondary" class="mt-4" (click)="user.reload()" i18n>
       Reintentar
     </button>
   }

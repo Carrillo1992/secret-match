@@ -48,6 +48,7 @@ let nextId = 0;
           autofocus
           [disabled]="busy()"
           (click)="cancelled.emit()"
+          i18n
         >
           Cancelar
         </button>
@@ -63,7 +64,7 @@ export class ConfirmDialog {
   /** The label of the button that goes ahead, e.g. "Sí, borrar mi cuenta". */
   readonly confirmLabel = input.required<string>();
   /** The confirm button's label while the action runs, e.g. "Borrando…". */
-  readonly busyLabel = input<string>('Un momento…');
+  readonly busyLabel = input<string>($localize`Un momento…`);
   /** The action is running: both buttons are off and Escape does nothing. */
   readonly busy = input(false);
   readonly confirmed = output();

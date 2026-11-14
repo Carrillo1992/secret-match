@@ -25,7 +25,7 @@ import { GroupSummary } from '../../data-access/groups-api';
         </p>
         <ul class="mt-3 flex flex-wrap gap-2">
           @if (group().finished) {
-            <li appChip>Finalizado</li>
+            <li appChip i18n>Finalizado</li>
           }
           @if (group().admin) {
             <li appChip>Admin</li>

@@ -4,27 +4,30 @@
       @case ('verifying') {
         <app-status-header>
           <svg lucideLoaderCircle statusIcon [size]="30" class="motion-safe:animate-spin"></svg>
-          Confirmando tu correo…
+          <ng-container i18n>Confirmando tu correo…</ng-container>
         </app-status-header>
       }
       @case ('verified') {
         <app-status-header tone="good">
           <svg lucideCircleCheck statusIcon [size]="30"></svg>
-          ¡Correo confirmado!
+          <ng-container i18n>¡Correo confirmado!</ng-container>
         </app-status-header>
-        <p class="mt-2 text-ink-muted">Tu cuenta ya está lista.</p>
-        <a routerLink="/sign-in" [queryParams]="signInParams" appButton class="mt-6 w-full"
+        <p class="mt-2 text-ink-muted" i18n>Tu cuenta ya está lista.</p>
+        <a routerLink="/sign-in" [queryParams]="signInParams" appButton class="mt-6 w-full" i18n
           >Iniciar sesión</a
         >
       }
       @case ('expired') {
         <app-status-header>
           <svg lucideClock statusIcon [size]="30"></svg>
-          Este enlace ha caducado
+          <ng-container i18n>Este enlace ha caducado</ng-container>
         </app-status-header>
-        <p class="mt-2 mb-6 text-ink-muted">
-          Los enlaces duran {{ rules.linkValidityHours }} horas. Si tu cuenta sigue pendiente de
-          confirmar, te enviamos otro al mismo correo.
+        <p class="mt-2 mb-6 text-ink-muted" i18n>
+          {rules.linkValidityHours, plural,
+            =1 {Los enlaces duran {{ rules.linkValidityHours }} hora.}
+            other {Los enlaces duran {{ rules.linkValidityHours }} horas.}
+          }
+          Si tu cuenta sigue pendiente de confirmar, te enviamos otro al mismo correo.
         </p>
         <app-new-link-button
           class="w-full"
@@ -35,19 +38,19 @@
       @case ('used') {
         <app-status-header tone="good">
           <svg lucideCircleCheck statusIcon [size]="30"></svg>
-          Este enlace ya se ha usado
+          <ng-container i18n>Este enlace ya se ha usado</ng-container>
         </app-status-header>
-        <p class="mt-2 text-ink-muted">
+        <p class="mt-2 text-ink-muted" i18n>
           Tu correo ya está confirmado y tu cuenta está lista: no tienes que hacer nada más.
         </p>
-        <a routerLink="/" appButton class="mt-6 w-full">Ir al inicio</a>
+        <a routerLink="/" appButton class="mt-6 w-full" i18n>Ir al inicio</a>
       }
       @case ('invalid') {
         <app-status-header>
           <svg lucideUnlink statusIcon [size]="30"></svg>
-          Este enlace no es válido
+          <ng-container i18n>Este enlace no es válido</ng-container>
         </app-status-header>
-        <p class="mt-2 text-ink-muted">
+        <p class="mt-2 text-ink-muted" i18n>
           Si pediste otro enlace después, este ya no sirve: abre el del último correo que te
           enviamos. Si no lo encuentras,
           <a routerLink="/sign-up" appLink>vuelve a registrarte</a>.
@@ -56,10 +59,12 @@
       @case ('failed') {
         <app-status-header>
           <svg lucideWifiOff statusIcon [size]="30"></svg>
-          No hemos podido confirmar tu correo
+          <ng-container i18n>No hemos podido confirmar tu correo</ng-container>
         </app-status-header>
-        <p class="mt-2 text-ink-muted">Puede ser un problema de conexión.</p>
-        <button type="button" appButton class="mt-6 w-full" (click)="verify()">Reintentar</button>
+        <p class="mt-2 text-ink-muted" i18n>Puede ser un problema de conexión.</p>
+        <button type="button" appButton class="mt-6 w-full" (click)="verify()" i18n>
+          Reintentar
+        </button>
       }
     }
   </div>

@@ -1,21 +1,23 @@
 <app-shell>
   <a routerLink="/home" appLink standalone class="gap-1">
     <svg lucideChevronLeft [size]="18"></svg>
-    Mis grupos
+    <ng-container i18n>Mis grupos</ng-container>
   </a>
 
   @if (isLoading()) {
-    <p role="status" class="mt-4 text-ink-muted">Cargando…</p>
+    <p role="status" class="mt-4 text-ink-muted" i18n>Cargando…</p>
   } @else if (group(); as group) {
     <h1 class="mt-4 font-display text-3xl font-bold tracking-tight break-words">
       {{ group.name }}
     </h1>
 
     @if (group.finished) {
-      <app-notice class="mt-6" heading="Finalizado" headingId="group-finished">
+      <app-notice class="mt-6" heading="Finalizado" i18n-heading headingId="group-finished">
         <svg lucideCircleCheck noticeIcon [size]="20"></svg>
-        El intercambio fue el {{ longExchangeDate(group.exchangeDate) }}. El grupo ya solo se puede
-        consultar.
+        <ng-container i18n
+          >El intercambio fue el {{ longExchangeDate(group.exchangeDate) }}. El grupo ya solo se
+          puede consultar.</ng-container
+        >
       </app-notice>
     }
 
@@ -53,17 +55,21 @@
     }
 
     <section aria-labelledby="my-wishlist" class="mt-6 rounded-card bg-surface p-5 shadow-card">
-      <h2 id="my-wishlist" class="font-display text-lg font-semibold">Tu lista de deseos</h2>
+      <h2 id="my-wishlist" class="font-display text-lg font-semibold" i18n>Tu lista de deseos</h2>
       <p class="mt-1.5 text-ink-muted">
         @if (group.drawn) {
-          Quien te regala ya puede verla.
+          <ng-container i18n>Quien te regala ya puede verla.</ng-container>
         } @else {
-          Solo la verá quien te regale, cuando se haga el sorteo.
+          <ng-container i18n>Solo la verá quien te regale, cuando se haga el sorteo.</ng-container>
         }
       </p>
       @if (you(); as you) {
         <a [routerLink]="['members', you.id, 'wishlist']" appLink standalone class="mt-2 gap-0.5">
-          {{ group.finished ? 'Ver tus deseos' : 'Escribir tus deseos' }}
+          @if (group.finished) {
+            <ng-container i18n>Ver tus deseos</ng-container>
+          } @else {
+            <ng-container i18n>Escribir tus deseos</ng-container>
+          }
           <svg lucideChevronRight [size]="18"></svg>
         </a>
       }
@@ -123,14 +129,16 @@
     <div class="mt-6">
       <app-status-header>
         <svg lucideSearchX statusIcon [size]="30"></svg>
-        No encontramos este grupo
+        <ng-container i18n>No encontramos este grupo</ng-container>
       </app-status-header>
-      <p class="mt-1.5 text-ink-muted">
+      <p class="mt-1.5 text-ink-muted" i18n>
         Puede que el enlace no esté bien o que el grupo ya no exista.
       </p>
     </div>
   } @else {
-    <p appAlert class="mt-6">No hemos podido cargar el grupo. Inténtalo de nuevo.</p>
-    <button type="button" appButton="secondary" class="mt-4" (click)="reload()">Reintentar</button>
+    <p appAlert class="mt-6" i18n>No hemos podido cargar el grupo. Inténtalo de nuevo.</p>
+    <button type="button" appButton="secondary" class="mt-4" (click)="reload()" i18n>
+      Reintentar
+    </button>
   }
 </app-shell>

@@ -34,7 +34,7 @@ import { TextLink } from '../text-link/text-link';
       <button #confirmButton type="button" appButton="secondary" (click)="confirm()">
         {{ confirmLabel() }}
       </button>
-      <button type="button" appLink standalone (click)="cancel()">Cancelar</button>
+      <button type="button" appLink standalone (click)="cancel()" i18n>Cancelar</button>
     </div>
   `,
 })

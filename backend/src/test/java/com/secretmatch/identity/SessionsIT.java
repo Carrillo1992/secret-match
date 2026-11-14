@@ -115,7 +115,7 @@ class SessionsIT {
     @Test
     @DisplayName("a sign-up whose link was never opened cannot sign in")
     void unverifiedUserIsRefused() {
-        post("/api/v1/sign-ups", Map.of("email", email, "displayName", "Ana", "password", PASSWORD))
+        post("/api/v1/sign-ups", Map.of("email", email, "displayName", "Ana", "password", PASSWORD, "language", "es"))
                 .expectStatus()
                 .isAccepted();
 
@@ -297,7 +297,9 @@ class SessionsIT {
     private record Session(String accessToken, String refreshToken) {}
 
     private void verifiedUser(String address, String displayName, String password) {
-        post("/api/v1/sign-ups", Map.of("email", address, "displayName", displayName, "password", password))
+        post(
+                        "/api/v1/sign-ups",
+                        Map.of("email", address, "displayName", displayName, "password", password, "language", "es"))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(address).getLast().text());

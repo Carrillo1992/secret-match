@@ -18,6 +18,7 @@ export type { GroupResponse } from './models/group-response';
 export type { GroupSummaryResponse } from './models/group-summary-response';
 export type { Health } from './models/health';
 export type { JoinGroupRequest } from './models/join-group-request';
+export type { LanguageRequest } from './models/language-request';
 export type { LinkTokenRequest } from './models/link-token-request';
 export type { MailboxResponse } from './models/mailbox-response';
 export type { MemberResponse } from './models/member-response';

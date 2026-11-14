@@ -34,7 +34,8 @@ class SignUpController {
             summary = "Sign up with email and password",
             description = "Emails a verification link. Answers the same whether or not the email has an account.")
     SignUpResponse signUp(@Valid @RequestBody SignUpRequest request) {
-        SignUpId id = emailSignUp.signUp(new SignUpCommand(request.email(), request.displayName(), request.password()));
+        SignUpId id = emailSignUp.signUp(
+                new SignUpCommand(request.email(), request.displayName(), request.password(), request.language()));
         return new SignUpResponse(id.value());
     }
 

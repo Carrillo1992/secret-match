@@ -268,7 +268,9 @@ class GroupsIT {
     /** Signs up, verifies and signs in a new User; returns their access token. */
     private String signedInUser(String displayName) {
         String email = "user-" + UUID.randomUUID() + "@example.com";
-        post("/api/v1/sign-ups", Map.of("email", email, "displayName", displayName, "password", PASSWORD))
+        post(
+                        "/api/v1/sign-ups",
+                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", "es"))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(email).getLast().text());

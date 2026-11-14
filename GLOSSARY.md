@@ -34,6 +34,10 @@ _Avoid_: Password recovery, forgot-password token
 The tie between a User and one Google account, made the first time they continue with Google. A new email gets a new User named as in Google; an email that already has a User is linked to it. It remembers the Google account itself, not its email, so a later change of Google email keeps the same User, and another Google account cannot take over a User already linked.
 _Avoid_: Google login, social account, OAuth connection
 
+**Language**:
+The language a User reads SecretMatch and its emails in: Spanish (`es`) or English (`en`). Chosen at sign-up (a Sign-up Verification keeps it for the User it creates; a Google sign-in gives it only to a User it creates), changeable while signed in. Users from before there was a choice have Spanish.
+_Avoid_: Locale, lang, idiom
+
 **Profile**:
 What a User manages about their own account: their Display Name and their password; it is also where they delete their account. Deleting it is refused while they are in a Group whose Draw is made and that is not Finished; otherwise the Groups they are the Admin of are deleted with it and they leave every other Group. Not what they tell their Giver: that is their Preferences.
 _Avoid_: Account settings, my account

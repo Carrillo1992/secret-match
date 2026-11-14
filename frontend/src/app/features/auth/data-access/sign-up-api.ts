@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
 import { problemCode } from '../../../core/api/problem';
+import { browserLanguage } from '../../../core/browser-language';
 import {
   sendNewLinkForSignUp,
   sendNewLinkInPlaceOf,
@@ -33,9 +34,12 @@ const VERIFICATION_PROBLEMS: Readonly<Record<string, VerifyEmailOutcome>> = {
 export class SignUpApi {
   private readonly api = inject(Api);
 
-  async signUp(details: SignUpRequest): Promise<SignUpOutcome> {
+  /** Signs up in the browser's Language, which the User it creates gets. */
+  async signUp(details: Omit<SignUpRequest, 'language'>): Promise<SignUpOutcome> {
     try {
-      const { signUpId } = await this.api.invoke(signUp, { body: details });
+      const { signUpId } = await this.api.invoke(signUp, {
+        body: { ...details, language: browserLanguage() },
+      });
       return { status: 'accepted', signUpId };
     } catch (error) {
       return { status: isClientError(error) ? 'invalid' : 'failed' };

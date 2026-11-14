@@ -89,6 +89,44 @@ class GoogleSignInIT {
     }
 
     @Test
+    @DisplayName("a first Google sign-in gives the new User the Language sent; a later one does not change it")
+    void firstGoogleSignInSetsTheLanguage() {
+        String first = signedIn(signInWithGoogle(GOOGLE.idToken(clock.instant(), subject, email, "Ana"), "en"));
+        String later = signedIn(signInWithGoogle(GOOGLE.idToken(clock.instant(), subject, email, "Ana"), "es"));
+
+        assertThat(languageOf(first)).isEqualTo("en");
+        assertThat(languageOf(later)).isEqualTo("en");
+    }
+
+    @Test
+    @DisplayName("linking Google to an existing User keeps the User's Language")
+    void linkingKeepsTheLanguage() {
+        verifiedUser(email, "Ana", PASSWORD);
+
+        String viaGoogle = signedIn(signInWithGoogle(GOOGLE.idToken(clock.instant(), subject, email, "Ana"), "en"));
+
+        assertThat(languageOf(viaGoogle)).isEqualTo("es");
+    }
+
+    @Test
+    @DisplayName("a Google sign-in in an unsupported Language is refused with a 400 problem, creating no User")
+    void unsupportedLanguageIsRefused() {
+        String idToken = GOOGLE.idToken(clock.instant(), subject, email, "Ana");
+
+        signInWithGoogle(idToken, "fr")
+                .expectStatus()
+                .isBadRequest()
+                .expectHeader()
+                .contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+                .expectHeader()
+                .doesNotExist(HttpHeaders.SET_COOKIE);
+        post("/api/v1/sessions/google", Map.of("idToken", idToken))
+                .expectStatus()
+                .isBadRequest();
+        expectRejected(post("/api/v1/sessions", Map.of("email", email, "password", PASSWORD)), "invalid-credentials");
+    }
+
+    @Test
     @DisplayName("an email that already has a User is linked to Google, and the password still signs in")
     void existingEmailIsLinked() {
         verifiedUser(email, "Ana", PASSWORD);
@@ -183,7 +221,9 @@ class GoogleSignInIT {
     // ---------- helpers ----------
 
     private void verifiedUser(String address, String displayName, String password) {
-        post("/api/v1/sign-ups", Map.of("email", address, "displayName", displayName, "password", password))
+        post(
+                        "/api/v1/sign-ups",
+                        Map.of("email", address, "displayName", displayName, "password", password, "language", "es"))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(address).getLast().text());
@@ -208,7 +248,21 @@ class GoogleSignInIT {
     }
 
     private RestTestClient.ResponseSpec signInWithGoogle(String idToken) {
-        return post("/api/v1/sessions/google", Map.of("idToken", idToken));
+        return signInWithGoogle(idToken, "es");
+    }
+
+    private RestTestClient.ResponseSpec signInWithGoogle(String idToken, String language) {
+        return post("/api/v1/sessions/google", Map.of("idToken", idToken, "language", language));
+    }
+
+    private String languageOf(String accessToken) {
+        String body = me(accessToken)
+                .expectStatus()
+                .isOk()
+                .expectBody(String.class)
+                .returnResult()
+                .getResponseBody();
+        return JSON.readTree(body).get("language").asString();
     }
 
     private RestTestClient.ResponseSpec me(String accessToken) {

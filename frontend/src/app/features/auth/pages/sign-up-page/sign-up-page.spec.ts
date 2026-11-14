@@ -116,6 +116,7 @@ describe('SignUpPage', () => {
       email: 'ana@example.com',
       displayName: 'Ana',
       password: 'turrón-y-polvorones',
+      language: expect.any(String),
     });
     request.flush({ signUpId: 'id-1' }, { status: 202, statusText: 'Accepted' });
     await settle();

@@ -4,5 +4,6 @@
 export interface SignUpRequest {
   displayName: string;
   email: string;
+  language: 'es' | 'en';
   password: string;
 }

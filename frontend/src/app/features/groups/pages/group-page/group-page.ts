@@ -264,7 +264,11 @@ export class GroupPage {
     this.setSend(mailboxId, outcome.status);
   }
 
-  /** Asked for again quietly; should that fail, the page still knows the Group is finished. */
+  /**
+   * The Group is asked for again quietly, as after cancelling the Draw: reloading the resource would
+   * replace the whole page with "Cargando…" and lose the open Mailbox. Should that request fail, the
+   * page still knows the Group is finished.
+   */
   private async finishedMeanwhile(): Promise<void> {
     const refreshed = await this.groupsApi.group(this.groupId());
     const group = this.group();

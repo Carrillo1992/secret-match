@@ -115,7 +115,10 @@ public class MemberMailboxes {
     @Transactional
     public MailboxMessage send(UUID mailboxId, UUID author, String text) {
         Mailbox mailbox = openTo(mailboxId, author);
-        if (groupMembers.isFinished(mailbox.groupId().value(), author).orElse(false)) {
+        boolean finished = groupMembers
+                .isFinished(mailbox.groupId().value(), author)
+                .orElseThrow(() -> new IllegalStateException("a Mailbox side outside its Group"));
+        if (finished) {
             throw new GroupFinishedException();
         }
         MemberId me = new MemberId(author);

@@ -280,6 +280,12 @@ class MailboxIT {
                         "/api/v1/groups/" + drawn.family().groupId())
                 .expectStatus()
                 .isNoContent();
+        UUID groupId = UUID.fromString(drawn.family().groupId());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM mailboxes WHERE group_id = ?", Long.class, groupId))
+                .isZero();
+        assertThat(jdbc.queryForObject(
+                        "SELECT count(*) FROM messages WHERE mailbox_id = ?", Long.class, UUID.fromString(mailbox)))
+                .isZero();
         get(giver.user(), messagesOf(mailbox)).expectStatus().isNotFound();
     }
 

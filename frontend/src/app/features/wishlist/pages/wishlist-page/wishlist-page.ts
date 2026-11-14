@@ -53,7 +53,9 @@ import {
  * behind an inline confirmation), and once there is a Draw their Giver reads it, from the Draw card.
  * Under the Wishes come the Don't List and the Preferences (#33), each on its own card: the page saves
  * what the owner changes there and keeps it without reloading the Wishlist. The Giver reads them,
- * and an empty one is hidden from them. Once the Group is finished (#34) the owner only reads it all.
+ * and an empty one is hidden from them; for the Giver the Don't List comes first, above the Wishes,
+ * so what not to buy is the first thing they see (#35). Once the Group is finished (#34) the owner
+ * only reads it all.
  */
 @Component({
   selector: 'app-wishlist-page',

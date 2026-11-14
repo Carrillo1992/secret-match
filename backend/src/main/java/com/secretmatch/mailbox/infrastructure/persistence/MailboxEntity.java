@@ -1,5 +1,6 @@
 package com.secretmatch.mailbox.infrastructure.persistence;
 
+import com.secretmatch.mailbox.domain.GroupId;
 import com.secretmatch.mailbox.domain.Mailbox;
 import com.secretmatch.mailbox.domain.MailboxId;
 import com.secretmatch.mailbox.domain.MemberId;
@@ -31,6 +32,9 @@ class MailboxEntity {
 
     Mailbox toMailbox() {
         return new Mailbox(
-                new MailboxId(id), groupId, giverId == null ? null : new MemberId(giverId), new MemberId(receiverId));
+                new MailboxId(id),
+                new GroupId(groupId),
+                giverId == null ? null : new MemberId(giverId),
+                new MemberId(receiverId));
     }
 }

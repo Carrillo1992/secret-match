@@ -16,8 +16,10 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { MESSAGE_MAX_LENGTH, messageLength, messageProblem } from '../../data-access/message-rules';
 
-/** Where the last Message written here stands, as the page tells it. */
-/** `invalid`: the API refused the text, which the composer's own check should have caught. */
+/**
+ * Where the last Message written here stands, as the page tells it. `invalid`: the API refused the
+ * text, which the composer's own check should have caught.
+ */
 export type SendStatus = 'idle' | 'sending' | 'sent' | 'failed' | 'invalid' | 'not-found';
 
 /**
@@ -74,7 +76,7 @@ export class MailboxComposer {
   /** The textarea's id, unique on the page; its hint is `<id>-hint`. */
   readonly id = input.required<string>();
   readonly status = input<SendStatus>('idle');
-  /** The text to send, without surrounding spaces; the page posts it and reports the status. */
+  /** The text to send, as written; the page posts it and reports the status. */
   readonly send = output<string>();
 
   protected readonly max = MESSAGE_MAX_LENGTH;
@@ -110,6 +112,6 @@ export class MailboxComposer {
       this.attempted.set(true);
       return;
     }
-    this.send.emit(value.trim());
+    this.send.emit(value);
   }
 }

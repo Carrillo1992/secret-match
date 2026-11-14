@@ -2,7 +2,6 @@ package com.secretmatch.mailbox.domain;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * The conversation of one Assignment, between its Giver and its Receiver; nobody else is in it. Who the Giver is
@@ -10,7 +9,7 @@ import java.util.UUID;
  *
  * @param giver {@code null} once the Giver deleted their account: the Receiver keeps the Mailbox, alone in it
  */
-public record Mailbox(MailboxId id, UUID groupId, MemberId giver, MemberId receiver) {
+public record Mailbox(MailboxId id, GroupId groupId, MemberId giver, MemberId receiver) {
 
     public Mailbox {
         Objects.requireNonNull(id, "id");

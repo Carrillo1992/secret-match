@@ -134,10 +134,12 @@ public class MemberMailboxes {
      */
     private boolean isCurrent(Mailbox mailbox) {
         if (mailbox.giverIsGone()) {
-            return assignments.giverOf(mailbox.groupId(), mailbox.receiver()).isEmpty();
+            return assignments
+                    .giverOf(mailbox.groupId().value(), mailbox.receiver())
+                    .isEmpty();
         }
         return assignments
-                .receiverOf(mailbox.groupId(), mailbox.giver())
+                .receiverOf(mailbox.groupId().value(), mailbox.giver())
                 .filter(mailbox.receiver()::equals)
                 .isPresent();
     }

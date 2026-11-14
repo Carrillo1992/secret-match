@@ -91,11 +91,11 @@ describe('MailboxComposer', () => {
     expect(sent).toHaveLength(1);
   });
 
-  it('sends the text without surrounding spaces', async () => {
+  it('sends the text as written, as the API keeps it', async () => {
     await type('  ¿Qué talla usas?\n');
     await submit();
 
-    expect(sent).toEqual(['¿Qué talla usas?']);
+    expect(sent).toEqual(['  ¿Qué talla usas?\n']);
   });
 
   it('cannot send again while sending', async () => {

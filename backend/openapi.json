@@ -374,6 +374,38 @@
         "tags" : [ "groups" ]
       }
     },
+    "/api/v1/groups/{groupId}/mailboxes" : {
+      "get" : {
+        "description" : "None before the Draw. After it, two: the one with their Receiver (side GIVER) first, then the one with their Giver (side RECEIVER), who is never named.",
+        "operationId" : "myMailboxes",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MailboxResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The signed-in Member's Mailboxes in the Group",
+        "tags" : [ "mailbox" ]
+      }
+    },
     "/api/v1/groups/{groupId}/members/{memberId}" : {
       "delete" : {
         "description" : "A Member leaves when memberId is their own id; only the Admin can remove someone else, and the Admin cannot leave. The removed Member is emailed.",
@@ -552,6 +584,75 @@
         },
         "summary" : "Replace one of your Wishes",
         "tags" : [ "wishlists" ]
+      }
+    },
+    "/api/v1/mailboxes/{mailboxId}/messages" : {
+      "get" : {
+        "description" : "Only its Giver and Receiver can read it; anyone else, the Admin included, gets a 404.",
+        "operationId" : "mailboxMessages",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "mailboxId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MessageResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "A Mailbox's Messages, oldest first",
+        "tags" : [ "mailbox" ]
+      },
+      "post" : {
+        "description" : "Text only, 1 to 1000 characters, not blank. Only its Giver and Receiver can; anyone else, the Admin included, gets a 404.",
+        "operationId" : "sendMessage",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "mailboxId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SendMessageRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MessageResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "summary" : "Send a Message in a Mailbox",
+        "tags" : [ "mailbox" ]
       }
     },
     "/api/v1/memberships" : {
@@ -1154,6 +1255,26 @@
         },
         "required" : [ "token" ]
       },
+      "MailboxResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Opaque: says nothing about who is in it."
+          },
+          "receiverDisplayName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The Receiver's display name when side is GIVER; null when side is RECEIVER: the Giver is never named."
+          },
+          "side" : {
+            "type" : "string",
+            "description" : "The signed-in Member's own side: GIVER in the Mailbox with their Receiver, RECEIVER in the one with their Giver.",
+            "enum" : [ "GIVER", "RECEIVER" ]
+          }
+        },
+        "required" : [ "id", "receiverDisplayName", "side" ]
+      },
       "MemberResponse" : {
         "type" : "object",
         "properties" : {
@@ -1184,6 +1305,24 @@
           }
         },
         "required" : [ "groupId" ]
+      },
+      "MessageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "mine" : {
+            "type" : "boolean",
+            "description" : "Whether the signed-in Member wrote it."
+          },
+          "sentOn" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day it was sent, in UTC; never the time."
+          },
+          "text" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "mine", "sentOn", "text" ]
       },
       "PasswordResetEmailRequest" : {
         "type" : "object",
@@ -1225,6 +1364,18 @@
           }
         },
         "required" : [ "displayName", "id" ]
+      },
+      "SendMessageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "type" : "string",
+            "description" : "Text only, kept as written; not blank.",
+            "maxLength" : 1000,
+            "minLength" : 1
+          }
+        },
+        "required" : [ "text" ]
       },
       "SignInRequest" : {
         "type" : "object",

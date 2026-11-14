@@ -298,17 +298,30 @@ class DrawIT {
                 json(http.get().uri("/v3/api-docs").exchange().expectStatus().isOk());
 
         for (User member : family.everyone()) {
-            String own = json(get(member, drawOf(family))).at("/myReceiver/id").asString();
+            JsonNode myDraw = json(get(member, drawOf(family)));
+            String own = myDraw.at("/myReceiver/id").asString();
+            String ownName = myDraw.at("/myReceiver/displayName").asString();
+            List<String> myMailboxes = json(get(member, "/api/v1/groups/" + family.groupId() + "/mailboxes"))
+                    .valueStream()
+                    .map(mailbox -> mailbox.get("id").asString())
+                    .toList();
             for (Map.Entry<String, JsonNode> path : document.get("paths").properties()) {
                 if (!path.getValue().has("get")) {
                     continue;
                 }
                 String inGroup = path.getKey().replace("{groupId}", family.groupId());
-                List<String> uris = inGroup.contains("{memberId}")
-                        ? family.ids().stream()
-                                .map(id -> inGroup.replace("{memberId}", id))
-                                .toList()
-                        : List.of(inGroup);
+                List<String> uris;
+                if (inGroup.contains("{memberId}")) {
+                    uris = family.ids().stream()
+                            .map(id -> inGroup.replace("{memberId}", id))
+                            .toList();
+                } else if (inGroup.contains("{mailboxId}")) {
+                    uris = myMailboxes.stream()
+                            .map(id -> inGroup.replace("{mailboxId}", id))
+                            .toList();
+                } else {
+                    uris = List.of(inGroup);
+                }
                 for (String uri : uris) {
                     assertThat(uri).as("a GET this test cannot fill in").doesNotContain("{");
                     String body = get(member, uri)
@@ -317,6 +330,18 @@ class DrawIT {
                             .getResponseBody();
                     if (uri.endsWith("/draw")) {
                         assertThat(json(body).at("/myReceiver/id").asString()).isEqualTo(own);
+                    } else if (uri.endsWith("/mailboxes")) {
+                        // The Mailbox with their Receiver names only them; the one with their Giver names nobody.
+                        JsonNode mailboxes = json(body);
+                        assertThat(mailboxes).hasSize(2);
+                        assertThat(mailboxes.get(0).get("receiverDisplayName").asString())
+                                .isEqualTo(ownName);
+                        assertThat(mailboxes.get(1).get("receiverDisplayName").isNull())
+                                .isTrue();
+                        assertThat(body).as(uri).doesNotContain(family.ids());
+                        family.idsByName().keySet().stream()
+                                .filter(name -> !name.equals(ownName))
+                                .forEach(name -> assertThat(body).as(uri).doesNotContain(name));
                     } else {
                         assertThat(String.valueOf(body))
                                 .as(uri)

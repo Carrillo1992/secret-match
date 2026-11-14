@@ -41,6 +41,11 @@ class JpaDraws implements Draws {
     }
 
     @Override
+    public Optional<MemberId> giverOf(UUID groupId, MemberId receiver) {
+        return repository.findGiver(groupId, receiver.value()).map(MemberId::new);
+    }
+
+    @Override
     public void removeIn(UUID groupId) {
         repository.removeAssignmentsIn(groupId);
         repository.removeDrawIn(groupId);

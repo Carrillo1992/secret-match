@@ -1,26 +1,31 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GiftIllustration } from '../gift-illustration/gift-illustration';
+import { PreferencesMenu } from '../preferences-menu/preferences-menu';
 
 /**
  * Page frame for focused, single-task screens (sign-up, confirmations, landing): the gift
  * illustration on top and the content in a sheet that rises over it. On wide screens the
- * sheet becomes a centred card. Projected content goes inside the page's `<main>`.
+ * sheet becomes a centred card. The header holds the wordmark and the Preferences menu, raised on
+ * its own disc so it reads over the illustration. Projected content goes inside the page's `<main>`.
  */
 @Component({
   selector: 'app-sheet-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [GiftIllustration, RouterLink],
+  imports: [GiftIllustration, PreferencesMenu, RouterLink],
   host: { class: 'flex min-h-dvh flex-col' },
   template: `
     <div class="relative h-60 shrink-0 sm:h-72">
       <app-gift-illustration class="absolute inset-0" />
-      <header class="relative mx-auto flex min-h-11 max-w-md items-center px-6 pt-5">
+      <header
+        class="relative mx-auto flex min-h-11 max-w-md items-center justify-between px-6 pt-5"
+      >
         <a
           routerLink="/"
           class="inline-flex min-h-11 items-center font-display text-xl font-bold tracking-tight text-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >SecretMatch</a
         >
+        <app-preferences-menu raised />
       </header>
     </div>
     <main

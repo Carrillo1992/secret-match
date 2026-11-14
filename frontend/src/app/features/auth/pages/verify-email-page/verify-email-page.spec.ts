@@ -33,7 +33,8 @@ describe('VerifyEmailPage', () => {
 
   afterEach(() => http.verify());
 
-  const page = () => harness.routeNativeElement as HTMLElement;
+  // The page itself, without the layout's header (wordmark, Preferences menu).
+  const page = () => harness.routeNativeElement?.querySelector('main') as HTMLElement;
   const heading = () => page().querySelector('h1')?.textContent ?? '';
   const settle = async () => {
     await new Promise((resolve) => setTimeout(resolve));

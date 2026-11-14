@@ -27,7 +27,8 @@ describe('CheckEmailPage', () => {
 
   afterEach(() => http.verify());
 
-  const page = () => harness.routeNativeElement as HTMLElement;
+  // The page itself, without the layout's header (wordmark, Preferences menu).
+  const page = () => harness.routeNativeElement?.querySelector('main') as HTMLElement;
   // What the sign-up page does once the API has accepted the sign-up.
   const arriveFromSignUp = async () => {
     await TestBed.inject(Router).navigate(['/check-email'], {

@@ -53,3 +53,23 @@ describe('Field on a select', () => {
     expect(select?.classList).toContain('rounded-field');
   });
 });
+
+@Component({
+  imports: [Field],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<label for="notes">Notas</label><textarea id="notes" rows="5" appField></textarea>`,
+})
+class TextareaHost {}
+
+describe('Field on a textarea', () => {
+  it('looks like a text input but grows with its rows instead of a fixed height', async () => {
+    const fixture = TestBed.createComponent(TextareaHost);
+    await fixture.whenStable();
+    const textarea = (fixture.nativeElement as HTMLElement).querySelector('textarea');
+
+    expect(textarea?.classList).toContain('bg-field');
+    expect(textarea?.classList).toContain('rounded-field');
+    expect(textarea?.classList).toContain('aria-invalid:border-danger');
+    expect(textarea?.classList).not.toContain('h-13');
+  });
+});

@@ -9,6 +9,7 @@ import { WishlistPage } from './wishlist-page';
 
 const LUIS_WISHLIST_URL = 'http://api.test/api/v1/groups/g-1/members/u-luis/wishlist';
 const WISHES_URL = 'http://api.test/api/v1/groups/g-1/wishes';
+const PREFERENCES_URL = 'http://api.test/api/v1/groups/g-1/preferences';
 
 const auriculares = {
   id: 'w-1',
@@ -19,14 +20,21 @@ const auriculares = {
   priority: 'HIGH',
 };
 const libro = { id: 'w-2', title: 'Libro', priority: 'MEDIUM' };
+const noChocolate = { id: 'd-1', text: 'Nada de chocolate' };
+const noVelas = { id: 'd-2', text: 'Velas' };
 
 /** Luis's Wishlist as Marta, another Member, sees it. */
 const seenByMarta = {
   owner: { id: 'u-luis', displayName: 'Luis', you: false },
   wishes: [auriculares, libro],
+  dontList: [],
 };
 /** Luis's own Wishlist, still empty. */
-const ownEmpty = { owner: { id: 'u-luis', displayName: 'Luis', you: true }, wishes: [] };
+const ownEmpty = {
+  owner: { id: 'u-luis', displayName: 'Luis', you: true },
+  wishes: [],
+  dontList: [],
+};
 const own = { ...ownEmpty, wishes: [auriculares, libro] };
 
 describe('WishlistPage', () => {
@@ -319,5 +327,69 @@ describe('WishlistPage', () => {
     await open(seenByMarta);
 
     expect(rows()).toHaveLength(2);
+  });
+
+  describe("Preferences and Don't List", () => {
+    const headings = () => [...page().querySelectorAll('h2')].map(text);
+    const preferencesCard = () => page().querySelector('app-preferences-card');
+    const dontListCard = () => page().querySelector('app-dont-list-card');
+
+    it("shows the Giver their Receiver's Don't List and Preferences after the Wishes, read-only", async () => {
+      await open({
+        ...seenByMarta,
+        preferences: 'Talla M.\nMe encanta el café.',
+        dontList: [noChocolate, noVelas],
+      });
+
+      expect(text(dontListCard())).toContain('Nada de chocolate');
+      expect(text(dontListCard())).toContain('Velas');
+      expect(text(preferencesCard())).toContain('Sus gustos');
+      expect(text(preferencesCard())).toContain('Talla M. Me encanta el café.');
+      expect(dontListCard()?.querySelector('button')).toBeNull();
+      expect(preferencesCard()?.querySelector('button')).toBeNull();
+
+      const wishes = page().querySelector('ul[aria-label="Deseos"]');
+      const dontList = dontListCard();
+      const preferences = preferencesCard();
+      if (!wishes || !dontList || !preferences) throw new Error('a section is missing');
+      expect(
+        wishes.compareDocumentPosition(dontList) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        dontList.compareDocumentPosition(preferences) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('hides from the Giver the sections their Receiver left empty', async () => {
+      await open(seenByMarta);
+
+      expect(headings()).not.toContain('Nada de…');
+      expect(headings()).not.toContain('Sus gustos');
+    });
+
+    it("lets the owner change their Don't List and Preferences, even while empty", async () => {
+      await open({ ...own, dontList: [noChocolate] });
+
+      expect(headings()).toEqual(['Auriculares', 'Libro', 'Nada de…', 'Tus gustos']);
+      expect(
+        dontListCard()?.querySelector('button[aria-label="Quitar «Nada de chocolate»"]'),
+      ).not.toBeNull();
+      expect(button('Escribir mis gustos', preferencesCard() ?? page())).toBeDefined();
+    });
+
+    it('keeps the Preferences the owner saved without loading the Wishlist again', async () => {
+      await open(ownEmpty);
+
+      button('Escribir mis gustos')?.click();
+      await settle();
+      type('Tus gustos', 'Talla M.');
+      preferencesCard()?.querySelector('form')?.dispatchEvent(new Event('submit'));
+      await settle();
+      http.expectOne(PREFERENCES_URL).flush({ preferences: 'Talla M.' });
+      await settle();
+
+      expect(text(preferencesCard())).toContain('Talla M.');
+      expect(button('Editar', preferencesCard() ?? page())).toBeDefined();
+    });
   });
 });

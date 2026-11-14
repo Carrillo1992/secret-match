@@ -21,14 +21,24 @@ import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel'
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { euros } from '../../../../shared/format/euros';
+import { DontListCard } from '../../components/dont-list-card/dont-list-card';
+import { PreferencesCard } from '../../components/preferences-card/preferences-card';
 import { SaveStatus, WishForm } from '../../components/wish-form/wish-form';
 import { PRIORITY_LABELS } from '../../data-access/wish-rules';
-import { Wish, WishInput, WishlistApi } from '../../data-access/wishlist-api';
+import {
+  DontListEntry,
+  Wish,
+  WishInput,
+  Wishlist,
+  WishlistApi,
+} from '../../data-access/wishlist-api';
 
 /**
  * A Member's Wishlist in a Group (#32, option A). Private (ADR 0004): its owner reads and changes it
  * (adding Wishes through the inline form, editing one in place with the same form, deleting one
  * behind an inline confirmation), and once there is a Draw their Giver reads it, from the Draw card.
+ * Under the Wishes come the Don't List and the Preferences (#33), each a card that saves its own
+ * changes; the Giver reads them, and an empty one is hidden from them.
  */
 @Component({
   selector: 'app-wishlist-page',
@@ -39,6 +49,8 @@ import { Wish, WishInput, WishlistApi } from '../../data-access/wishlist-api';
     Button,
     Chip,
     ConfirmPanel,
+    DontListCard,
+    PreferencesCard,
     RouterLink,
     StatusHeader,
     TextLink,
@@ -54,7 +66,7 @@ export class WishlistPage {
   private readonly api = inject(WishlistApi);
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);
-  private readonly params = toSignal(
+  protected readonly params = toSignal(
     inject(ActivatedRoute).paramMap.pipe(
       map((params) => ({
         groupId: params.get('groupId') ?? '',
@@ -166,6 +178,23 @@ export class WishlistPage {
     }
     this.statusText.set(`«${wish.title}» ya no está en tu lista.`);
     this.outcome.reload();
+  }
+
+  protected dontListChanged(dontList: readonly DontListEntry[]): void {
+    this.changeWishlist({ dontList: [...dontList] });
+  }
+
+  protected preferencesChanged(preferences: string | undefined): void {
+    this.changeWishlist({ preferences });
+  }
+
+  /** A card saved its part: the page keeps it without reloading the whole Wishlist. */
+  private changeWishlist(change: Partial<Wishlist>): void {
+    this.outcome.update((outcome) =>
+      outcome?.status === 'found'
+        ? { ...outcome, wishlist: { ...outcome.wishlist, ...change } }
+        : outcome,
+    );
   }
 
   private focusOnceRendered(id: string): void {

@@ -47,12 +47,14 @@ export type EditGroupOutcome =
 
 /**
  * `invalid` covers an unknown, malformed or regenerated code: the API answers them all the same.
- * `finished` is a Group whose Exchange Date is over: nobody joins it any more.
+ * `finished` is a Group whose Exchange Date is over, and `drawn` one whose Draw is made: nobody joins
+ * either any more.
  */
 export type JoinOutcome =
   | { readonly status: 'joined'; readonly groupId: string }
   | { readonly status: 'invalid' }
   | { readonly status: 'finished' }
+  | { readonly status: 'drawn' }
   | { readonly status: 'failed' };
 
 export type RegenerateOutcome =
@@ -111,8 +113,11 @@ export class GroupsApi {
       const { groupId } = await this.api.invoke(join, { body: { inviteCode } });
       return { status: 'joined', groupId };
     } catch (error) {
-      if (problemCode(error) === 'group-finished') {
-        return { status: 'finished' };
+      switch (problemCode(error)) {
+        case 'group-finished':
+          return { status: 'finished' };
+        case 'group-drawn':
+          return { status: 'drawn' };
       }
       const invalid =
         error instanceof HttpErrorResponse && (error.status === 404 || error.status === 400);

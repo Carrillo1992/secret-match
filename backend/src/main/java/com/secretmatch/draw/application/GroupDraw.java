@@ -1,5 +1,6 @@
 package com.secretmatch.draw.application;
 
+import com.secretmatch.draw.domain.AccountInDrawException;
 import com.secretmatch.draw.domain.AdminOnlyException;
 import com.secretmatch.draw.domain.DrawAlreadyMadeException;
 import com.secretmatch.draw.domain.DrawEngine;
@@ -11,6 +12,8 @@ import com.secretmatch.draw.domain.GroupNotFoundException;
 import com.secretmatch.draw.domain.MemberId;
 import com.secretmatch.draw.domain.NoValidDrawException;
 import com.secretmatch.group.application.GroupDeleted;
+import com.secretmatch.identity.application.UserDeleted;
+import com.secretmatch.identity.application.UserDeletionRequested;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import java.security.SecureRandom;
@@ -57,7 +60,8 @@ public class GroupDraw {
     }
 
     /**
-     * Draws the Group and stores every Assignment at once. Every Member is emailed once it is stored.
+     * Draws the Group and stores every Assignment at once, which freezes who is in it and its Exclusions. Every
+     * Member is emailed once it is stored.
      *
      * @return the Admin's own Receiver
      * @throws GroupNotFoundException if there is no such Group or {@code admin} is not one of its Members
@@ -69,7 +73,8 @@ public class GroupDraw {
      */
     @Transactional
     public MyReceiver run(UUID groupId, UUID admin) {
-        Roster roster = rosters.of(groupId, admin).orElseThrow(GroupNotFoundException::new);
+        // Locked, so nobody joins or leaves, and no Exclusion changes, while it is drawn.
+        Roster roster = rosters.lockedOf(groupId, admin).orElseThrow(GroupNotFoundException::new);
         if (!roster.admin().equals(new MemberId(admin))) {
             throw new AdminOnlyException();
         }
@@ -89,6 +94,7 @@ public class GroupDraw {
                 if (!draws.add(groupId, drawn.assignments(), clock.instant())) {
                     throw new DrawAlreadyMadeException();
                 }
+                rosters.markDrawn(groupId);
             }
             case DrawResult.NoValidDraw noValidDraw -> throw new NoValidDrawException();
         }
@@ -123,6 +129,26 @@ public class GroupDraw {
     @EventListener
     void on(GroupDeleted event) {
         draws.removeIn(event.groupId());
+    }
+
+    /**
+     * A User cannot delete their account while in a Group whose Draw is made and whose Exchange Date has not passed:
+     * the Draw would lose one of its Assignments. The Admin cancels the Draw, or the User waits.
+     */
+    @EventListener
+    void on(UserDeletionRequested event) {
+        if (rosters.unfinishedGroupsOf(event.userId()).stream().anyMatch(draws::existsIn)) {
+            throw new AccountInDrawException();
+        }
+    }
+
+    /**
+     * A deleted User's Assignments go with them, in the same transaction: only those of finished Groups are left,
+     * since any other Draw refused the deletion. Their Giver there no longer has a Receiver to see.
+     */
+    @EventListener
+    void on(UserDeleted event) {
+        draws.removeAssignmentsOf(new MemberId(event.userId()));
     }
 
     /**

@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { LandingPage } from './landing-page';
 
@@ -85,5 +86,31 @@ describe('LandingPage', () => {
     await fixture.whenStable();
 
     expect(statusText()).toContain('API OK');
+  });
+
+  describe('after the User deleted their account', () => {
+    it('says the account is gone, and only when arriving from that deletion', async () => {
+      api.expectOne(HEALTH_URL);
+      const router = TestBed.inject(Router);
+      router.resetConfig([
+        { path: '', component: LandingPage },
+        { path: 'other', children: [] },
+      ]);
+      const harness = await RouterTestingHarness.create();
+      const arrive = async (state?: Record<string, unknown>) => {
+        await router.navigateByUrl('/other');
+        await router.navigateByUrl('/', { state });
+        harness.detectChanges();
+        api.match(HEALTH_URL);
+        return (harness.routeNativeElement as HTMLElement).querySelector(
+          '[data-testid="account-deleted"]',
+        );
+      };
+
+      expect((await arrive({ accountDeleted: true }))?.textContent).toContain(
+        'Tu cuenta se ha borrado',
+      );
+      expect(await arrive()).toBeNull();
+    });
   });
 });

@@ -6,6 +6,7 @@ import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.GroupNotFoundException;
 import com.secretmatch.group.domain.InviteCode;
 import com.secretmatch.group.domain.MemberId;
+import com.secretmatch.identity.application.UserDeleted;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import java.security.SecureRandom;
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,6 +74,12 @@ public class MyGroups {
                 .toList();
     }
 
+    /** The Groups this User is a Member of, soonest Exchange Date first, for other modules. */
+    @Transactional(readOnly = true)
+    public List<GroupSummary> findGroupsOf(UUID user) {
+        return groupsOf(new MemberId(user));
+    }
+
     /**
      * The Group as one of its Members sees it.
      *
@@ -94,6 +102,30 @@ public class MyGroups {
         return groups.findById(new GroupId(groupId))
                 .filter(group -> group.hasMember(member))
                 .map(group -> detailsOf(group, member));
+    }
+
+    /**
+     * Like {@link #findGroup}, but first locks the Group until the transaction ends, so nobody joins or leaves it
+     * meanwhile: for other modules about to change data that depends on who is in it, such as its Draw.
+     *
+     * @return empty if there is no such Group or the viewer is not one of its Members
+     */
+    @Transactional
+    public Optional<GroupDetails> lockGroup(UUID groupId, UUID viewer) {
+        groups.lock(new GroupId(groupId));
+        return findGroup(groupId, viewer);
+    }
+
+    /**
+     * Records that the Group's Draw is made, which freezes who is in it. The Draw module calls it in the
+     * transaction that stores the Draw, after {@link #lockGroup}.
+     *
+     * @throws GroupNotFoundException if there is no such Group
+     */
+    @Transactional
+    public void markDrawn(UUID groupId) {
+        Group group = groups.findById(new GroupId(groupId)).orElseThrow(GroupNotFoundException::new);
+        groups.saveDrawn(group.markDrawn());
     }
 
     /**
@@ -121,6 +153,7 @@ public class MyGroups {
      * @throws GroupNotFoundException if there is no such Group or the User is not one of its Members
      * @throws com.secretmatch.group.domain.AdminOnlyException if the User is not its Admin
      * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
+     * @throws com.secretmatch.group.domain.GroupDrawnException if the Group's Draw is made
      */
     @Transactional
     public GroupDetails regenerateInviteLink(GroupId id, MemberId by) {
@@ -139,16 +172,18 @@ public class MyGroups {
      * @throws com.secretmatch.group.domain.AdminOnlyException if {@code by} removes someone else and is not the
      *     Admin
      * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
+     * @throws com.secretmatch.group.domain.GroupDrawnException if the Group's Draw is made
      */
     @Transactional
     public void removeMember(GroupId id, MemberId by, MemberId member) {
+        // Before reading it, so a Draw being made at the same moment either waits for this or is seen.
+        groups.lock(id);
         Group group = memberView(id, by);
         group.removeMember(by, member, clock.instant());
-        if (!groups.removeMember(group.id(), member)) {
+        if (!endMembership(group.id(), member)) {
             // Removed at the same moment by another request, which did the rest.
             return;
         }
-        events.publishEvent(new MembershipEnded(group.id().value(), member.value()));
         if (!by.equals(member)) {
             emailRemovedMember(group, member);
         }
@@ -171,6 +206,36 @@ public class MyGroups {
         events.publishEvent(new GroupDeleted(group.id().value()));
         groups.delete(group.id());
         emailGroupDeleted(group, toTell);
+    }
+
+    /**
+     * A User deleting their account takes the Groups they are the Admin of with them, emailing those Groups' other
+     * Members, and leaves every other Group. Finished Groups too: the read-only rule protects the exchange from its
+     * Members' changes, not from a User leaving SecretMatch.
+     */
+    @EventListener
+    void on(UserDeleted event) {
+        MemberId user = new MemberId(event.userId());
+        for (Group group : groups.findWithMember(user)) {
+            if (group.admin().equals(user)) {
+                delete(group.id(), user);
+            } else {
+                endMembership(group.id(), user);
+            }
+        }
+    }
+
+    /**
+     * Removes the Member and lets the other modules delete what they had in the Group.
+     *
+     * @return {@code false} if they were not a Member any more: another request removed them a moment ago
+     */
+    private boolean endMembership(GroupId group, MemberId member) {
+        if (!groups.removeMember(group, member)) {
+            return false;
+        }
+        events.publishEvent(new MembershipEnded(group.value(), member.value()));
+        return true;
     }
 
     /** Catalogue email 7: "the Group was deleted", to each Member but the Admin. */
@@ -227,6 +292,7 @@ public class MyGroups {
                         .toList(),
                 group.inviteCode().value(),
                 group.admin().equals(viewer),
-                group.isFinished(clock.instant()));
+                group.isFinished(clock.instant()),
+                group.isDrawn());
     }
 }

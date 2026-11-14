@@ -35,7 +35,7 @@ The tie between a User and one Google account, made the first time they continue
 _Avoid_: Google login, social account, OAuth connection
 
 **Profile**:
-What a User manages about their own account: their Display Name and their password. Not what they tell their Giver: that is their Preferences.
+What a User manages about their own account: their Display Name and their password; it is also where they delete their account. Deleting it is refused while they are in a Group whose Draw is made and that is not Finished; otherwise the Groups they are the Admin of are deleted with it and they leave every other Group. Not what they tell their Giver: that is their Preferences.
 _Avoid_: Account settings, my account
 
 **Group**:

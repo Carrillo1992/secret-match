@@ -30,4 +30,9 @@ interface UserRepository extends JpaRepository<UserEntity, UUID> {
                     """, nativeQuery = true)
     int insertUnlessTaken(
             UUID id, String email, String displayName, String passwordHash, String googleSubject, Instant createdAt);
+
+    /** Their refresh tokens and Password Reset go with them ({@code ON DELETE CASCADE}). */
+    @Modifying
+    @Query(value = "DELETE FROM users WHERE id = :id", nativeQuery = true)
+    int deleteUser(UUID id);
 }

@@ -75,6 +75,9 @@ export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';
             Ver sus deseos
             <svg lucideChevronRight [size]="18"></svg>
           </a>
+          <p class="mt-4 text-sm text-ink-muted">
+            Con el sorteo hecho, el grupo queda cerrado: ya no entra ni sale nadie.
+          </p>
         }
         @case ('not-drawn') {
           @if (finished()) {

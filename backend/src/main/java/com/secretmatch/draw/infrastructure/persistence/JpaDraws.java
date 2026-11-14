@@ -45,4 +45,9 @@ class JpaDraws implements Draws {
         repository.removeAssignmentsIn(groupId);
         repository.removeDrawIn(groupId);
     }
+
+    @Override
+    public void removeAssignmentsOf(MemberId user) {
+        repository.removeAssignmentsOf(user.value());
+    }
 }

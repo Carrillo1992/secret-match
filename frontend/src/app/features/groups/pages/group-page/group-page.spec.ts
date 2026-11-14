@@ -25,6 +25,7 @@ const navidad = {
   inviteCode: 'q8Xf3kL0',
   admin: false,
   finished: false,
+  drawn: false,
 };
 const REGENERATE_URL = 'http://api.test/api/v1/groups/g-1/invite-link';
 const MEMBERS_URL = 'http://api.test/api/v1/groups/g-1/members';
@@ -630,6 +631,52 @@ describe('GroupPage', () => {
 
       expect(notice()).toBeNull();
       expect(button('Editar')).toBeDefined();
+    });
+  });
+
+  describe('Drawn Group', () => {
+    const button = (label: string) =>
+      [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
+    const section = (id: string) => page().querySelector(`section[aria-labelledby="${id}"]`);
+    const MARTA = { myReceiver: { id: 'u-marta', displayName: 'Marta' } };
+    const open = async (group: object, exclusions: unknown[] = []) => {
+      http.expectOne(GROUP_URL).flush(group);
+      await settle();
+      http.match(EXCLUSIONS_URL).forEach((request) => request.flush(exclusions));
+      http.expectOne((r) => r.url === DRAW_URL && r.method === 'GET').flush(MARTA);
+      await settle();
+    };
+
+    it('tells a Member nobody joins or leaves any more, with no Invite Link and no way out', async () => {
+      await open({ ...navidad, drawn: true });
+
+      expect(text(section('group-draw'))).toContain('ya no entra ni sale nadie');
+      expect(section('group-invite')).toBeNull();
+      expect(button('Salir del grupo')).toBeUndefined();
+      expect(text(section('group-membership'))).toContain(
+        'El sorteo ya está hecho, así que ya no puedes salir del grupo',
+      );
+    });
+
+    it('lets the Admin edit and delete it, but not invite, remove anyone or change Exclusions', async () => {
+      await open({ ...asAdmin, drawn: true }, [
+        {
+          id: 'x-1',
+          members: [
+            { id: 'u-luis', displayName: 'Luis' },
+            { id: 'u-marta', displayName: 'Marta' },
+          ],
+        },
+      ]);
+
+      expect(button('Generar uno nuevo')).toBeUndefined();
+      expect(button('Quitar')).toBeUndefined();
+      expect(button('Añadir exclusión')).toBeUndefined();
+      expect(text(section('group-exclusions'))).toContain(
+        'El sorteo ya está hecho, así que las exclusiones ya no se pueden cambiar',
+      );
+      expect(button('Editar')).toBeDefined();
+      expect(button('Borrar el grupo')).toBeDefined();
     });
   });
 

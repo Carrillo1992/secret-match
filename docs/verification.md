@@ -27,6 +27,15 @@ Run from `backend/` with a JDK 21 as `JAVA_HOME` (`./mvnw spotless:apply` fixes 
 | `./mvnw spotless:check` | Formatting |
 | `./mvnw verify` | Compile, unit tests, integration tests (Testcontainers PostgreSQL: Docker must be running), ArchUnit layer rules, coverage report |
 
+To run one test class while iterating (the whole suite still runs once before the PR):
+
+| What | Command |
+|---|---|
+| One unit test class | `./mvnw test -Dtest=GroupTest -Djacoco.skip=true` |
+| One integration test class | `./mvnw verify -Dit.test=DrawIT -Dtest=none -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true` |
+
+With `-q` a passing integration test prints nothing: its result is in `target/failsafe-reports/<package>.<Class>.txt`.
+
 `./mvnw verify` also fails when `backend/openapi.json` no longer matches the OpenAPI document the API serves. After an intended API change, refresh it with `./mvnw verify -Dopenapi.snapshot.update=true`, then run `npm run api:generate` in `frontend/` and commit both.
 
 ### Coverage floors
@@ -47,12 +56,13 @@ Coverage is a floor, not a goal. A test written only to raise the number (no mea
 
 ### Frontend
 
-Run from `frontend/` with Node 24 (the version CI and the frontend image use):
+Run from `frontend/` with Node 26, the version CI and the frontend image use (`frontend/.nvmrc`; `npm ci` warns with `EBADENGINE` on another major):
 
 | Command | What it covers |
 |---|---|
 | `npm run lint` | ESLint (+ Prettier check) |
 | `npm test -- --watch=false` | Unit and component tests |
+| `npx ng test --watch=false --include='src/app/features/groups/**/*.spec.ts'` | Only the specs matching the glob, while iterating |
 | `npm run build` | Production build compiles with strict TypeScript |
 | `npm run api:generate` + `git status --porcelain src/app/core/api/generated` (must print nothing) | Generated API client matches the committed OpenAPI snapshot `backend/openapi.json` |
 

@@ -776,6 +776,17 @@
       }
     },
     "/api/v1/users/me" : {
+      "delete" : {
+        "description" : "Refused (account-in-draw) while the User is in a Group whose Draw is made and whose Exchange Date has not passed. Otherwise the Groups they are the Admin of are deleted, and their other Members emailed; they leave every other Group, and all their Sessions end.",
+        "operationId" : "deleteAccount",
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Delete the signed-in User's account",
+        "tags" : [ "profile" ]
+      },
       "get" : {
         "operationId" : "currentUser",
         "responses" : {
@@ -1045,6 +1056,10 @@
             "type" : "number",
             "description" : "In euros; absent when the Group has no budget."
           },
+          "drawn" : {
+            "type" : "boolean",
+            "description" : "Whether its Draw is made: from then on nobody joins it, leaves it or is removed from it, its Invite Link no longer works and its Exclusions cannot change."
+          },
           "exchangeDate" : {
             "type" : "string",
             "format" : "date"
@@ -1072,7 +1087,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "admin", "exchangeDate", "finished", "id", "inviteCode", "members", "name" ]
+        "required" : [ "admin", "drawn", "exchangeDate", "finished", "id", "inviteCode", "members", "name" ]
       },
       "GroupSummaryResponse" : {
         "type" : "object",

@@ -37,6 +37,11 @@ interface DrawRepository extends JpaRepository<DrawEntity, UUID> {
     @Query(value = "DELETE FROM assignments WHERE group_id = :groupId", nativeQuery = true)
     int removeAssignmentsIn(UUID groupId);
 
+    /** Deletes, without reading them, the Assignments where this User gives or receives. */
+    @Modifying
+    @Query(value = "DELETE FROM assignments WHERE giver_id = :userId OR receiver_id = :userId", nativeQuery = true)
+    int removeAssignmentsOf(UUID userId);
+
     @Modifying
     @Query(value = "DELETE FROM draws WHERE group_id = :groupId", nativeQuery = true)
     int removeDrawIn(UUID groupId);

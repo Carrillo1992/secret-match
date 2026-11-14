@@ -4,7 +4,9 @@ import com.secretmatch.draw.application.Roster;
 import com.secretmatch.draw.application.Rosters;
 import com.secretmatch.draw.domain.MemberId;
 import com.secretmatch.group.application.GroupDetails;
+import com.secretmatch.group.application.GroupSummary;
 import com.secretmatch.group.application.MyGroups;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -24,6 +26,24 @@ class GroupRosters implements Rosters {
         return groups.findGroup(groupId, viewer).map(GroupRosters::rosterOf);
     }
 
+    @Override
+    public List<UUID> unfinishedGroupsOf(UUID member) {
+        return groups.findGroupsOf(member).stream()
+                .filter(group -> !group.finished())
+                .map(GroupSummary::id)
+                .toList();
+    }
+
+    @Override
+    public Optional<Roster> lockedOf(UUID groupId, UUID viewer) {
+        return groups.lockGroup(groupId, viewer).map(GroupRosters::rosterOf);
+    }
+
+    @Override
+    public void markDrawn(UUID groupId) {
+        groups.markDrawn(groupId);
+    }
+
     private static Roster rosterOf(GroupDetails group) {
         MemberId admin = group.members().stream()
                 .filter(GroupDetails.Member::admin)
@@ -36,6 +56,7 @@ class GroupRosters implements Rosters {
                 group.members().stream()
                         .map(member -> new Roster.Member(new MemberId(member.id()), member.displayName()))
                         .toList(),
-                group.finished());
+                group.finished(),
+                group.drawn());
     }
 }

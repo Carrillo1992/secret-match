@@ -114,6 +114,22 @@ describe('JoinPage', () => {
     expect(page().querySelector('button')).toBeNull();
   });
 
+  it('says a drawn Group cannot be joined any more, without naming it', async () => {
+    await signedInWith();
+    http
+      .expectOne(JOIN_URL)
+      .flush(
+        { type: 'urn:secretmatch:problem:group-drawn', status: 422 },
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
+    await settle();
+
+    expect(text(page().querySelector('h1'))).toBe('Este grupo ya ha hecho el sorteo');
+    expect(text(page())).toContain('ya no se puede entrar en él');
+    expect(link('Ir al inicio')?.getAttribute('href')).toBe('/home');
+    expect(page().querySelector('button')).toBeNull();
+  });
+
   it('offers a retry when the Group cannot be joined right now', async () => {
     await signedInWith();
     http.expectOne(JOIN_URL).error(new ProgressEvent('error'), { status: 0 });

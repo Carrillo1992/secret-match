@@ -175,6 +175,51 @@
         </div>
       </form>
     </section>
+
+    <section
+      aria-labelledby="profile-delete-title"
+      class="mt-6 rounded-card bg-surface p-5 shadow-card"
+    >
+      <h2 id="profile-delete-title" class="font-display text-lg font-semibold">Borrar tu cuenta</h2>
+      <p class="mt-1.5 text-ink-muted">
+        Saldrás de todos tus grupos y se borrarán tus datos. Los grupos que administras se borrarán
+        para todos.
+      </p>
+
+      <button
+        id="delete-account"
+        type="button"
+        appButton="secondary"
+        class="mt-4"
+        (click)="deleteState.set('confirming')"
+      >
+        <svg lucideTrash2 [size]="18"></svg>
+        Borrar mi cuenta
+      </button>
+
+      <app-confirm-dialog
+        [open]="deleteState() !== 'idle'"
+        question="¿Borrar tu cuenta?"
+        confirmLabel="Sí, borrar mi cuenta"
+        busyLabel="Borrando…"
+        [busy]="deleteState() === 'deleting'"
+        (confirmed)="deleteAccount()"
+        (cancelled)="deleteState.set('idle')"
+      >
+        <p>
+          Saldrás de todos tus grupos y los que administras se borrarán para todos, avisando por
+          email a sus miembros. No se puede deshacer.
+        </p>
+        @if (deleteState() === 'in-draw') {
+          <p appAlert>
+            Estás en un grupo con el sorteo hecho cuya fecha del intercambio aún no ha pasado. Pide
+            al administrador que cancele el sorteo o espera a que pase la fecha del intercambio.
+          </p>
+        } @else if (deleteState() === 'failed') {
+          <p appAlert>No hemos podido borrar tu cuenta. Inténtalo de nuevo.</p>
+        }
+      </app-confirm-dialog>
+    </section>
   } @else {
     <p appAlert class="mt-6">No hemos podido cargar tu perfil. Inténtalo de nuevo.</p>
     <button type="button" appButton="secondary" class="mt-4" (click)="user.reload()">

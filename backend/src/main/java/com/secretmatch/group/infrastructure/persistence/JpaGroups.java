@@ -38,8 +38,8 @@ class JpaGroups implements Groups {
     }
 
     @Override
-    public Optional<Group> findByInviteCode(InviteCode code) {
-        return repository.findByInviteCode(code.value()).map(GroupEntity::toDomain);
+    public Optional<GroupId> findIdByInviteCode(InviteCode code) {
+        return repository.findIdByInviteCode(code.value()).map(GroupId::new);
     }
 
     @Override
@@ -80,6 +80,13 @@ class JpaGroups implements Groups {
     public void saveInviteCode(Group group) {
         if (repository.updateInviteCode(group.id().value(), group.inviteCode().value()) != 1) {
             throw new IllegalStateException("no stored Group to change");
+        }
+    }
+
+    @Override
+    public void saveDrawn(Group group) {
+        if (!group.isDrawn() || repository.markDrawn(group.id().value()) != 1) {
+            throw new IllegalStateException("no stored Group to mark drawn");
         }
     }
 }

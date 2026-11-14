@@ -1,6 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
-import { changeDisplayName, changePassword } from '../../../core/api/generated/functions';
+import {
+  changeDisplayName,
+  changePassword,
+  deleteAccount,
+} from '../../../core/api/generated/functions';
 import { CurrentUserResponse } from '../../../core/api/generated/models';
 import { problemCode } from '../../../core/api/problem';
 
@@ -13,6 +17,9 @@ export type PasswordOutcome =
   | { readonly status: 'changed' }
   | { readonly status: 'wrong-password' }
   | { readonly status: 'failed' };
+
+/** `in-draw`: the User is in a Group whose Draw is made and whose Exchange Date has not passed. */
+export type DeleteAccountOutcome = 'deleted' | 'in-draw' | 'failed';
 
 /** The signed-in User's own profile, with the API's errors turned into outcomes a page can show. */
 @Injectable({ providedIn: 'root' })
@@ -40,6 +47,19 @@ export class ProfileApi {
       return { status: 'changed' };
     } catch (error) {
       return { status: problemCode(error) === 'wrong-password' ? 'wrong-password' : 'failed' };
+    }
+  }
+
+  /**
+   * Deletes the signed-in User's account: the Groups they are the Admin of go too, and they leave
+   * every other one. The API ends all their Sessions.
+   */
+  async deleteAccount(): Promise<DeleteAccountOutcome> {
+    try {
+      await this.api.invoke(deleteAccount);
+      return 'deleted';
+    } catch (error) {
+      return problemCode(error) === 'account-in-draw' ? 'in-draw' : 'failed';
     }
   }
 }

@@ -42,6 +42,16 @@
         <p class="mt-2 text-ink-muted">Su intercambio ya pasó, así que no se puede entrar en él.</p>
         <a routerLink="/home" appButton class="mt-6 w-full">Ir al inicio</a>
       }
+      @case ('drawn') {
+        <app-status-header>
+          <svg lucideLock statusIcon [size]="30"></svg>
+          Este grupo ya ha hecho el sorteo
+        </app-status-header>
+        <p class="mt-2 text-ink-muted">
+          Cada uno ya sabe a quién le regala, así que ya no se puede entrar en él.
+        </p>
+        <a routerLink="/home" appButton class="mt-6 w-full">Ir al inicio</a>
+      }
       @case ('failed') {
         <app-status-header>
           <svg lucideWifiOff statusIcon [size]="30"></svg>

@@ -10,8 +10,9 @@ import java.util.Optional;
  *
  * @param groupName the Group's name, for the emails the Draw module sends
  * @param finished whether the Group's Exchange Date is over, which makes it read-only
+ * @param drawn whether the Group's Draw is made, which freezes its Members and Exclusions
  */
-public record Roster(String groupName, MemberId admin, List<Member> members, boolean finished) {
+public record Roster(String groupName, MemberId admin, List<Member> members, boolean finished, boolean drawn) {
 
     public Roster {
         Objects.requireNonNull(groupName, "groupName");

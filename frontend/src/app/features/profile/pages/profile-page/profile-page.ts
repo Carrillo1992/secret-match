@@ -13,23 +13,29 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { LucideChevronLeft } from '@lucide/angular';
+import { Router, RouterLink } from '@angular/router';
+import { LucideChevronLeft, LucideTrash2 } from '@lucide/angular';
+import { AuthSession } from '../../../../core/auth/auth-session';
 import { CurrentUser } from '../../../../core/auth/current-user';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
+import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { USER_RULES } from '../../../../core/auth/user-rules';
 import { maxUtf8Bytes, notBlank } from '../../../../shared/forms/validators';
-import { Me, ProfileApi } from '../../data-access/profile-api';
+import { DeleteAccountOutcome, Me, ProfileApi } from '../../data-access/profile-api';
 
 type FormState = 'idle' | 'sending' | 'saved' | 'failed';
 /** `created`: a User who had no password (Google only) set their first one. */
 type PasswordState = FormState | 'wrong-password' | 'created';
+type DeleteState = 'idle' | 'confirming' | 'deleting' | Exclude<DeleteAccountOutcome, 'deleted'>;
 
-/** "Tu perfil": the signed-in User changes their display name and their password. */
+/**
+ * "Tu perfil": the signed-in User changes their display name and their password, and can delete
+ * their account after confirming it in a dialog.
+ */
 @Component({
   selector: 'app-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,11 +43,13 @@ type PasswordState = FormState | 'wrong-password' | 'created';
     Alert,
     AppShell,
     Button,
+    ConfirmDialog,
     Field,
     ReactiveFormsModule,
     RouterLink,
     TextLink,
     LucideChevronLeft,
+    LucideTrash2,
   ],
   templateUrl: './profile-page.html',
   providers: [CurrentUser],
@@ -49,6 +57,8 @@ type PasswordState = FormState | 'wrong-password' | 'created';
 export class ProfilePage {
   private readonly profileApi = inject(ProfileApi);
   private readonly forms = inject(NonNullableFormBuilder);
+  private readonly session = inject(AuthSession);
+  private readonly router = inject(Router);
 
   protected readonly user = inject(CurrentUser);
   private readonly saved = signal<Me | undefined>(undefined);
@@ -80,6 +90,8 @@ export class ProfilePage {
   protected readonly passwordSubmitted = signal(false);
   protected readonly passwordState = signal<PasswordState>('idle');
   protected readonly hasPassword = computed(() => this.me()?.hasPassword ?? true);
+
+  protected readonly deleteState = signal<DeleteState>('idle');
 
   constructor() {
     effect(() => {
@@ -143,5 +155,17 @@ export class ProfilePage {
       this.saved.set({ ...me, hasPassword: true });
     }
     this.passwordState.set(hadPassword ? 'saved' : 'created');
+  }
+
+  /** Once deleted, the session ends and the User lands on the landing page, which says it is done. */
+  protected async deleteAccount(): Promise<void> {
+    this.deleteState.set('deleting');
+    const outcome = await this.profileApi.deleteAccount();
+    if (outcome !== 'deleted') {
+      this.deleteState.set(outcome);
+      return;
+    }
+    await this.session.endDeletedSession();
+    await this.router.navigateByUrl('/', { state: { accountDeleted: true } });
   }
 }

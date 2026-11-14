@@ -18,8 +18,11 @@ public interface Groups {
     /** The Groups this User is a Member of, soonest Exchange Date first. */
     List<Group> findWithMember(MemberId user);
 
-    /** The Group whose current Invite Link has this code. */
-    Optional<Group> findByInviteCode(InviteCode code);
+    /**
+     * The id of the Group whose current Invite Link has this code. Only the id, so the Group can be locked
+     * before it is read.
+     */
+    Optional<GroupId> findIdByInviteCode(InviteCode code);
 
     /**
      * Makes this User a Member of the Group, unless they are one already. Safe when the same User joins
@@ -51,4 +54,7 @@ public interface Groups {
 
     /** Stores the Group's current Invite Link code; the previous one stops matching. */
     void saveInviteCode(Group group);
+
+    /** Stores that the Group's Draw is made. */
+    void saveDrawn(Group group);
 }

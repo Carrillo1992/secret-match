@@ -29,4 +29,7 @@ public interface Draws {
 
     /** Deletes the Group's Draw and its Assignments, if it has one. */
     void removeIn(UUID groupId);
+
+    /** Deletes every Assignment, in any Group, where this User is the Giver or the Receiver. */
+    void removeAssignmentsOf(MemberId user);
 }

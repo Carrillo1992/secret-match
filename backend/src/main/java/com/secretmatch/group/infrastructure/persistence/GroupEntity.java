@@ -48,6 +48,9 @@ class GroupEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(nullable = false)
+    private boolean drawn;
+
     @ElementCollection
     @CollectionTable(name = "group_members", joinColumns = @JoinColumn(name = "group_id"))
     @OrderBy("joinedAt, userId")
@@ -65,6 +68,7 @@ class GroupEntity {
         entity.adminId = group.admin().value();
         entity.inviteCode = group.inviteCode().value();
         entity.createdAt = group.createdAt();
+        entity.drawn = group.isDrawn();
         group.members().forEach(member -> entity.members.add(new MemberEmbeddable(member.value(), group.createdAt())));
         return entity;
     }
@@ -78,7 +82,8 @@ class GroupEntity {
                 new MemberId(adminId),
                 members.stream().map(member -> new MemberId(member.userId)).toList(),
                 new InviteCode(inviteCode),
-                createdAt);
+                createdAt,
+                drawn);
     }
 
     @Embeddable

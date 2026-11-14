@@ -34,4 +34,10 @@ public interface Users {
 
     /** Stores the changes to an existing User. */
     void save(User user);
+
+    /**
+     * Deletes the User. Their refresh tokens and Password Reset go with them, so every Session of theirs ends.
+     * Does nothing if there is no such User.
+     */
+    void delete(UserId id);
 }

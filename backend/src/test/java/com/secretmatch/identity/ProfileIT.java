@@ -82,6 +82,51 @@ class ProfileIT {
     }
 
     @Test
+    @DisplayName("a changed Language is what the User reads back on their next load")
+    void changeLanguage() {
+        verifiedUser(email, "Ana", PASSWORD);
+        Session session = signedIn(signIn(email, PASSWORD));
+
+        put(session, "/api/v1/users/me/language", Map.of("language", "en"))
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.language")
+                .isEqualTo("en");
+
+        me(session.accessToken())
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.language")
+                .isEqualTo("en");
+    }
+
+    @Test
+    @DisplayName("an unsupported Language is refused with a 400 problem, and the User keeps theirs")
+    void unsupportedLanguageIsRefused() {
+        verifiedUser(email, "Ana", PASSWORD);
+        Session session = signedIn(signIn(email, PASSWORD));
+
+        put(session, "/api/v1/users/me/language", Map.of("language", "fr"))
+                .expectStatus()
+                .isBadRequest()
+                .expectHeader()
+                .contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+        put(session, "/api/v1/users/me/language", Map.of("language", "EN"))
+                .expectStatus()
+                .isBadRequest();
+        put(session, "/api/v1/users/me/language", Map.of()).expectStatus().isBadRequest();
+
+        me(session.accessToken())
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.language")
+                .isEqualTo("es");
+    }
+
+    @Test
     @DisplayName("a password change with a wrong current password is refused, and the old password keeps working")
     void wrongCurrentPasswordIsRefused() {
         verifiedUser(email, "Ana", PASSWORD);
@@ -153,7 +198,7 @@ class ProfileIT {
     private UserId userWithoutPassword(String address) {
         UserId id = UserId.newId();
         jdbc.update(
-                "INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (?, ?, ?, NULL, now())",
+                "INSERT INTO users (id, email, display_name, password_hash, language, created_at) VALUES (?, ?, ?, NULL, 'es', now())",
                 id.value(),
                 address,
                 "Ana de Google");
@@ -163,7 +208,9 @@ class ProfileIT {
     private record Session(String accessToken, String refreshToken) {}
 
     private void verifiedUser(String address, String displayName, String password) {
-        post("/api/v1/sign-ups", Map.of("email", address, "displayName", displayName, "password", password))
+        post(
+                        "/api/v1/sign-ups",
+                        Map.of("email", address, "displayName", displayName, "password", password, "language", "es"))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(address).getLast().text());

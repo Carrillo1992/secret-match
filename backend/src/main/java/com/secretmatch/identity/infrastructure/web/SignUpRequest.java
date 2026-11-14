@@ -3,6 +3,7 @@ package com.secretmatch.identity.infrastructure.web;
 import com.secretmatch.identity.domain.DisplayName;
 import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.NewPassword;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -19,7 +20,10 @@ record SignUpRequest(
         @NotBlank @Size(max = DisplayName.MAX_LENGTH) String displayName,
 
         @NotNull @Size(min = NewPassword.MIN_LENGTH, max = NewPassword.MAX_BYTES)
-        String password) {
+        String password,
+
+        @NotNull @Pattern(regexp = LanguageRequest.CODES) @Schema(allowableValues = {"es", "en"})
+        String language) {
 
     @Override
     public String toString() {

@@ -3,6 +3,7 @@ package com.secretmatch.identity.application;
 import com.secretmatch.identity.domain.DisplayName;
 import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.EmailLinkToken;
+import com.secretmatch.identity.domain.Language;
 import com.secretmatch.identity.domain.NewPassword;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.SignUpId;
@@ -58,13 +59,15 @@ public class EmailSignUp {
     public SignUpId signUp(SignUpCommand command) {
         EmailAddress email = new EmailAddress(command.email());
         DisplayName displayName = new DisplayName(command.displayName());
+        Language language = Language.ofCode(command.language());
         // Hashed before the lookup, so a registered email does not answer measurably faster here.
         PasswordHash passwordHash = passwordHasher.hash(new NewPassword(command.password()));
         if (users.existsWithEmail(email)) {
             return SignUpId.newId();
         }
         EmailLinkToken token = EmailLinkToken.generate(random);
-        SignUpVerification signUp = SignUpVerification.start(email, displayName, passwordHash, token, clock.instant());
+        SignUpVerification signUp =
+                SignUpVerification.start(email, displayName, passwordHash, language, token, clock.instant());
         saveAndSendLink(signUp, token);
         return signUp.id();
     }

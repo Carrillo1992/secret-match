@@ -166,8 +166,8 @@ class PasswordResetIT {
     @DisplayName("a User without a password (Google only) sets their first one the same way, then signs in with it")
     void userWithoutPasswordSetsTheFirstOne() {
         jdbc.update(
-                "INSERT INTO users (id, email, display_name, password_hash, google_subject, created_at)"
-                        + " VALUES (?, ?, 'Ana de Google', NULL, ?, now())",
+                "INSERT INTO users (id, email, display_name, password_hash, google_subject, language, created_at)"
+                        + " VALUES (?, ?, 'Ana de Google', NULL, ?, 'es', now())",
                 UUID.randomUUID(),
                 email,
                 "google-" + UUID.randomUUID());
@@ -199,7 +199,7 @@ class PasswordResetIT {
     // ---------- helpers ----------
 
     private void verifiedUser(String address, String password) {
-        post("/api/v1/sign-ups", Map.of("email", address, "displayName", "Ana", "password", password))
+        post("/api/v1/sign-ups", Map.of("email", address, "displayName", "Ana", "password", password, "language", "es"))
                 .expectStatus()
                 .isAccepted();
         post("/api/v1/email-verifications", Map.of("token", lastToken(address, VERIFY_LINK)))

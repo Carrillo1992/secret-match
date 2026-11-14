@@ -19,6 +19,7 @@ public final class SignUpVerification {
     private final EmailAddress email;
     private final DisplayName displayName;
     private final PasswordHash passwordHash;
+    private final Language language;
     private TokenHash tokenHash;
     private Instant expiresAt;
     private Instant usedAt;
@@ -29,6 +30,7 @@ public final class SignUpVerification {
             EmailAddress email,
             DisplayName displayName,
             PasswordHash passwordHash,
+            Language language,
             TokenHash tokenHash,
             Instant expiresAt,
             Instant usedAt) {
@@ -36,15 +38,21 @@ public final class SignUpVerification {
         this.email = Objects.requireNonNull(email, "email");
         this.displayName = Objects.requireNonNull(displayName, "displayName");
         this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
+        this.language = Objects.requireNonNull(language, "language");
         this.tokenHash = Objects.requireNonNull(tokenHash, "tokenHash");
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt");
         this.usedAt = usedAt;
     }
 
     public static SignUpVerification start(
-            EmailAddress email, DisplayName displayName, PasswordHash passwordHash, EmailLinkToken token, Instant now) {
+            EmailAddress email,
+            DisplayName displayName,
+            PasswordHash passwordHash,
+            Language language,
+            EmailLinkToken token,
+            Instant now) {
         return new SignUpVerification(
-                SignUpId.newId(), email, displayName, passwordHash, token.hash(), now.plus(VALIDITY), null);
+                SignUpId.newId(), email, displayName, passwordHash, language, token.hash(), now.plus(VALIDITY), null);
     }
 
     /**
@@ -61,7 +69,7 @@ public final class SignUpVerification {
             throw new VerificationLinkExpiredException();
         }
         usedAt = now;
-        return User.withPassword(UserId.newId(), email, displayName, passwordHash, now);
+        return User.withPassword(UserId.newId(), email, displayName, passwordHash, language, now);
     }
 
     /** Replaces the link with a new one that works for another 24 hours; the old one stops working. */
@@ -91,6 +99,11 @@ public final class SignUpVerification {
 
     public PasswordHash passwordHash() {
         return passwordHash;
+    }
+
+    /** The Language the sign-up was made in, which the User it creates gets. */
+    public Language language() {
+        return language;
     }
 
     public TokenHash tokenHash() {

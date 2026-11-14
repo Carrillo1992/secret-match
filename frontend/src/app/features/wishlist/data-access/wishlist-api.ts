@@ -30,10 +30,6 @@ export type WishInput = WishRequest;
 /** One thing on a Member's Don't List: what they do not want to receive. */
 export type DontListEntry = DontListEntryResponse;
 
-/** The API's limits, which it checks too. */
-export const PREFERENCES_MAX_LENGTH = 2000;
-export const DONT_LIST_ENTRY_MAX_LENGTH = 100;
-
 export type WishlistOutcome =
   | { readonly status: 'found'; readonly wishlist: Wishlist }
   | { readonly status: 'not-found' }
@@ -111,25 +107,31 @@ export class WishlistApi {
     }
   }
 
-  /** Replaces the signed-in Member's own Preferences; blank text clears them. */
+  /**
+   * Replaces the signed-in Member's own Preferences; blank text clears them. Sent trimmed: the API
+   * checks the length of the text as it arrives.
+   */
   async editPreferences(groupId: string, preferences: string): Promise<SavePreferencesOutcome> {
     try {
-      const saved = await this.api.invoke(editPreferences, { groupId, body: { preferences } });
+      const saved = await this.api.invoke(editPreferences, {
+        groupId,
+        body: { preferences: preferences.trim() },
+      });
       return { status: 'saved', preferences: saved.preferences };
     } catch (error) {
-      return { status: isProblem(error, 'invalid-preferences') ? 'invalid' : 'failed' };
+      return { status: isRefused(error, 'invalid-preferences') ? 'invalid' : 'failed' };
     }
   }
 
-  /** Adds to the signed-in Member's own Don't List. */
+  /** Adds to the signed-in Member's own Don't List, trimmed like the Preferences. */
   async addDontListEntry(groupId: string, text: string): Promise<AddDontListEntryOutcome> {
     try {
       return {
         status: 'added',
-        entry: await this.api.invoke(addDontListEntry, { groupId, body: { text } }),
+        entry: await this.api.invoke(addDontListEntry, { groupId, body: { text: text.trim() } }),
       };
     } catch (error) {
-      return { status: isProblem(error, 'invalid-dont-list-entry') ? 'invalid' : 'failed' };
+      return { status: isRefused(error, 'invalid-dont-list-entry') ? 'invalid' : 'failed' };
     }
   }
 
@@ -149,6 +151,14 @@ function isProblem(error: unknown, code: string): boolean {
     error.status === 422 &&
     (error.error as { type?: string } | null)?.type === `urn:secretmatch:problem:${code}`
   );
+}
+
+/**
+ * The API refusing the text: its request validation (any 400, whose body names no field) or the
+ * named problem (422).
+ */
+function isRefused(error: unknown, code: string): boolean {
+  return (error instanceof HttpErrorResponse && error.status === 400) || isProblem(error, code);
 }
 
 function saveFailure(error: unknown): SaveWishOutcome {

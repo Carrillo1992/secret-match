@@ -1,50 +1,29 @@
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { DontListEntry } from '../../data-access/wishlist-api';
-import { DontListCard } from './dont-list-card';
-
-const DONT_LIST_URL = 'http://api.test/api/v1/groups/g-1/dont-list';
+import { DontListAddition, DontListCard, DontListRemoval } from './dont-list-card';
 
 const chocolate = { id: 'd-1', text: 'Nada de chocolate' };
 const velas = { id: 'd-2', text: 'Velas' };
 
 describe('DontListCard', () => {
-  let http: HttpTestingController;
   let fixture: ComponentFixture<DontListCard>;
-  let emitted: (readonly DontListEntry[])[];
+  let added: string[];
+  let removed: DontListEntry[];
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideApiConfiguration('http://api.test'),
-      ],
-    });
-    http = TestBed.inject(HttpTestingController);
-  });
+  afterEach(() => fixture.nativeElement.remove());
 
-  afterEach(() => {
-    http.verify();
-    fixture.nativeElement.remove();
-  });
-
-  /** The card as `owner` (or the Giver) sees it; entries come back through `entriesChange`. */
+  /** The card as `owner` (or the Giver) sees it. */
   async function show(entries: readonly DontListEntry[], owner: boolean): Promise<void> {
     fixture = TestBed.createComponent(DontListCard);
     // Attached, so that focus can land on its elements.
     document.body.appendChild(fixture.nativeElement);
-    fixture.componentRef.setInput('groupId', 'g-1');
     fixture.componentRef.setInput('entries', entries);
     fixture.componentRef.setInput('owner', owner);
     fixture.componentRef.setInput('ownerName', 'Luis');
-    emitted = [];
-    fixture.componentInstance.entriesChange.subscribe((next) => {
-      emitted.push(next);
-      fixture.componentRef.setInput('entries', next);
-    });
+    added = [];
+    removed = [];
+    fixture.componentInstance.add.subscribe((text) => added.push(text));
+    fixture.componentInstance.remove.subscribe((entry) => removed.push(entry));
     await fixture.whenStable();
   }
 
@@ -73,6 +52,16 @@ describe('DontListCard', () => {
   };
   const statusLine = () => text(card().querySelector('[role="status"]'));
   const alert = () => text(card().querySelector('[role="alert"]'));
+  /** What the page feeds back while it changes the Don't List through the API. */
+  const pageSays = async (
+    change: { addition?: DontListAddition; removal?: DontListRemoval },
+    entries?: readonly DontListEntry[],
+  ) => {
+    if (entries) fixture.componentRef.setInput('entries', entries);
+    if (change.addition) fixture.componentRef.setInput('addition', change.addition);
+    if (change.removal) fixture.componentRef.setInput('removal', change.removal);
+    await settle();
+  };
 
   async function openForm(): Promise<void> {
     button('Añadir')?.click();
@@ -102,6 +91,9 @@ describe('DontListCard', () => {
     await show([chocolate, velas], false);
 
     expect(rows()).toEqual(['Nada de chocolate', 'Velas']);
+    expect(card().querySelector('ul')?.getAttribute('aria-label')).toBe(
+      'Lo que Luis no quiere recibir',
+    );
     expect(card().querySelectorAll('button')).toHaveLength(0);
     expect(card().querySelector('form')).toBeNull();
   });
@@ -113,21 +105,39 @@ describe('DontListCard', () => {
     expect(text(card())).toBe('');
   });
 
-  it('lets the owner add an entry at the end, then closes the form and says so', async () => {
+  it('sends the entry the owner typed, trimmed', async () => {
     await show([chocolate], true);
 
     await openForm();
     expect(document.activeElement).toBe(input());
     type('  Velas ');
     await submit();
+
+    expect(added).toEqual(['Velas']);
+  });
+
+  it('shows the entry being added and sends nothing more meanwhile', async () => {
+    await show([], true);
+    await openForm();
+    type('Velas');
+    await submit();
+
+    await pageSays({ addition: { status: 'adding' } });
     expect(button('Añadiendo…')?.disabled).toBe(true);
+    await submit();
 
-    const request = http.expectOne((r) => r.url === DONT_LIST_URL && r.method === 'POST');
-    expect(request.request.body).toEqual({ text: 'Velas' });
-    request.flush(velas, { status: 201, statusText: 'Created' });
-    await settle();
+    expect(added).toEqual(['Velas']);
+  });
 
-    expect(emitted).toEqual([[chocolate, velas]]);
+  it('closes the form once the entry is added, says so and gives focus back to "Añadir"', async () => {
+    await show([chocolate], true);
+    await openForm();
+    type('Velas');
+    await submit();
+    await pageSays({ addition: { status: 'adding' } });
+
+    await pageSays({ addition: { status: 'added', entry: velas } }, [chocolate, velas]);
+
     expect(rows()).toEqual(['Nada de chocolate', 'Velas']);
     expect(card().querySelector('form')).toBeNull();
     expect(statusLine()).toBe('Añadido «Velas».');
@@ -145,41 +155,39 @@ describe('DontListCard', () => {
     expect(document.activeElement?.id).toBe('add-dont-list-entry');
   });
 
-  it('refuses a blank entry before asking the API', async () => {
+  it('refuses a blank entry without sending it', async () => {
     await show([], true);
     await openForm();
 
     type('   ');
     await submit();
 
-    http.expectNone(DONT_LIST_URL);
+    expect(added).toEqual([]);
     expect(input()?.getAttribute('aria-invalid')).toBe('true');
     expect(text(card())).toContain('Escribe qué no quieres recibir.');
-    expect(emitted).toEqual([]);
   });
 
-  it('refuses an entry longer than 100 characters before asking the API', async () => {
+  it('refuses an entry longer than 100 characters without sending it', async () => {
     await show([], true);
     await openForm();
 
     type('a'.repeat(101));
     await submit();
 
-    http.expectNone(DONT_LIST_URL);
+    expect(added).toEqual([]);
     expect(input()?.getAttribute('aria-invalid')).toBe('true');
     expect(input()?.getAttribute('aria-describedby')).toBe('dont-list-entry-error');
     expect(text(card())).toContain('Como mucho 100 caracteres.');
   });
 
-  it('accepts exactly 100 characters', async () => {
+  it('accepts exactly 100 characters, counted without the spaces around them', async () => {
     await show([], true);
     await openForm();
 
-    type('a'.repeat(100));
+    type(` ${'a'.repeat(100)} `);
     await submit();
 
-    http.expectOne(DONT_LIST_URL).flush({ id: 'd-3', text: 'a'.repeat(100) });
-    await settle();
+    expect(added).toEqual(['a'.repeat(100)]);
   });
 
   it('points at the length when the API refuses the entry, keeping what was typed', async () => {
@@ -188,18 +196,12 @@ describe('DontListCard', () => {
     type('Velas');
     await submit();
 
-    http
-      .expectOne(DONT_LIST_URL)
-      .flush(
-        { type: 'urn:secretmatch:problem:invalid-dont-list-entry', status: 422 },
-        { status: 422, statusText: 'Unprocessable Content' },
-      );
-    await settle();
+    await pageSays({ addition: { status: 'adding' } });
+    await pageSays({ addition: { status: 'invalid' } });
 
     expect(input()?.value).toBe('Velas');
     expect(input()?.getAttribute('aria-invalid')).toBe('true');
     expect(text(card())).toContain('Como mucho 100 caracteres.');
-    expect(emitted).toEqual([]);
   });
 
   it('says when the entry could not be added, keeping what was typed', async () => {
@@ -208,58 +210,89 @@ describe('DontListCard', () => {
     type('Velas');
     await submit();
 
-    http.expectOne(DONT_LIST_URL).flush(null, { status: 500, statusText: 'Server Error' });
-    await settle();
+    await pageSays({ addition: { status: 'adding' } });
+    await pageSays({ addition: { status: 'failed' } });
 
     expect(alert()).toBe('No hemos podido añadirlo. Inténtalo de nuevo.');
     expect(input()?.value).toBe('Velas');
     expect(button('Añadir')?.disabled).toBe(false);
-    expect(emitted).toEqual([]);
   });
 
-  it('removes an entry at once, then says so and moves focus to the next one', async () => {
+  it('asks to remove an entry at once, and shows it being removed', async () => {
     await show([chocolate, velas], true);
 
     button('Quitar «Nada de chocolate»')?.click();
     await settle();
+    expect(removed).toEqual([chocolate]);
+
+    await pageSays({ removal: { entry: chocolate, status: 'removing' } });
     expect(button('Quitar «Nada de chocolate»')?.disabled).toBe(true);
+    expect(button('Quitar «Velas»')?.disabled).toBe(false);
+  });
 
-    const request = http.expectOne(`${DONT_LIST_URL}/d-1`);
-    expect(request.request.method).toBe('DELETE');
-    request.flush(null, { status: 204, statusText: 'No Content' });
-    await settle();
+  it('says an entry was removed and moves focus to the one that takes its place', async () => {
+    await show([chocolate, velas], true);
+    button('Quitar «Nada de chocolate»')?.click();
+    await pageSays({ removal: { entry: chocolate, status: 'removing' } });
 
-    expect(emitted).toEqual([[velas]]);
+    await pageSays({ removal: { entry: chocolate, status: 'removed' } }, [velas]);
+
     expect(rows()).toEqual(['Velas']);
     expect(statusLine()).toBe('Quitado «Nada de chocolate».');
     expect(document.activeElement).toBe(button('Quitar «Velas»'));
   });
 
-  it('moves focus to "Añadir" once the last entry is removed', async () => {
-    await show([velas], true);
-
+  it('moves focus to the entry before once the last one is removed', async () => {
+    await show([chocolate, velas], true);
     button('Quitar «Velas»')?.click();
-    await settle();
-    http.expectOne(`${DONT_LIST_URL}/d-2`).flush(null, { status: 204, statusText: 'No Content' });
-    await settle();
+    await pageSays({ removal: { entry: velas, status: 'removing' } });
 
-    expect(emitted).toEqual([[]]);
+    await pageSays({ removal: { entry: velas, status: 'removed' } }, [chocolate]);
+
+    expect(document.activeElement).toBe(button('Quitar «Nada de chocolate»'));
+  });
+
+  it('moves focus to "Añadir" once the only entry is removed', async () => {
+    await show([velas], true);
+    button('Quitar «Velas»')?.click();
+    await pageSays({ removal: { entry: velas, status: 'removing' } });
+
+    await pageSays({ removal: { entry: velas, status: 'removed' } }, []);
+
     expect(text(card())).toContain('Apunta lo que no quieres recibir');
     expect(document.activeElement?.id).toBe('add-dont-list-entry');
   });
 
-  it('keeps the entry and says so when it could not be removed', async () => {
-    await show([chocolate, velas], true);
-
+  it('moves focus to the heading once the only entry is removed while the form is open', async () => {
+    await show([velas], true);
+    await openForm();
     button('Quitar «Velas»')?.click();
-    await settle();
-    http.expectOne(`${DONT_LIST_URL}/d-2`).flush(null, { status: 500, statusText: 'Server Error' });
-    await settle();
+    await pageSays({ removal: { entry: velas, status: 'removing' } });
 
-    expect(emitted).toEqual([]);
+    await pageSays({ removal: { entry: velas, status: 'removed' } }, []);
+
+    expect(document.activeElement?.id).toBe('dont-list-heading');
+  });
+
+  it('keeps the entry, says so and gives its button focus back when it could not be removed', async () => {
+    await show([chocolate, velas], true);
+    button('Quitar «Velas»')?.click();
+    await pageSays({ removal: { entry: velas, status: 'removing' } });
+
+    await pageSays({ removal: { entry: velas, status: 'failed' } });
+
     expect(rows()).toEqual(['Nada de chocolate', 'Velas']);
     expect(alert()).toBe('No hemos podido quitar «Velas». Inténtalo de nuevo.');
     expect(button('Quitar «Velas»')?.disabled).toBe(false);
+    expect(document.activeElement).toBe(button('Quitar «Velas»'));
     expect(statusLine()).toBe('');
+  });
+
+  it('draws the focus ring of its ✕ buttons in danger, as the warning card asks', async () => {
+    await show([chocolate], true);
+
+    const remove = button('Quitar «Nada de chocolate»');
+    expect(remove?.classList).toContain('focus-visible:outline-danger');
+    expect(remove?.classList).not.toContain('focus-visible:outline-primary');
   });
 });

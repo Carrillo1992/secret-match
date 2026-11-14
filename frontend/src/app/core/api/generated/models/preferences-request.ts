@@ -4,7 +4,7 @@
 export interface PreferencesRequest {
 
   /**
-   * Tastes, sizes and hobbies, up to 2000 characters. Blank or left out clears them.
+   * Tastes, sizes and hobbies. Blank or left out clears them.
    */
   preferences?: string;
 }

@@ -145,19 +145,20 @@
 
     <app-dont-list-card
       class="mt-6"
-      [groupId]="params().groupId"
       [entries]="wishlist.dontList"
       [owner]="wishlist.owner.you"
       [ownerName]="wishlist.owner.displayName"
-      (entriesChange)="dontListChanged($event)"
+      [addition]="dontListAddition()"
+      [removal]="dontListRemoval()"
+      (add)="addDontListEntry($event)"
+      (remove)="removeDontListEntry($event)"
     />
     <app-preferences-card
       class="mt-6"
-      [groupId]="params().groupId"
       [preferences]="wishlist.preferences"
       [owner]="wishlist.owner.you"
-      [ownerName]="wishlist.owner.displayName"
-      (preferencesChange)="preferencesChanged($event)"
+      [status]="preferencesStatus()"
+      (save)="savePreferences($event)"
     />
   } @else if (notFound()) {
     <div class="mt-6">

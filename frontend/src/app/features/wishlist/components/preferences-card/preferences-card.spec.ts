@@ -1,36 +1,22 @@
-import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
-import { PreferencesCard } from './preferences-card';
-
-const PREFERENCES_URL = 'http://api.test/api/v1/groups/g-1/preferences';
+import { PreferencesCard, PreferencesStatus } from './preferences-card';
 
 describe('PreferencesCard', () => {
   let fixture: ComponentFixture<PreferencesCard>;
-  let http: HttpTestingController;
   let card: HTMLElement;
+  let saved: string[];
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideApiConfiguration('http://api.test'),
-      ],
-    });
-    http = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => http.verify());
+  afterEach(() => fixture.nativeElement.remove());
 
   async function render(inputs: { preferences?: string; owner: boolean }): Promise<void> {
     fixture = TestBed.createComponent(PreferencesCard);
-    fixture.componentRef.setInput('groupId', 'g-1');
+    // Attached, so that focus can land on its elements.
+    document.body.appendChild(fixture.nativeElement);
     fixture.componentRef.setInput('preferences', inputs.preferences);
     fixture.componentRef.setInput('owner', inputs.owner);
-    fixture.componentRef.setInput('ownerName', 'Luis');
     card = fixture.nativeElement as HTMLElement;
+    saved = [];
+    fixture.componentInstance.save.subscribe((value) => saved.push(value));
     await fixture.whenStable();
   }
 
@@ -57,9 +43,17 @@ describe('PreferencesCard', () => {
     control.dispatchEvent(new Event('input'));
     await fixture.whenStable();
   };
-  const save = async () => {
+  const submit = async () => {
     card.querySelector('form')?.dispatchEvent(new Event('submit'));
     await fixture.whenStable();
+  };
+  /** What the page feeds back while it saves through the API. */
+  const pageSays = async (status: PreferencesStatus, preferences?: string) => {
+    if (status === 'saved') {
+      fixture.componentRef.setInput('preferences', preferences);
+    }
+    fixture.componentRef.setInput('status', status);
+    await settle();
   };
 
   it("shows the Giver their Receiver's Preferences, with no way to change them", async () => {
@@ -96,11 +90,6 @@ describe('PreferencesCard', () => {
 
   it('lets the owner edit their Preferences, starting from what they say', async () => {
     await render({ preferences: 'Talla M.', owner: true });
-    const changes: (string | undefined)[] = [];
-    fixture.componentInstance.preferencesChange.subscribe((value) => {
-      changes.push(value);
-      fixture.componentRef.setInput('preferences', value);
-    });
 
     await open('Editar');
     expect(document.activeElement).toBe(textarea());
@@ -108,83 +97,95 @@ describe('PreferencesCard', () => {
     expect(text(counter())).toBe('8 / 2000');
     await type('Talla M, pie 42.\nMe encanta el café.');
     expect(text(counter())).toBe('36 / 2000');
-    await save();
+    await submit();
 
-    const request = http.expectOne(PREFERENCES_URL);
-    expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toEqual({ preferences: 'Talla M, pie 42.\nMe encanta el café.' });
-    expect(text(button('Guardando…'))).toBe('Guardando…');
+    expect(saved).toEqual(['Talla M, pie 42.\nMe encanta el café.']);
+  });
+
+  it('sends the text trimmed', async () => {
+    await render({ preferences: undefined, owner: true });
+    await open('Escribir mis gustos');
+    await type('  Talla M.\n ');
+    await submit();
+
+    expect(saved).toEqual(['Talla M.']);
+  });
+
+  it('shows the save in progress and sends nothing more meanwhile', async () => {
+    await render({ preferences: undefined, owner: true });
+    await open('Escribir mis gustos');
+    await type('Talla M.');
+    await submit();
+
+    await pageSays('saving');
     expect(button('Guardando…')?.disabled).toBe(true);
-    request.flush({ preferences: 'Talla M, pie 42.\nMe encanta el café.' });
-    await settle();
+    await submit();
 
-    expect(changes).toEqual(['Talla M, pie 42.\nMe encanta el café.']);
+    expect(saved).toEqual(['Talla M.']);
+  });
+
+  it('closes the editor once saved, says so and gives focus back to "Editar"', async () => {
+    await render({ preferences: undefined, owner: true });
+    await open('Escribir mis gustos');
+    await type('Talla M.');
+    await submit();
+    await pageSays('saving');
+
+    await pageSays('saved', 'Talla M.');
+
     expect(textarea()).toBeNull();
-    expect(text(card)).toContain('Talla M, pie 42. Me encanta el café.');
+    expect(text(card)).toContain('Talla M.');
     expect(status()).toBe('Gustos guardados.');
     expect(document.activeElement?.id).toBe('edit-preferences');
   });
 
-  it('lets the owner write their first Preferences', async () => {
-    await render({ preferences: undefined, owner: true });
-
-    await open('Escribir mis gustos');
-    expect(textarea()?.value).toBe('');
-    expect(textarea()?.getAttribute('placeholder')).toContain('Tallas, colores, aficiones');
-    await type('Talla M.');
-    await save();
-
-    http.expectOne(PREFERENCES_URL).flush({ preferences: 'Talla M.' });
-    await settle();
-    expect(status()).toBe('Gustos guardados.');
-  });
-
-  it('clears the Preferences when saved blank', async () => {
+  it('says the Preferences were cleared when saved blank', async () => {
     await render({ preferences: 'Talla M.', owner: true });
-    const changes: (string | undefined)[] = [];
-    fixture.componentInstance.preferencesChange.subscribe((value) => changes.push(value));
-
     await open('Editar');
     await type('   ');
-    await save();
+    await submit();
+    expect(saved).toEqual(['']);
+    await pageSays('saving');
 
-    const request = http.expectOne(PREFERENCES_URL);
-    expect(request.request.body).toEqual({ preferences: '   ' });
-    request.flush({});
-    await settle();
+    await pageSays('saved', undefined);
 
-    expect(changes).toEqual([undefined]);
     expect(status()).toBe('Gustos borrados.');
   });
 
-  it('refuses more than 2000 characters before asking the API', async () => {
+  it('counts and sends the text without the spaces around it, as the API checks it', async () => {
+    await render({ preferences: undefined, owner: true });
+    await open('Escribir mis gustos');
+
+    await type(`  ${'a'.repeat(2000)}\n `);
+    expect(text(counter())).toBe('2000 / 2000');
+    await submit();
+
+    expect(saved).toEqual(['a'.repeat(2000)]);
+  });
+
+  it('refuses more than 2000 characters without sending them', async () => {
     await render({ preferences: undefined, owner: true });
     await open('Escribir mis gustos');
 
     await type('a'.repeat(2001));
     expect(text(counter())).toBe('2001 / 2000');
     expect(counter()?.classList).toContain('text-danger');
-    await save();
+    await submit();
 
-    http.expectNone(PREFERENCES_URL);
+    expect(saved).toEqual([]);
     expect(textarea()?.getAttribute('aria-invalid')).toBe('true');
     expect(text(card)).toContain('Como mucho 2000 caracteres.');
     expect(textarea()?.getAttribute('aria-describedby')).toContain(counter()?.id);
   });
 
-  it('points at the text when the API refuses its length', async () => {
+  it('points at the text when the API refuses it', async () => {
     await render({ preferences: undefined, owner: true });
     await open('Escribir mis gustos');
     await type('Talla M.');
-    await save();
+    await submit();
 
-    http
-      .expectOne(PREFERENCES_URL)
-      .flush(
-        { type: 'urn:secretmatch:problem:invalid-preferences', status: 422 },
-        { status: 422, statusText: 'Unprocessable Content' },
-      );
-    await settle();
+    await pageSays('saving');
+    await pageSays('invalid');
 
     expect(textarea()?.getAttribute('aria-invalid')).toBe('true');
     expect(text(card)).toContain('Como mucho 2000 caracteres.');
@@ -194,16 +195,30 @@ describe('PreferencesCard', () => {
     await render({ preferences: undefined, owner: true });
     await open('Escribir mis gustos');
     await type('Talla M.');
-    await save();
+    await submit();
 
-    http.expectOne(PREFERENCES_URL).flush(null, { status: 500, statusText: 'Server Error' });
-    await settle();
+    await pageSays('saving');
+    await pageSays('failed');
 
     expect(text(card.querySelector('[role="alert"]'))).toBe(
       'No hemos podido guardar tus gustos. Inténtalo de nuevo.',
     );
     expect(textarea()?.value).toBe('Talla M.');
     expect(status()).toBe('');
+  });
+
+  it('does not show the last failure again when the editor is opened anew', async () => {
+    await render({ preferences: 'Talla M.', owner: true });
+    await open('Editar');
+    await submit();
+    await pageSays('saving');
+    await pageSays('failed');
+
+    button('Cancelar')?.click();
+    await settle();
+    await open('Editar');
+
+    expect(card.querySelector('[role="alert"]')).toBeNull();
   });
 
   it('closes the editor without saving when cancelled', async () => {
@@ -214,7 +229,7 @@ describe('PreferencesCard', () => {
     button('Cancelar')?.click();
     await settle();
 
-    http.expectNone(PREFERENCES_URL);
+    expect(saved).toEqual([]);
     expect(textarea()).toBeNull();
     expect(text(card)).toContain('Talla M.');
     expect(document.activeElement?.id).toBe('edit-preferences');

@@ -4,29 +4,31 @@ import {
   Component,
   computed,
   DOCUMENT,
+  effect,
   inject,
   Injector,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { LucidePlus } from '@lucide/angular';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
-import { PREFERENCES_MAX_LENGTH, WishlistApi } from '../../data-access/wishlist-api';
+import { PREFERENCES_MAX_LENGTH } from '../../data-access/wishlist-rules';
 
-/** How the owner's last save went. */
-type SaveStatus = 'idle' | 'saving' | 'invalid' | 'failed';
+/** How the page's last save of the Preferences went. */
+export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'failed';
 
 /**
  * A Member's Preferences in a Group (#33): the free text on a surface card, read-only to their
  * Giver and hidden from them when there is none. The owner edits it in place, in a `bg-canvas`
- * well with a counter out of 2000; saving it blank clears it. The card saves through the API
- * itself and tells the page the new text.
+ * well with a counter out of 2000; saving it blank clears it. The page saves what the card
+ * sends and reports back through `status`; once `saved`, the card closes the editor and says so.
  */
 @Component({
   selector: 'app-preferences-card',
@@ -48,7 +50,7 @@ type SaveStatus = 'idle' | 'saving' | 'invalid' | 'failed';
           <form
             class="mt-3 flex flex-col gap-1.5 rounded-field bg-canvas p-4"
             [formGroup]="form"
-            (ngSubmit)="save()"
+            (ngSubmit)="submit()"
             novalidate
           >
             <label for="preferences-text" class="font-bold">Tus gustos</label>
@@ -78,7 +80,7 @@ type SaveStatus = 'idle' | 'saving' | 'invalid' | 'failed';
                 Como mucho {{ maxLength }} caracteres.
               </p>
             }
-            @if (status() === 'failed') {
+            @if (submitted() && status() === 'failed') {
               <p appAlert>No hemos podido guardar tus gustos. Inténtalo de nuevo.</p>
             }
             <div class="mt-2 flex flex-wrap items-center gap-4">
@@ -125,41 +127,47 @@ type SaveStatus = 'idle' | 'saving' | 'invalid' | 'failed';
   `,
 })
 export class PreferencesCard {
-  readonly groupId = input.required<string>();
   /** `undefined` when the Member has written none. */
   readonly preferences = input.required<string | undefined>();
   /** Only the owner changes them (ADR 0004); their Giver reads them. */
   readonly owner = input.required<boolean>();
-  readonly ownerName = input.required<string>();
-  /** The saved text after a change, `undefined` once cleared. */
-  readonly preferencesChange = output<string | undefined>();
+  readonly status = input<PreferencesStatus>('idle');
+  /** The owner sent the text, trimmed: the page asks the API to replace the Preferences. */
+  readonly save = output<string>();
 
-  private readonly api = inject(WishlistApi);
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);
 
   protected readonly maxLength = PREFERENCES_MAX_LENGTH;
-  protected readonly form = inject(NonNullableFormBuilder).group({
-    text: ['', Validators.maxLength(PREFERENCES_MAX_LENGTH)],
-  });
+  protected readonly form = inject(NonNullableFormBuilder).group({ text: [''] });
   private readonly text = this.form.controls.text;
   private readonly value = toSignal(this.text.valueChanges, { initialValue: '' });
-  protected readonly length = computed(() => this.value().length);
+  /** Counted as the API counts it: without the spaces around the text, which it strips. */
+  protected readonly length = computed(() => this.value().trim().length);
   protected readonly tooLong = computed(() => this.length() > PREFERENCES_MAX_LENGTH);
 
   protected readonly editing = signal(false);
   protected readonly submitted = signal(false);
-  protected readonly status = signal<SaveStatus>('idle');
   protected readonly statusText = signal('');
 
+  constructor() {
+    effect(() => {
+      if (this.status() === 'saved' && untracked(this.editing)) {
+        untracked(() => {
+          this.statusText.set(this.preferences() ? 'Gustos guardados.' : 'Gustos borrados.');
+          this.close();
+        });
+      }
+    });
+  }
+
   protected showsError(): boolean {
-    return (this.submitted() && this.tooLong()) || this.status() === 'invalid';
+    return this.submitted() && (this.tooLong() || this.status() === 'invalid');
   }
 
   protected open(): void {
     this.text.setValue(this.preferences() ?? '');
     this.submitted.set(false);
-    this.status.set('idle');
     this.statusText.set('');
     this.editing.set(true);
     this.focusOnceRendered('preferences-text');
@@ -170,21 +178,12 @@ export class PreferencesCard {
     this.focusOnceRendered('edit-preferences');
   }
 
-  protected async save(): Promise<void> {
+  protected submit(): void {
     this.submitted.set(true);
     if (this.tooLong() || this.status() === 'saving') {
       return;
     }
-    this.status.set('saving');
-    const outcome = await this.api.editPreferences(this.groupId(), this.text.getRawValue());
-    if (outcome.status !== 'saved') {
-      this.status.set(outcome.status);
-      return;
-    }
-    this.status.set('idle');
-    this.statusText.set(outcome.preferences ? 'Gustos guardados.' : 'Gustos borrados.');
-    this.preferencesChange.emit(outcome.preferences);
-    this.close();
+    this.save.emit(this.text.getRawValue().trim());
   }
 
   private focusOnceRendered(id: string): void {

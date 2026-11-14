@@ -4,7 +4,7 @@
 export interface DontListEntryRequest {
 
   /**
-   * What the Member does not want, 1 to 100 characters.
+   * What the Member does not want.
    */
   text: string;
 }

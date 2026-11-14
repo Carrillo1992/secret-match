@@ -4,35 +4,43 @@ import {
   Component,
   computed,
   DOCUMENT,
+  effect,
   inject,
   Injector,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-} from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { LucideBan, LucidePlus, LucideX } from '@lucide/angular';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
-import {
-  DONT_LIST_ENTRY_MAX_LENGTH,
-  DontListEntry,
-  WishlistApi,
-} from '../../data-access/wishlist-api';
+import { DontListEntry } from '../../data-access/wishlist-api';
+import { DONT_LIST_ENTRY_MAX_LENGTH, dontListEntry } from '../../data-access/wishlist-rules';
+
+/** How the page's last addition of an entry went. */
+export type DontListAddition =
+  | { readonly status: 'adding' }
+  | { readonly status: 'added'; readonly entry: DontListEntry }
+  | { readonly status: 'invalid' }
+  | { readonly status: 'failed' };
+
+/** How the page's last removal of an entry went. */
+export interface DontListRemoval {
+  readonly entry: DontListEntry;
+  readonly status: 'removing' | 'removed' | 'failed';
+}
 
 /**
  * A Member's Don't List, "Nada de…" (#33, option A): a warning card in `danger-soft` listing what
  * they do not want to receive, oldest first. Its owner removes an entry at once with its ✕ (it is
  * short and easy to type again) and adds one through an inline form; the Giver only reads it, and
- * an empty one is not shown to them at all.
+ * an empty one is not shown to them at all. The page changes the Don't List through the API and
+ * reports back through `addition` and `removal`; the card then closes its form, says what happened
+ * and moves focus.
  */
 @Component({
   selector: 'app-dont-list-card',
@@ -75,10 +83,10 @@ import {
                 <button
                   type="button"
                   [id]="removeButtonId(entry)"
-                  class="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-danger transition-colors duration-200 hover:bg-surface focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60"
+                  class="inline-flex size-11 shrink-0 items-center justify-center rounded-full text-danger transition-colors duration-200 hover:bg-surface focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-danger disabled:cursor-not-allowed disabled:opacity-60"
                   [attr.aria-label]="'Quitar «' + entry.text + '»'"
-                  [disabled]="removing().has(entry.id)"
-                  (click)="remove(entry)"
+                  [disabled]="isRemoving(entry)"
+                  (click)="removeNow(entry)"
                 >
                   <svg lucideX [size]="20"></svg>
                 </button>
@@ -120,12 +128,12 @@ import {
                   Hasta {{ maxLength }} caracteres.
                 </p>
               }
-              @if (addFailed()) {
+              @if (submitted() && addition()?.status === 'failed') {
                 <p appAlert class="mt-1.5">No hemos podido añadirlo. Inténtalo de nuevo.</p>
               }
               <div class="mt-2 flex flex-wrap items-center gap-4">
-                <button type="submit" appButton="secondary" [disabled]="adding()">
-                  {{ adding() ? 'Añadiendo…' : 'Añadir' }}
+                <button type="submit" appButton="secondary" [disabled]="isAdding()">
+                  {{ isAdding() ? 'Añadiendo…' : 'Añadir' }}
                 </button>
                 <button type="button" appLink standalone (click)="close()">Cancelar</button>
               </div>
@@ -150,48 +158,75 @@ import {
   `,
 })
 export class DontListCard {
-  readonly groupId = input.required<string>();
   /** Oldest first. */
   readonly entries = input.required<readonly DontListEntry[]>();
   /** The signed-in Member owns this Wishlist, so they may change it. */
   readonly owner = input.required<boolean>();
   readonly ownerName = input.required<string>();
-  /** The Don't List after an entry was added (at the end) or removed. */
-  readonly entriesChange = output<readonly DontListEntry[]>();
+  readonly addition = input<DontListAddition | null>(null);
+  readonly removal = input<DontListRemoval | null>(null);
+  /** The owner sent a new entry, trimmed: the page adds it at the end of the Don't List. */
+  readonly add = output<string>();
+  /** The owner removed an entry: the page asks the API to remove it, without confirming. */
+  readonly remove = output<DontListEntry>();
 
-  private readonly api = inject(WishlistApi);
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);
 
   protected readonly maxLength = DONT_LIST_ENTRY_MAX_LENGTH;
   protected readonly form = new FormGroup({
-    text: new FormControl('', { nonNullable: true, validators: entryRules }),
+    text: new FormControl('', { nonNullable: true, validators: dontListEntry }),
   });
   protected readonly formOpen = signal(false);
-  private readonly submitted = signal(false);
-  protected readonly adding = signal(false);
-  protected readonly addFailed = signal(false);
-  /** Ids of the entries being removed right now. */
-  protected readonly removing = signal<ReadonlySet<string>>(new Set());
-  protected readonly failedRemoval = signal<DontListEntry | null>(null);
+  protected readonly submitted = signal(false);
   protected readonly announcement = signal('');
+  /** Where the entry the owner is removing stood, to give focus to its neighbour once it goes. */
+  private removedAt: number | null = null;
 
   protected readonly listLabel = computed(() =>
     this.owner() ? 'Lo que no quieres recibir' : `Lo que ${this.ownerName()} no quiere recibir`,
   );
+  protected readonly isAdding = computed(() => this.addition()?.status === 'adding');
+  protected readonly failedRemoval = computed(() => {
+    const removal = this.removal();
+    return removal?.status === 'failed' ? removal.entry : null;
+  });
+
+  constructor() {
+    effect(() => {
+      const addition = this.addition();
+      if (addition?.status === 'added' && untracked(this.formOpen)) {
+        untracked(() => {
+          this.announcement.set(`Añadido «${addition.entry.text}».`);
+          this.close();
+        });
+      }
+    });
+    effect(() => {
+      const removal = this.removal();
+      if (removal && removal.status !== 'removing') {
+        untracked(() => this.removalDone(removal));
+      }
+    });
+  }
 
   protected removeButtonId(entry: DontListEntry): string {
     return `remove-dont-list-entry-${entry.id}`;
   }
 
+  protected isRemoving(entry: DontListEntry): boolean {
+    const removal = this.removal();
+    return removal?.status === 'removing' && removal.entry.id === entry.id;
+  }
+
+  /** The API refusing the entry is shown on the field, like the form's own check. */
   protected showsError(): boolean {
-    return this.form.invalid && this.submitted();
+    return this.submitted() && (this.form.invalid || this.addition()?.status === 'invalid');
   }
 
   protected open(): void {
     this.form.reset();
     this.submitted.set(false);
-    this.addFailed.set(false);
     this.formOpen.set(true);
     this.focusOnceRendered('dont-list-entry-text');
   }
@@ -201,54 +236,32 @@ export class DontListCard {
     this.focusOnceRendered('add-dont-list-entry');
   }
 
-  protected async submit(): Promise<void> {
+  protected submit(): void {
     this.submitted.set(true);
-    this.addFailed.set(false);
-    if (this.form.invalid || this.adding()) {
+    if (this.form.invalid || this.isAdding()) {
       return;
     }
-    this.adding.set(true);
-    const outcome = await this.api.addDontListEntry(
-      this.groupId(),
-      this.form.controls.text.value.trim(),
-    );
-    this.adding.set(false);
-    switch (outcome.status) {
-      case 'added':
-        this.entriesChange.emit([...this.entries(), outcome.entry]);
-        this.announcement.set(`Añadido «${outcome.entry.text}».`);
-        this.close();
-        break;
-      case 'invalid':
-        // The API only refuses what the form lets through when it is too long for it.
-        this.form.controls.text.setErrors({ tooLong: true });
-        break;
-      case 'failed':
-        this.addFailed.set(true);
-        break;
-    }
+    this.add.emit(this.form.controls.text.value.trim());
   }
 
-  protected async remove(entry: DontListEntry): Promise<void> {
-    this.failedRemoval.set(null);
-    this.removing.update((ids) => new Set(ids).add(entry.id));
-    const outcome = await this.api.deleteDontListEntry(this.groupId(), entry.id);
-    this.removing.update((ids) => {
-      const rest = new Set(ids);
-      rest.delete(entry.id);
-      return rest;
-    });
-    if (outcome.status === 'failed') {
-      this.failedRemoval.set(entry);
-      this.focusOnceRendered(this.removeButtonId(entry));
+  protected removeNow(entry: DontListEntry): void {
+    this.removedAt = this.entries().findIndex((other) => other.id === entry.id);
+    this.remove.emit(entry);
+  }
+
+  private removalDone(removal: DontListRemoval): void {
+    const index = this.removedAt;
+    if (index === null) {
       return;
     }
-    const entries = this.entries();
-    const index = entries.findIndex((other) => other.id === entry.id);
-    const rest = entries.filter((other) => other.id !== entry.id);
-    this.entriesChange.emit(rest);
-    this.announcement.set(`Quitado «${entry.text}».`);
+    this.removedAt = null;
+    if (removal.status === 'failed') {
+      this.focusOnceRendered(this.removeButtonId(removal.entry));
+      return;
+    }
+    this.announcement.set(`Quitado «${removal.entry.text}».`);
     // Focus goes to the entry that takes its place, else the one before, else "Añadir".
+    const rest = this.entries();
     const neighbour = rest[Math.min(index, rest.length - 1)];
     this.focusOnceRendered(
       neighbour
@@ -262,13 +275,4 @@ export class DontListCard {
   private focusOnceRendered(id: string): void {
     afterNextRender(() => this.document.getElementById(id)?.focus(), { injector: this.injector });
   }
-}
-
-/** The API's rules, on the text as it will be sent: trimmed. */
-function entryRules(control: AbstractControl<string>): ValidationErrors | null {
-  const text = control.value.trim();
-  if (text === '') {
-    return { blank: true };
-  }
-  return text.length > DONT_LIST_ENTRY_MAX_LENGTH ? { tooLong: true } : null;
 }

@@ -10,8 +10,9 @@ import { routes } from './app.routes';
 describe('App routes', () => {
   // The routed pages are lazy-loaded inside each test, and @lucide/angular ships every icon in
   // one large module that takes several seconds to load the first time under the test runner.
-  // Load it once up front so that cost doesn't eat into a single test's timeout.
-  beforeAll(() => import('@lucide/angular'), 30_000);
+  // Load it once up front so that cost doesn't eat into a single test's timeout. Every other spec
+  // file loads it at the same time in parallel, so the wait grows with the number of spec files.
+  beforeAll(() => import('@lucide/angular'), 90_000);
 
   beforeEach(() => {
     TestBed.configureTestingModule({

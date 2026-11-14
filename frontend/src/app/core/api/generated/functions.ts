@@ -35,6 +35,14 @@ export type { CreateExclusion$Params as CreateExclusion$Params } from './fn/excl
 export { createExclusion as createExclusion } from './fn/exclusions/create-exclusion';
 export type { DeleteExclusion$Params as DeleteExclusion$Params } from './fn/exclusions/delete-exclusion';
 export { deleteExclusion as deleteExclusion } from './fn/exclusions/delete-exclusion';
+export type { Wishlist$Params as Wishlist$Params } from './fn/wishlists/wishlist';
+export { wishlist as wishlist } from './fn/wishlists/wishlist';
+export type { AddWish$Params as AddWish$Params } from './fn/wishlists/add-wish';
+export { addWish as addWish } from './fn/wishlists/add-wish';
+export type { EditWish$Params as EditWish$Params } from './fn/wishlists/edit-wish';
+export { editWish as editWish } from './fn/wishlists/edit-wish';
+export type { DeleteWish$Params as DeleteWish$Params } from './fn/wishlists/delete-wish';
+export { deleteWish as deleteWish } from './fn/wishlists/delete-wish';
 export type { Join$Params as Join$Params } from './fn/invite-links/join';
 export { join as join } from './fn/invite-links/join';
 export type { SendResetLink$Params as SendResetLink$Params } from './fn/password-reset/send-reset-link';

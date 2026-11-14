@@ -1,0 +1,159 @@
+<app-shell>
+  <a [routerLink]="groupLink()" appLink standalone class="gap-1">
+    <svg lucideChevronLeft [size]="18"></svg>
+    Volver al grupo
+  </a>
+
+  @if (isLoading()) {
+    <p role="status" class="mt-4 text-ink-muted">Cargando…</p>
+  } @else if (wishlist(); as wishlist) {
+    <h1
+      id="wishlist-title"
+      tabindex="-1"
+      class="mt-4 font-display text-3xl font-bold tracking-tight break-words focus:outline-none"
+    >
+      {{ wishlist.owner.you ? 'Tus deseos' : 'Deseos de ' + wishlist.owner.displayName }}
+    </h1>
+    <p class="mt-1.5 text-ink-muted">
+      @if (wishlist.owner.you) {
+        Solo la verá quien te regale, cuando se haga el sorteo.
+      } @else {
+        Solo la ves tú, porque te toca regalarle. Nadie más del grupo puede abrirla.
+      }
+    </p>
+
+    <p role="status" class="mt-1.5 text-sm text-ink-muted empty:hidden">{{ statusText() }}</p>
+
+    @if (wishlist.owner.you) {
+      <section aria-label="Añadir un deseo" class="mt-6 rounded-card bg-surface p-5 shadow-card">
+        @if (adding()) {
+          <app-wish-form
+            idPrefix="new-wish"
+            [status]="addStatus()"
+            (save)="add($event)"
+            (cancelled)="closeAdd()"
+          />
+        } @else {
+          <button id="add-wish" type="button" appLink standalone class="gap-1" (click)="openAdd()">
+            <svg lucidePlus [size]="18"></svg>
+            Añadir deseo
+          </button>
+        }
+      </section>
+    }
+
+    @if (deleteFailed(); as wish) {
+      <p appAlert class="mt-6">No hemos podido borrar «{{ wish.title }}». Inténtalo de nuevo.</p>
+    }
+
+    @if (wishlist.wishes.length === 0) {
+      <p class="mt-6 text-ink-muted">
+        @if (wishlist.owner.you) {
+          Aún no has añadido deseos. Cuenta qué te haría ilusión recibir.
+        } @else {
+          {{ wishlist.owner.displayName }} aún no ha añadido deseos.
+        }
+      </p>
+    } @else {
+      <ul aria-label="Deseos" class="mt-6 flex flex-col gap-4">
+        @for (wish of wishlist.wishes; track wish.id) {
+          <li class="rounded-card bg-surface p-5 shadow-card">
+            @if (editing() === wish.id) {
+              <app-wish-form
+                [idPrefix]="'wish-' + wish.id"
+                [wish]="wish"
+                [status]="editStatus()"
+                (save)="edit(wish.id, $event)"
+                (cancelled)="closeEdit()"
+              />
+            } @else {
+              <div class="flex items-start gap-3">
+                <h2 class="min-w-0 flex-1 font-display text-lg font-semibold break-words">
+                  {{ wish.title }}
+                </h2>
+                <span appChip class="shrink-0">
+                  <span class="sr-only">Prioridad </span>{{ priorityLabels[wish.priority] }}
+                </span>
+              </div>
+              @if (wish.price !== undefined) {
+                <p class="mt-1.5">Unos {{ euros(wish.price) }}</p>
+              }
+              @if (wish.notes) {
+                <p class="mt-1.5 whitespace-pre-line break-words text-ink-muted">
+                  {{ wish.notes }}
+                </p>
+              }
+              @if (wish.link) {
+                <a
+                  [href]="wish.link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  appLink
+                  standalone
+                  class="mt-1.5 gap-1"
+                >
+                  Abrir enlace
+                  <span class="sr-only">de {{ wish.title }} (se abre en otra pestaña)</span>
+                  <svg lucideExternalLink [size]="16"></svg>
+                </a>
+              }
+
+              @if (wishlist.owner.you) {
+                @if (confirmingDelete() === wish.id) {
+                  <app-confirm-panel
+                    class="mt-3"
+                    [question]="'¿Borrar «' + wish.title + '»?'"
+                    confirmLabel="Sí, borrar"
+                    [returnFocusTo]="'delete-' + wish.id"
+                    focusAfterConfirm="wishlist-title"
+                    (confirmed)="delete(wish)"
+                    (cancelled)="confirmingDelete.set(null)"
+                  >
+                    Desaparecerá de tu lista.
+                  </app-confirm-panel>
+                } @else {
+                  <div class="mt-3 flex justify-end gap-4">
+                    <button
+                      [id]="'edit-' + wish.id"
+                      type="button"
+                      appLink
+                      standalone
+                      [attr.aria-label]="'Editar «' + wish.title + '»'"
+                      (click)="openEdit(wish)"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      [id]="'delete-' + wish.id"
+                      type="button"
+                      appLink
+                      standalone
+                      [attr.aria-label]="'Borrar «' + wish.title + '»'"
+                      [disabled]="deleting() === wish.id"
+                      (click)="confirmingDelete.set(wish.id)"
+                    >
+                      {{ deleting() === wish.id ? 'Borrando…' : 'Borrar' }}
+                    </button>
+                  </div>
+                }
+              }
+            }
+          </li>
+        }
+      </ul>
+    }
+  } @else if (notFound()) {
+    <div class="mt-6">
+      <app-status-header>
+        <svg lucideSearchX statusIcon [size]="30"></svg>
+        No encontramos esta lista
+      </app-status-header>
+      <p class="mt-1.5 text-ink-muted">
+        Puede que el enlace no esté bien o que esa persona ya no esté en el grupo.
+      </p>
+    </div>
+  } @else {
+    <p appAlert class="mt-6">No hemos podido cargar la lista. Inténtalo de nuevo.</p>
+    <button type="button" appButton="secondary" class="mt-4" (click)="reload()">Reintentar</button>
+  }
+</app-shell>

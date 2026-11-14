@@ -1,3 +1,4 @@
+import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 
@@ -96,5 +97,18 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/groups/pages/join-page/join-page').then((m) => m.JoinPage),
   },
+  // PROTOTYPE (#87), throwaway: Preferences menu variants. Dev builds only.
+  ...(isDevMode()
+    ? [
+        {
+          path: 'prototype/preferences',
+          title: 'Prototype · Preferencias',
+          loadComponent: () =>
+            import('./features/preferences/prototype/preferences-prototype').then(
+              (m) => m.PreferencesPrototype,
+            ),
+        },
+      ]
+    : []),
   { path: '**', redirectTo: '' },
 ];

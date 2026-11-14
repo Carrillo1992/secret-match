@@ -1,0 +1,130 @@
+/*
+ * PROTOTYPE (#87), throwaway: makes the Theme choice visible without touching src/styles.css.
+ * `data-theme` on <html> beats the `prefers-color-scheme` media query there by specificity; with no
+ * attribute ("Sistema") the OS decides as today. Values copied from src/styles.css.
+ */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-canvas: #fbf3e9;
+  --color-surface: #ffffff;
+  --color-field: #f6ede3;
+  --color-subtle: #f3e4d3;
+  --color-ink: #3b2219;
+  --color-ink-muted: #6e5146;
+  --color-line: #9c7f6e;
+  --color-primary: #b5502f;
+  --color-primary-hover: #9c4227;
+  --color-on-primary: #ffffff;
+  --color-success: #3e6b3a;
+  --color-success-soft: #e3eee0;
+  --color-danger: #a12c1f;
+  --color-danger-soft: #fbe3dd;
+  --color-mustard: #e9b44c;
+  --color-sage: #a9c3a3;
+  --color-sage-soft: #d6e4d2;
+  --color-clay: #e8a486;
+  --color-scrim: rgb(59 34 25 / 0.55);
+  --shadow-sheet: 0 -8px 30px -12px rgb(59 34 25 / 0.18);
+  --shadow-card: 0 2px 4px rgb(59 34 25 / 0.06), 0 24px 48px -16px rgb(59 34 25 / 0.28);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-canvas: #22160f;
+  --color-surface: #301f16;
+  --color-field: #3e2a1f;
+  --color-subtle: #3e2a1f;
+  --color-ink: #fbf0e4;
+  --color-ink-muted: #d3bba8;
+  --color-line: #8c6e5c;
+  --color-primary: #e98a63;
+  --color-primary-hover: #f0a07f;
+  --color-on-primary: #22160f;
+  --color-success: #a9c3a3;
+  --color-success-soft: #2f3d2b;
+  --color-danger: #ff9c85;
+  --color-danger-soft: #4a2018;
+  --color-mustard: #d9a23e;
+  --color-sage: #55704f;
+  --color-sage-soft: #45573f;
+  --color-clay: #8a4a33;
+  --color-scrim: rgb(0 0 0 / 0.65);
+  --shadow-sheet: 0 -8px 30px -12px rgb(0 0 0 / 0.6);
+  --shadow-card: 0 2px 4px rgb(0 0 0 / 0.3), 0 24px 48px -16px rgb(0 0 0 / 0.7);
+}
+
+/* Everyday motion: 150–250 ms fade + scale from the button corner. */
+.proto-pop {
+  transform-origin: top right;
+  animation: proto-pop 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes proto-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Variant B: rises from the bottom on phones, fades + scales in from `sm`. */
+dialog.proto-sheet[open] {
+  animation: proto-rise 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@media (min-width: 40rem) {
+  dialog.proto-sheet[open] {
+    animation-name: proto-pop;
+    transform-origin: center;
+  }
+}
+
+@keyframes proto-rise {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proto-pop,
+  dialog.proto-sheet[open] {
+    animation: none;
+  }
+}
+
+/* Floating prototype switcher (tooling, off-palette on purpose). */
+[data-proto-bar] .proto-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0 0.5rem;
+  border-radius: 0.5rem;
+  background: #262626;
+  color: #fff;
+}
+[data-proto-bar] .proto-btn:hover {
+  background: #3f3f46;
+}
+[data-proto-bar] .proto-btn.on {
+  background: #fde047;
+  color: #111;
+  font-weight: 700;
+}
+[data-proto-bar] .proto-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+[data-proto-bar] .proto-row > span:first-child {
+  width: 4.5rem;
+  color: #9ca3af;
+}
+  

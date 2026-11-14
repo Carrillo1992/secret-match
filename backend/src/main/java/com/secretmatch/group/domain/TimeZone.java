@@ -1,7 +1,5 @@
 package com.secretmatch.group.domain;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneId;
 
 /**
@@ -10,9 +8,6 @@ import java.time.ZoneId;
  * the date flips would tell them the hour a Message was sent (ADR 0001).
  */
 public record TimeZone(ZoneId zone) {
-
-    /** The Time Zone of the Groups created before Groups had one. */
-    public static final String UTC = "UTC";
 
     /**
      * @param id an IANA id, as the JDK's time-zone database knows it; offsets ({@code +05:00}) and abbreviations
@@ -32,11 +27,6 @@ public record TimeZone(ZoneId zone) {
     /** The IANA id. */
     public String id() {
         return zone.getId();
-    }
-
-    /** The calendar day {@code moment} falls on in this Time Zone. */
-    public LocalDate dayOf(Instant moment) {
-        return LocalDate.ofInstant(moment, zone);
     }
 
     private static ZoneId parse(String id) {

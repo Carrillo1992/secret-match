@@ -517,15 +517,4 @@ class GroupTest {
                         .zone())
                 .isEqualTo(ZoneId.of(MADRID));
     }
-
-    @Test
-    @DisplayName("the day a moment falls on in the Group's Time Zone")
-    void dayInItsTimeZone() {
-        Group group = Group.create("Amigos", CHRISTMAS_EVE, null, "America/New_York", CREATOR, FIRST_CODE, NOW);
-
-        assertThat(group.timeZone().dayOf(Instant.parse("2026-12-13T02:00:00Z")))
-                .isEqualTo(LocalDate.of(2026, 12, 12));
-        assertThat(group.timeZone().dayOf(Instant.parse("2026-12-13T05:00:00Z")))
-                .isEqualTo(LocalDate.of(2026, 12, 13));
-    }
 }

@@ -15,7 +15,7 @@ public final class Group {
      * Where an Exchange Date starts and ends, for every Group alike. Not the Group's own {@link TimeZone}, which only
      * cuts its Mailbox Message dates.
      */
-    public static final ZoneId TIME_ZONE = ZoneId.of("Europe/Madrid");
+    public static final ZoneId EXCHANGE_DATE_ZONE = ZoneId.of("Europe/Madrid");
 
     private final GroupId id;
     private final GroupName name;
@@ -62,7 +62,7 @@ public final class Group {
      * @param timeZone the IANA id of its {@link TimeZone}
      * @param inviteCode the code of its first Invite Link
      * @throws InvalidGroupDetailsException if a detail breaks its rules, e.g. the Exchange Date is not after
-     *     today in {@link #TIME_ZONE}
+     *     today in {@link #EXCHANGE_DATE_ZONE}
      */
     public static Group create(
             String name,
@@ -89,12 +89,13 @@ public final class Group {
     }
 
     /**
-     * Whether the Group is finished at {@code now}: from 00:00 in {@link #TIME_ZONE} on the day after its
+     * Whether the Group is finished at {@code now}: from 00:00 in {@link #EXCHANGE_DATE_ZONE} on the day after its
      * Exchange Date it is read-only, and only its deletion is still allowed. Other modules reuse this rule for
      * their own read-only behaviour.
      */
     public boolean isFinished(Instant now) {
-        return !now.isBefore(exchangeDate.plusDays(1).atStartOfDay(TIME_ZONE).toInstant());
+        return !now.isBefore(
+                exchangeDate.plusDays(1).atStartOfDay(EXCHANGE_DATE_ZONE).toInstant());
     }
 
     /**
@@ -134,7 +135,7 @@ public final class Group {
      * @throws GroupDrawnException if the Time Zone changes once the Draw is made: it is frozen then, like who is in
      *     the Group, so nobody can change it to probe when a Message was sent (ADR 0001)
      * @throws InvalidGroupDetailsException if a detail breaks its rules, e.g. a changed Exchange Date is not
-     *     after today in {@link #TIME_ZONE}. An unchanged one is kept as it is, so on the Exchange Date itself
+     *     after today in {@link #EXCHANGE_DATE_ZONE}. An unchanged one is kept as it is, so on the Exchange Date itself
      *     the Admin can still rename the Group.
      */
     public Group edit(
@@ -282,6 +283,6 @@ public final class Group {
     }
 
     private static boolean isInTheFuture(LocalDate date, Instant now) {
-        return date != null && date.isAfter(LocalDate.ofInstant(now, TIME_ZONE));
+        return date != null && date.isAfter(LocalDate.ofInstant(now, EXCHANGE_DATE_ZONE));
     }
 }

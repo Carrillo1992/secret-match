@@ -25,10 +25,14 @@ export type MessagesOutcome =
   | { readonly status: 'not-found' }
   | { readonly status: 'failed' };
 
-/** `invalid`: the API refused the text (blank or too long), which the composer checks too. */
+/**
+ * `invalid`: the API refused the text (blank or too long), which the composer checks too.
+ * `finished`: the Group finished while the page was open, so its Mailboxes are read-only.
+ */
 export type SendMessageOutcome =
   | { readonly status: 'sent'; readonly message: Message }
   | { readonly status: 'invalid' }
+  | { readonly status: 'finished' }
   | { readonly status: 'not-found' }
   | { readonly status: 'failed' };
 
@@ -62,8 +66,12 @@ export class MailboxApi {
         message: await this.api.invoke(sendMessage, { mailboxId, body: { text } }),
       };
     } catch (error) {
-      if (problemCode(error) === 'invalid-message') {
+      const code = problemCode(error);
+      if (code === 'invalid-message') {
         return { status: 'invalid' };
+      }
+      if (code === 'group-finished') {
+        return { status: 'finished' };
       }
       return { status: isNotFound(error) ? 'not-found' : 'failed' };
     }

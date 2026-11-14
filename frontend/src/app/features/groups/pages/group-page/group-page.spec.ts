@@ -1330,6 +1330,50 @@ describe('GroupPage', () => {
       expect(textarea.value).toBe('¡Hola!');
     });
 
+    it('shows a finished Group’s Messages with nothing to write', async () => {
+      http.expectOne(GROUP_URL).flush({ ...navidad, drawn: true, finished: true });
+      await settle();
+      http.expectOne((r) => r.url === DRAW_URL && r.method === 'GET').flush(MARTA);
+      await settle();
+      http.expectOne(MAILBOXES_URL).flush([toMarta, fromGiver]);
+      await settle();
+      http
+        .expectOne(messagesUrl('m-1'))
+        .flush([{ mine: false, text: 'Para leer, sin duda.', sentOn: '2026-12-10' }]);
+      await settle();
+
+      expect(text(panel('m-1'))).toContain('Con Marta: Para leer, sin duda.');
+      expect(panel('m-1')?.querySelector('textarea')).toBeNull();
+      expect(text(panel('m-1'))).toContain('ya solo se pueden leer los mensajes');
+    });
+
+    it('turns read-only when the Group finishes while it is open', async () => {
+      await openDrawn();
+      http.expectOne(MAILBOXES_URL).flush([toMarta]);
+      await settle();
+      http.expectOne(messagesUrl('m-1')).flush([]);
+      await settle();
+
+      await write('¡Hola!');
+      http
+        .expectOne((r) => r.url === messagesUrl('m-1') && r.method === 'POST')
+        .flush(
+          { type: 'urn:secretmatch:problem:group-finished', status: 422 },
+          { status: 422, statusText: 'Unprocessable Content' },
+        );
+      await settle();
+      http.expectOne(GROUP_URL).flush({ ...navidad, drawn: true, finished: true });
+      await settle();
+
+      expect(panel('m-1')?.querySelector('textarea')).toBeNull();
+      expect(text(panel('m-1')?.querySelector('[role="status"]'))).toContain(
+        'No se ha enviado: el grupo acaba de finalizar',
+      );
+      expect(text(page().querySelector('[aria-labelledby="group-finished"]'))).toContain(
+        'Finalizado',
+      );
+    });
+
     it('opens once the Admin makes the Draw', async () => {
       const withFour = {
         ...asAdmin,

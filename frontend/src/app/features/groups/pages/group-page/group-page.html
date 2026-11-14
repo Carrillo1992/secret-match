@@ -37,6 +37,7 @@
         <app-mailbox-card
           class="mt-6"
           [mailboxes]="mailboxes"
+          [finished]="group.finished"
           [selected]="selectedMailbox()"
           [threads]="threads()"
           [sends]="sends()"

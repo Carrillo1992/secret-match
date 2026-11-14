@@ -19,7 +19,8 @@ const LOADING: ThreadState = { status: 'loading' };
  * The Group's anonymous Mailbox, right after the Draw card (#36, option B): one tab per Mailbox,
  * "Con <Receiver>" and "Tu Giver" (never a name, initials or avatar), each with a hint of who is on
  * the other side, the conversation and the composer. It renders nothing while there are no
- * Mailboxes, as before the Draw.
+ * Mailboxes, as before the Draw. Once the Group is finished (#38) the conversations stay and the
+ * composer gives way to one sentence saying they are only read now.
  */
 @Component({
   selector: 'app-mailbox-card',
@@ -93,7 +94,18 @@ const LOADING: ThreadState = { status: 'loading' };
                 [author]="title(mailbox)"
                 (retry)="retryMessages.emit(mailbox.id)"
               />
-              @if (thread(mailbox).status === 'loaded') {
+              @if (finished()) {
+                @if (sends()[mailbox.id] === 'finished') {
+                  <p role="status" class="mt-4 text-sm text-ink-muted">
+                    No se ha enviado: el grupo acaba de finalizar y ya solo se pueden leer los
+                    mensajes.
+                  </p>
+                } @else {
+                  <p class="mt-4 text-sm text-ink-muted">
+                    El grupo ha finalizado: ya solo se pueden leer los mensajes.
+                  </p>
+                }
+              } @else if (thread(mailbox).status === 'loaded') {
                 <app-mailbox-composer
                   class="mt-4"
                   [id]="'mailbox-message-' + mailbox.id"
@@ -114,6 +126,8 @@ export class MailboxCard {
   readonly selected = input<string | null>(null);
   /** Each Mailbox's conversation, by id; one not there yet is loading. */
   readonly threads = input<Readonly<Record<string, ThreadState>>>({});
+  /** Whether the Group is finished, which makes every Mailbox read-only. */
+  readonly finished = input(false);
   /** Where each Mailbox's last send stands, by id. */
   readonly sends = input<Readonly<Record<string, SendStatus>>>({});
   /** A tab was chosen: the page opens that Mailbox, loading its Messages if needed. */

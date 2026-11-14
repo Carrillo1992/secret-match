@@ -238,10 +238,19 @@ export class GroupPage {
     this.mailboxesOutcome.reload();
   }
 
-  /** Once the API agrees, the Message joins the end of its conversation and pops in. */
+  /**
+   * Once the API agrees, the Message joins the end of its conversation and pops in. If the Group
+   * finished meanwhile, the Group is asked for again so the whole page shows it finished, the
+   * Mailbox read-only.
+   */
   protected async sendMessage({ mailboxId, text }: MessageToSend): Promise<void> {
     this.setSend(mailboxId, 'sending');
     const outcome = await this.mailboxApi.send(mailboxId, text);
+    if (outcome.status === 'finished') {
+      this.setSend(mailboxId, 'finished');
+      await this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'sent') {
       const thread = this.threads()[mailboxId];
       if (thread?.status === 'loaded') {
@@ -253,6 +262,17 @@ export class GroupPage {
       }
     }
     this.setSend(mailboxId, outcome.status);
+  }
+
+  /** Asked for again quietly; should that fail, the page still knows the Group is finished. */
+  private async finishedMeanwhile(): Promise<void> {
+    const refreshed = await this.groupsApi.group(this.groupId());
+    const group = this.group();
+    if (refreshed.status === 'found') {
+      this.outcome.set(refreshed);
+    } else if (group) {
+      this.outcome.set({ status: 'found', group: { ...group, finished: true } });
+    }
   }
 
   private setThread(mailboxId: string, thread: ThreadState): void {

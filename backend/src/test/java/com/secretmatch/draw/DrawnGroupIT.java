@@ -350,7 +350,9 @@ class DrawnGroupIT {
     /** Signs up, verifies and signs in a new User. */
     private User signedInUser(String displayName) {
         String email = "user-" + UUID.randomUUID() + "@example.com";
-        anonymousPost("/api/v1/sign-ups", Map.of("email", email, "displayName", displayName, "password", PASSWORD))
+        anonymousPost(
+                        "/api/v1/sign-ups",
+                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", "es"))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(email).getLast().text());

@@ -24,12 +24,18 @@ interface UserRepository extends JpaRepository<UserEntity, UUID> {
      */
     @Modifying
     @Query(value = """
-                    INSERT INTO users (id, email, display_name, password_hash, google_subject, created_at)
-                    VALUES (:id, :email, :displayName, :passwordHash, :googleSubject, :createdAt)
+                    INSERT INTO users (id, email, display_name, password_hash, google_subject, language, created_at)
+                    VALUES (:id, :email, :displayName, :passwordHash, :googleSubject, :language, :createdAt)
                     ON CONFLICT DO NOTHING
                     """, nativeQuery = true)
     int insertUnlessTaken(
-            UUID id, String email, String displayName, String passwordHash, String googleSubject, Instant createdAt);
+            UUID id,
+            String email,
+            String displayName,
+            String passwordHash,
+            String googleSubject,
+            String language,
+            Instant createdAt);
 
     /** Their refresh tokens and Password Reset go with them ({@code ON DELETE CASCADE}). */
     @Modifying

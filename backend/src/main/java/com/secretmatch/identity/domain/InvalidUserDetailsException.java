@@ -2,7 +2,7 @@ package com.secretmatch.identity.domain;
 
 import com.secretmatch.shared.domain.DomainException;
 
-/** An email, display name or password that breaks its rules. The message never repeats the value. */
+/** An email, display name, Language or password that breaks its rules. The message never repeats the value. */
 public class InvalidUserDetailsException extends DomainException {
 
     private InvalidUserDetailsException(String code, String message) {
@@ -17,6 +17,10 @@ public class InvalidUserDetailsException extends DomainException {
         return new InvalidUserDetailsException(
                 "invalid-display-name",
                 "The display name must have between 1 and " + DisplayName.MAX_LENGTH + " characters.");
+    }
+
+    static InvalidUserDetailsException language() {
+        return new InvalidUserDetailsException("invalid-language", "The language must be es or en.");
     }
 
     static InvalidUserDetailsException password() {

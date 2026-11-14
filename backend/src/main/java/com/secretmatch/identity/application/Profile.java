@@ -1,6 +1,7 @@
 package com.secretmatch.identity.application;
 
 import com.secretmatch.identity.domain.DisplayName;
+import com.secretmatch.identity.domain.Language;
 import com.secretmatch.identity.domain.NewPassword;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.SessionExpiredException;
@@ -49,6 +50,21 @@ public class Profile {
     public CurrentUser changeDisplayName(UserId id, ChangeDisplayNameCommand command) {
         User user = existing(id);
         user.rename(new DisplayName(command.displayName()));
+        users.save(user);
+        return CurrentUser.of(user);
+    }
+
+    /**
+     * Shows SecretMatch to the User, and writes them, in a new Language from now on.
+     *
+     * @throws com.secretmatch.identity.domain.InvalidUserDetailsException if the Language is not supported
+     * @throws SessionExpiredException if that User no longer exists
+     */
+    @Transactional
+    public CurrentUser changeLanguage(UserId id, ChangeLanguageCommand command) {
+        Language language = Language.ofCode(command.language());
+        User user = existing(id);
+        user.changeLanguage(language);
         users.save(user);
         return CurrentUser.of(user);
     }

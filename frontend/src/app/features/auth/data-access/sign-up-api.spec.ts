@@ -28,9 +28,13 @@ describe('SignUpApi', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    vi.restoreAllMocks();
+  });
 
-  it('posts the sign-up details', async () => {
+  it('posts the sign-up details in the browser Language', async () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['fr-FR', 'es-ES']);
     const done = signUpApi.signUp({
       email: 'ana@example.com',
       displayName: 'Ana',
@@ -43,6 +47,7 @@ describe('SignUpApi', () => {
       email: 'ana@example.com',
       displayName: 'Ana',
       password: 'secreto123',
+      language: 'es',
     });
     request.flush({ signUpId: 'id-1' }, { status: 202, statusText: 'Accepted' });
 

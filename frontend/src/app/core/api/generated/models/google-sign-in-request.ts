@@ -3,4 +3,5 @@
 
 export interface GoogleSignInRequest {
   idToken: string;
+  language: 'es' | 'en';
 }

@@ -37,6 +37,12 @@ export type { CreateExclusion$Params as CreateExclusion$Params } from './fn/excl
 export { createExclusion as createExclusion } from './fn/exclusions/create-exclusion';
 export type { DeleteExclusion$Params as DeleteExclusion$Params } from './fn/exclusions/delete-exclusion';
 export { deleteExclusion as deleteExclusion } from './fn/exclusions/delete-exclusion';
+export type { MyMailboxes$Params as MyMailboxes$Params } from './fn/mailbox/my-mailboxes';
+export { myMailboxes as myMailboxes } from './fn/mailbox/my-mailboxes';
+export type { MailboxMessages$Params as MailboxMessages$Params } from './fn/mailbox/mailbox-messages';
+export { mailboxMessages as mailboxMessages } from './fn/mailbox/mailbox-messages';
+export type { SendMessage$Params as SendMessage$Params } from './fn/mailbox/send-message';
+export { sendMessage as sendMessage } from './fn/mailbox/send-message';
 export type { Wishlist$Params as Wishlist$Params } from './fn/wishlists/wishlist';
 export { wishlist as wishlist } from './fn/wishlists/wishlist';
 export type { AddWish$Params as AddWish$Params } from './fn/wishlists/add-wish';

@@ -4,6 +4,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
+import com.secretmatch.draw.application.GroupDraw;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption.DoNotIncludeTests;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -13,6 +14,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,6 +60,14 @@ class ArchitectureTest {
             .should(onlyUseOtherModulesThroughTheirApplicationApi())
             .allowEmptyShould(true)
             .because("a module uses another module only through its application API (or shared.domain)");
+
+    @ArchTest
+    static final ArchRule onlyTheMailboxAsksForAGiver = noClasses()
+            .that()
+            .resideOutsideOfPackage("com.secretmatch.mailbox.infrastructure..")
+            .should()
+            .callMethod(GroupDraw.class, "findMyGiver", UUID.class, UUID.class)
+            .because("a Giver is looked up only to route Mailbox Messages, never to show anyone (ADR 0001)");
 
     private static ArchCondition<JavaClass> onlyUseOtherModulesThroughTheirApplicationApi() {
         return new ArchCondition<>("only use other modules through their application API") {

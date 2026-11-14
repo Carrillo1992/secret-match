@@ -152,6 +152,20 @@ public class GroupDraw {
                 .flatMap(roster -> draws.receiverOf(groupId, giver).map(receiver -> receiverIn(roster, receiver)));
     }
 
+    /**
+     * The Member's Giver in the Group's Draw. Only for the Mailbox, to route Messages between a Receiver and their
+     * Giver: it must never be exposed in any response, log, email or error (ADR 0001).
+     *
+     * @return the id of the User who is {@code member}'s Giver; empty if the Group has no Draw, there is no such
+     *     Group, or {@code member} is not one of its Members
+     */
+    @Transactional(readOnly = true)
+    public Optional<UUID> findMyGiver(UUID groupId, UUID member) {
+        return rosters.of(groupId, member)
+                .flatMap(roster -> draws.giverOf(groupId, new MemberId(member)))
+                .map(MemberId::value);
+    }
+
     /** A deleted Group's Draw goes with it, in the same transaction, before its Members' rows. */
     @EventListener
     void on(GroupDeleted event) {

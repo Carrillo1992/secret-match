@@ -31,6 +31,8 @@ const REGENERATE_URL = 'http://api.test/api/v1/groups/g-1/invite-link';
 const MEMBERS_URL = 'http://api.test/api/v1/groups/g-1/members';
 const EXCLUSIONS_URL = 'http://api.test/api/v1/groups/g-1/exclusions';
 const DRAW_URL = 'http://api.test/api/v1/groups/g-1/draw';
+const MAILBOXES_URL = 'http://api.test/api/v1/groups/g-1/mailboxes';
+const messagesUrl = (mailboxId: string) => `http://api.test/api/v1/mailboxes/${mailboxId}/messages`;
 const NOT_DRAWN = {
   body: { type: 'urn:secretmatch:problem:draw-not-found', status: 404 },
   init: { status: 404, statusText: 'Not Found' },
@@ -74,6 +76,8 @@ describe('GroupPage', () => {
     http
       .match((request) => request.url === DRAW_URL && request.method === 'GET')
       .forEach((request) => request.flush(NOT_DRAWN.body, NOT_DRAWN.init));
+    // A drawn Group's page asks for its Mailboxes; tests about something else answer with none.
+    http.match(MAILBOXES_URL).forEach((request) => request.flush([]));
     http.verify();
   });
 
@@ -1115,6 +1119,28 @@ describe('GroupPage', () => {
         expect(document.activeElement?.id).toBe('group-draw');
       });
 
+      it('takes the Mailbox card away with the Draw', async () => {
+        await open(drawnWithFour, PEDRO);
+        http.expectOne(MAILBOXES_URL).flush([
+          { id: 'm-1', side: 'GIVER', receiverDisplayName: 'Pedro' },
+          { id: 'm-2', side: 'RECEIVER', receiverDisplayName: null },
+        ]);
+        await settle();
+        http.match(messagesUrl('m-1')).forEach((request) => request.flush([]));
+        await settle();
+        expect(page().querySelector('app-mailbox-card section')).not.toBeNull();
+
+        const request = await cancelDraw();
+        request.flush(null, { status: 204, statusText: 'No Content' });
+        await settle();
+        await answerRefresh();
+        http.match(EXCLUSIONS_URL).forEach((one) => one.flush([]));
+        await settle();
+
+        http.expectNone(MAILBOXES_URL);
+        expect(page().querySelector('app-mailbox-card section')).toBeNull();
+      });
+
       it('shows the Group as not drawn when the Draw was already cancelled elsewhere', async () => {
         await open(drawnWithFour, PEDRO);
 
@@ -1146,6 +1172,196 @@ describe('GroupPage', () => {
         expect(text(section())).toContain('Te toca regalar a Pedro');
         expect(button('Anular el sorteo')).toBeDefined();
       });
+    });
+  });
+
+  describe('the Mailbox', () => {
+    const MARTA = { myReceiver: { id: 'u-marta', displayName: 'Marta' } };
+    const toMarta = { id: 'm-1', side: 'GIVER', receiverDisplayName: 'Marta' };
+    const fromGiver = { id: 'm-2', side: 'RECEIVER', receiverDisplayName: null };
+    const card = () => page().querySelector('app-mailbox-card section');
+    const tab = (label: string) =>
+      [...page().querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(
+        (one) => text(one) === label,
+      );
+    const panel = (id: string) => page().querySelector(`#mailbox-panel-${id}`);
+
+    const openDrawn = async () => {
+      http.expectOne(GROUP_URL).flush({ ...navidad, drawn: true });
+      await settle();
+      http.expectOne((r) => r.url === DRAW_URL && r.method === 'GET').flush(MARTA);
+      await settle();
+    };
+
+    it('is not there before the Draw, and nobody asks for it', async () => {
+      http.expectOne(GROUP_URL).flush(navidad);
+      await settle();
+      http
+        .expectOne((r) => r.url === DRAW_URL && r.method === 'GET')
+        .flush(NOT_DRAWN.body, NOT_DRAWN.init);
+      await settle();
+
+      http.expectNone(MAILBOXES_URL);
+      expect(page().querySelector('app-mailbox-card')).toBeNull();
+    });
+
+    it('is not there when the Group has no Mailboxes', async () => {
+      await openDrawn();
+      http.expectOne(MAILBOXES_URL).flush([]);
+      await settle();
+
+      expect(page().querySelector('app-mailbox-card')).toBeNull();
+    });
+
+    it('opens the Mailbox with the Receiver after the Draw card, with its Messages', async () => {
+      await openDrawn();
+      http.expectOne(MAILBOXES_URL).flush([toMarta, fromGiver]);
+      await settle();
+      http
+        .expectOne(messagesUrl('m-1'))
+        .flush([{ mine: false, text: 'Para leer, sin duda.', sentOn: '2026-12-10' }]);
+      await settle();
+
+      const cards = [...page().querySelectorAll('app-draw-card, app-mailbox-card')];
+      expect(cards.map((one) => one.tagName.toLowerCase())).toEqual([
+        'app-draw-card',
+        'app-mailbox-card',
+      ]);
+      expect(text(card()?.querySelector('h2'))).toBe('Buzón');
+      expect(text(panel('m-1'))).toContain('Con Marta: Para leer, sin duda.');
+    });
+
+    it('loads the other Mailbox’s Messages when its tab is chosen', async () => {
+      await openDrawn();
+      http.expectOne(MAILBOXES_URL).flush([toMarta, fromGiver]);
+      await settle();
+      http.expectOne(messagesUrl('m-1')).flush([]);
+      await settle();
+
+      tab('Tu Giver')?.click();
+      await settle();
+      http
+        .expectOne(messagesUrl('m-2'))
+        .flush([{ mine: false, text: '¿Qué talla usas?', sentOn: '2026-12-11' }]);
+      await settle();
+
+      expect(tab('Tu Giver')?.getAttribute('aria-selected')).toBe('true');
+      expect(text(panel('m-2'))).toContain('Tu Giver: ¿Qué talla usas?');
+
+      tab('Con Marta')?.click();
+      await settle();
+      http.expectNone(messagesUrl('m-1'));
+    });
+
+    it('retries Messages that could not be loaded', async () => {
+      await openDrawn();
+      http.expectOne(MAILBOXES_URL).flush([toMarta, fromGiver]);
+      await settle();
+      http.expectOne(messagesUrl('m-1')).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      panel('m-1')?.querySelector<HTMLButtonElement>('button')?.click();
+      await settle();
+      http.expectOne(messagesUrl('m-1')).flush([]);
+      await settle();
+
+      expect(text(panel('m-1'))).toContain('Aún no hay mensajes');
+    });
+
+    it('retries Mailboxes that could not be loaded', async () => {
+      await openDrawn();
+      http.expectOne(MAILBOXES_URL).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+
+      card()?.querySelector<HTMLButtonElement>('button')?.click();
+      await settle();
+      http.expectOne(MAILBOXES_URL).flush([toMarta]);
+      await settle();
+      http.expectOne(messagesUrl('m-1')).flush([]);
+      await settle();
+
+      expect(tab('Con Marta')).toBeDefined();
+    });
+
+    const write = async (message: string) => {
+      const textarea = panel('m-1')?.querySelector('textarea') as HTMLTextAreaElement;
+      textarea.value = message;
+      textarea.dispatchEvent(new Event('input'));
+      panel('m-1')?.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+      await settle();
+      return textarea;
+    };
+
+    it('sends a Message and adds it to the conversation', async () => {
+      await openDrawn();
+      http.expectOne(MAILBOXES_URL).flush([toMarta, fromGiver]);
+      await settle();
+      http.expectOne(messagesUrl('m-1')).flush([]);
+      await settle();
+
+      const textarea = await write('¿Para leer o para la cocina?');
+      const request = http.expectOne((r) => r.url === messagesUrl('m-1') && r.method === 'POST');
+      expect(request.request.body).toEqual({ text: '¿Para leer o para la cocina?' });
+      request.flush(
+        { mine: true, text: '¿Para leer o para la cocina?', sentOn: '2026-12-10' },
+        { status: 201, statusText: 'Created' },
+      );
+      await settle();
+
+      expect(text(panel('m-1'))).toContain('Tú: ¿Para leer o para la cocina?');
+      expect(textarea.value).toBe('');
+      expect(panel('m-1')?.querySelector('.motion-safe\\:animate-pop')).not.toBeNull();
+    });
+
+    it('keeps the text when the Message cannot be sent', async () => {
+      await openDrawn();
+      http.expectOne(MAILBOXES_URL).flush([toMarta]);
+      await settle();
+      http.expectOne(messagesUrl('m-1')).flush([]);
+      await settle();
+
+      const textarea = await write('¡Hola!');
+      http
+        .expectOne((r) => r.url === messagesUrl('m-1') && r.method === 'POST')
+        .flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(text(panel('m-1')?.querySelector('[role="alert"]'))).toContain('No se ha enviado');
+      expect(textarea.value).toBe('¡Hola!');
+    });
+
+    it('opens once the Admin makes the Draw', async () => {
+      const withFour = {
+        ...asAdmin,
+        members: [
+          ...asAdmin.members,
+          { id: 'u-pedro', displayName: 'Pedro', admin: false, you: false },
+        ],
+      };
+      http.expectOne(GROUP_URL).flush(withFour);
+      await settle();
+      http
+        .expectOne((r) => r.url === DRAW_URL && r.method === 'GET')
+        .flush(NOT_DRAWN.body, NOT_DRAWN.init);
+      await settle();
+      http.match(EXCLUSIONS_URL).forEach((request) => request.flush([]));
+
+      [...page().querySelectorAll<HTMLButtonElement>('button')]
+        .find((one) => text(one) === 'Sortear')
+        ?.click();
+      await settle();
+      [...page().querySelectorAll<HTMLButtonElement>('button')]
+        .find((one) => text(one) === 'Sí, sortear')
+        ?.click();
+      await settle();
+      http.expectOne((r) => r.url === DRAW_URL && r.method === 'POST').flush(MARTA);
+      await settle();
+
+      http.expectOne(MAILBOXES_URL).flush([toMarta]);
+      await settle();
+      http.expectOne(messagesUrl('m-1')).flush([]);
+      await settle();
+      expect(tab('Con Marta')).toBeDefined();
     });
   });
 });

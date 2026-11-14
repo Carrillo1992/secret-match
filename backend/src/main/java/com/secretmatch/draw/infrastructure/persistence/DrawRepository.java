@@ -7,7 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
-/** No query here returns more than one Assignment, nor looks one up by its Receiver (ADR 0001). */
+/**
+ * No query here returns more than one Assignment (ADR 0001). The one lookup by Receiver, {@link #findGiver}, only
+ * routes Mailbox Messages.
+ */
 interface DrawRepository extends JpaRepository<DrawEntity, UUID> {
 
     /**
@@ -32,6 +35,12 @@ interface DrawRepository extends JpaRepository<DrawEntity, UUID> {
             value = "SELECT receiver_id FROM assignments WHERE group_id = :groupId AND giver_id = :giverId",
             nativeQuery = true)
     Optional<UUID> findReceiver(UUID groupId, UUID giverId);
+
+    /** Only for routing Mailbox Messages; never shown to anyone. */
+    @Query(
+            value = "SELECT giver_id FROM assignments WHERE group_id = :groupId AND receiver_id = :receiverId",
+            nativeQuery = true)
+    Optional<UUID> findGiver(UUID groupId, UUID receiverId);
 
     @Modifying
     @Query(value = "DELETE FROM assignments WHERE group_id = :groupId", nativeQuery = true)

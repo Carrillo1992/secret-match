@@ -1021,10 +1021,51 @@ describe('GroupPage', () => {
         { status: 201, statusText: 'Created' },
       );
       await settle();
+      http.expectOne(GROUP_URL).flush({ ...withFour, drawn: true });
+      await settle();
       expect(button('Sortear')).toBeUndefined();
 
       await openEnvelope();
       expect(text(section())).toContain('Te toca regalar a Pedro');
+    });
+
+    describe('once the Admin has run it', () => {
+      const anywhere = (label: string) =>
+        [...page().querySelectorAll('button')].find((b) => b.textContent?.includes(label));
+      const wishlistNote = () =>
+        text(page().querySelector('section[aria-labelledby="my-wishlist"] p'));
+      const runTheDraw = async () => {
+        await open(withFour, 'not-drawn');
+        expect(wishlistNote()).toBe('Solo la verá quien te regale, cuando se haga el sorteo.');
+        const request = await runDraw();
+        request.flush(
+          { myReceiver: { id: 'u-pedro', displayName: 'Pedro' } },
+          { status: 201, statusText: 'Created' },
+        );
+        await settle();
+      };
+      const expectFrozen = () => {
+        expect(page().querySelector('section[aria-labelledby="group-invite"]')).toBeNull();
+        expect(anywhere('Quitar')).toBeUndefined();
+        expect(anywhere('Añadir exclusión')).toBeUndefined();
+        expect(wishlistNote()).toBe('Quien te regala ya puede verla.');
+      };
+
+      it('freezes the whole Group without a reload', async () => {
+        await runTheDraw();
+        http.expectOne(GROUP_URL).flush({ ...withFour, drawn: true });
+        await settle();
+
+        expectFrozen();
+      });
+
+      it('still shows the Group as drawn when it cannot be asked for again', async () => {
+        await runTheDraw();
+        http.expectOne(GROUP_URL).flush(null, { status: 500, statusText: 'Server Error' });
+        await settle();
+
+        expectFrozen();
+      });
     });
 
     it('does not draw when the Admin cancels the confirmation', async () => {
@@ -1431,6 +1472,8 @@ describe('GroupPage', () => {
         ?.click();
       await settle();
       http.expectOne((r) => r.url === DRAW_URL && r.method === 'POST').flush(MARTA);
+      await settle();
+      http.expectOne(GROUP_URL).flush({ ...withFour, drawn: true });
       await settle();
 
       http.expectOne(MAILBOXES_URL).flush([toMarta]);

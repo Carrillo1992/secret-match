@@ -38,6 +38,7 @@ import {
   PreferencesStatus,
 } from '../../components/preferences-card/preferences-card';
 import { SaveStatus, WishForm } from '../../components/wish-form/wish-form';
+import { GroupsApi } from '../../../groups/data-access/groups-api';
 import { PRIORITY_LABELS } from '../../data-access/wishlist-rules';
 import {
   DontListEntry,
@@ -83,6 +84,7 @@ import {
 })
 export class WishlistPage {
   private readonly api = inject(WishlistApi);
+  private readonly groupsApi = inject(GroupsApi);
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);
   protected readonly params = toSignal(
@@ -118,6 +120,20 @@ export class WishlistPage {
     return !!wishlist && wishlist.owner.you && !wishlist.finished;
   });
   protected readonly notFound = computed(() => this.result()?.status === 'not-found');
+
+  /**
+   * Whether the owner's Giver can read the Wishlist yet, which depends on the Group's Draw: asked
+   * for only on the owner's own Wishlist. `undefined` while that is not known: still loading, or the
+   * Group could not be loaded. The page then says nothing rather than something that may be stale.
+   */
+  private readonly groupOutcome = resource({
+    params: () => (this.wishlist()?.owner.you ? this.params().groupId : undefined),
+    loader: ({ params }) => this.groupsApi.group(params),
+  });
+  protected readonly drawn = computed(() => {
+    const outcome = this.groupOutcome.hasValue() ? this.groupOutcome.value() : undefined;
+    return outcome?.status === 'found' ? outcome.group.drawn : undefined;
+  });
   protected readonly groupLink = computed(() => `/groups/${this.params().groupId}`);
 
   protected readonly euros = euros;

@@ -23,9 +23,10 @@
     </p>
 
     @if (wishlist.owner.you && wishlist.finished) {
-      <p class="mt-1.5 font-semibold">
+      <app-notice class="mt-6" heading="Finalizado" headingId="wishlist-finished">
+        <svg lucideCircleCheck noticeIcon [size]="20"></svg>
         El grupo ha finalizado: tu lista ya solo se puede consultar.
-      </p>
+      </app-notice>
     }
 
     <p role="status" class="mt-1.5 text-sm text-ink-muted empty:hidden">{{ statusText() }}</p>

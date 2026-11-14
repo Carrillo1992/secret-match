@@ -133,7 +133,7 @@ export class PreferencesCard {
   /** Only the owner changes them (ADR 0004); their Giver reads them. */
   readonly owner = input.required<boolean>();
   /** False once the Group is finished: then nobody changes them, their owner included. */
-  readonly editable = input(true);
+  readonly editable = input.required<boolean>();
   readonly status = input<PreferencesStatus>('idle');
   /** The owner sent the text, trimmed: the page asks the API to replace the Preferences. */
   readonly save = output<string>();

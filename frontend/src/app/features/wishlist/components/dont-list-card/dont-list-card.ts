@@ -164,7 +164,7 @@ export class DontListCard {
   /** The signed-in Member owns this Wishlist, so they may change it. */
   readonly owner = input.required<boolean>();
   /** False once the Group is finished: then nobody changes it, its owner included. */
-  readonly editable = input(true);
+  readonly editable = input.required<boolean>();
   readonly ownerName = input.required<string>();
   readonly addition = input<DontListAddition | null>(null);
   readonly removal = input<DontListRemoval | null>(null);

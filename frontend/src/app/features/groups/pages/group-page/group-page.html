@@ -12,23 +12,11 @@
     </h1>
 
     @if (group.finished) {
-      <section
-        aria-labelledby="group-finished"
-        class="mt-6 flex gap-3 rounded-card bg-surface p-5 shadow-card"
-      >
-        <div
-          class="flex size-10 shrink-0 items-center justify-center rounded-full bg-subtle text-ink"
-        >
-          <svg lucideCircleCheck [size]="20"></svg>
-        </div>
-        <div>
-          <h2 id="group-finished" class="font-display text-lg font-semibold">Finalizado</h2>
-          <p class="mt-1.5 text-ink-muted">
-            El intercambio fue el {{ longExchangeDate(group.exchangeDate) }}. El grupo ya solo se
-            puede consultar.
-          </p>
-        </div>
-      </section>
+      <app-notice class="mt-6" heading="Finalizado" headingId="group-finished">
+        <svg lucideCircleCheck noticeIcon [size]="20"></svg>
+        El intercambio fue el {{ longExchangeDate(group.exchangeDate) }}. El grupo ya solo se puede
+        consultar.
+      </app-notice>
     }
 
     <app-draw-card

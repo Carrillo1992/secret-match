@@ -89,7 +89,7 @@ A rule set by the group admin that two specific members may never be assigned to
 _Avoid_: Restriction, block, constraint
 
 **Roster**:
-A Group's Admin and Members as the Draw module reads them from the Groups module. The same people as the Group's Members, seen from the Draw, not a separate list anyone keeps.
+A Group's Members as another module reads them from the Groups module: the Draw module with its Admin, the Wishlist module with whether the Group is finished. The same people as the Group's Members, seen from that module, not a separate list anyone keeps.
 _Avoid_: Participants, member list
 
 **Reveal**:

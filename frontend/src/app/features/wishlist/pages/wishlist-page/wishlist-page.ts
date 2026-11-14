@@ -11,13 +11,20 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideChevronLeft, LucideExternalLink, LucidePlus, LucideSearchX } from '@lucide/angular';
+import {
+  LucideChevronLeft,
+  LucideCircleCheck,
+  LucideExternalLink,
+  LucidePlus,
+  LucideSearchX,
+} from '@lucide/angular';
 import { map } from 'rxjs';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
+import { Notice } from '../../../../shared/ui/notice/notice';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { euros } from '../../../../shared/format/euros';
@@ -58,12 +65,14 @@ import {
     Chip,
     ConfirmPanel,
     DontListCard,
+    Notice,
     PreferencesCard,
     RouterLink,
     StatusHeader,
     TextLink,
     WishForm,
     LucideChevronLeft,
+    LucideCircleCheck,
     LucideExternalLink,
     LucidePlus,
     LucideSearchX,

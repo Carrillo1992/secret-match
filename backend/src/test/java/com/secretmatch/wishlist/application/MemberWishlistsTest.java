@@ -42,19 +42,19 @@ class MemberWishlistsTest {
     private final InMemoryWishes stored = new InMemoryWishes();
     private final InMemoryPreferences storedPreferences = new InMemoryPreferences();
     private final InMemoryDontListEntries storedDontList = new InMemoryDontListEntries();
-    private final FakeRosters members = new FakeRosters();
+    private final FakeRosters rosters = new FakeRosters();
     private final FakeReceivers receivers = new FakeReceivers();
     private final MemberWishlists wishlists = new MemberWishlists(
             stored,
             storedPreferences,
             storedDontList,
-            members,
+            rosters,
             receivers,
             Clock.fixed(Instant.parse("2026-12-01T10:00:00Z"), ZoneOffset.UTC));
 
     {
-        members.put(GROUP, List.of(member(CARMEN, "Abuela Carmen"), member(LUIS, "Luis"), member(MARTA, "Marta")));
-        members.put(OTHER_GROUP, List.of(member(LUIS, "Luis")));
+        rosters.put(GROUP, List.of(member(CARMEN, "Abuela Carmen"), member(LUIS, "Luis"), member(MARTA, "Marta")));
+        rosters.put(OTHER_GROUP, List.of(member(LUIS, "Luis")));
     }
 
     @Test
@@ -375,7 +375,7 @@ class MemberWishlistsTest {
         wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla M"));
         StoredDontListEntry chocolate = wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de chocolate"));
         receivers.draw(GROUP, Map.of(MARTA, LUIS, LUIS, CARMEN, CARMEN, MARTA));
-        members.finish(GROUP);
+        rosters.finish(GROUP);
 
         List<Runnable> edits = List.of(
                 () -> wishlists.addWish(GROUP, LUIS, wish("Guantes", Priority.LOW)),
@@ -402,7 +402,7 @@ class MemberWishlistsTest {
     @Test
     @DisplayName("a finished Group stays hidden from non-Members: they get no Group, not a finished one")
     void finishedGroupHiddenFromStrangers() {
-        members.finish(GROUP);
+        rosters.finish(GROUP);
 
         assertThatThrownBy(() -> wishlists.addWish(GROUP, STRANGER, wish("Bufanda", Priority.MEDIUM)))
                 .isInstanceOf(GroupNotFoundException.class);

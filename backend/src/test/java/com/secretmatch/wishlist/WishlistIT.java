@@ -596,6 +596,12 @@ class WishlistIT {
                 .expectStatus()
                 .is2xxSuccessful();
         User giverOfLuis = giverOf(family, family.luisId(), List.of(family.carmen(), family.marta(), pablo));
+        // After the Draw and before the Group is finished, the owner still edits all of it.
+        put(family.luis(), preferencesOf(family), Map.of("preferences", "Talla M, pie 42"))
+                .expectStatus()
+                .isOk();
+        String velas = addedDontListEntryId(family.luis(), family, "nada de velas");
+        delete(family.luis(), dontListOf(family) + "/" + velas).expectStatus().isNoContent();
         // 00:00 in Madrid on the day after the Exchange Date (24 December).
         clock.set(Instant.parse("2026-12-24T23:00:00Z"));
         User luis = signedInAgain(family.luis().email());
@@ -618,7 +624,7 @@ class WishlistIT {
         JsonNode own = json(get(luis, wishlistOf(family, family.luisId())));
         assertThat(own.get("finished").asBoolean()).isTrue();
         assertThat(titlesIn(own)).containsExactly("Bufanda");
-        assertThat(own.get("preferences").asString()).isEqualTo("Talla M");
+        assertThat(own.get("preferences").asString()).isEqualTo("Talla M, pie 42");
         assertThat(dontListIn(own)).containsExactly("nada de chocolate");
         User giver = signedInAgain(giverOfLuis.email());
         assertThat(titlesIn(json(get(giver, wishlistOf(family, family.luisId())))))

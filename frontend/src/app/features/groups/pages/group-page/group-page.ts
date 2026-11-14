@@ -48,6 +48,7 @@ import {
 } from '../../components/exclusions-card/exclusions-card';
 import { CancelStatus, DrawCard, DrawState, RunStatus } from '../../components/draw-card/draw-card';
 import { DrawApi } from '../../data-access/draw-api';
+import { envelopeWasOpened, rememberOpenedEnvelope } from '../../data-access/opened-envelopes';
 import { Exclusion, ExclusionsApi } from '../../data-access/exclusions-api';
 import { longExchangeDate } from '../../data-access/group-format';
 import { GroupEdit, GroupsApi } from '../../data-access/groups-api';
@@ -140,6 +141,19 @@ export class GroupPage {
     return this.drawOutcome.value();
   });
   protected readonly runStatus = signal<RunStatus>('idle');
+
+  /** Whether this device opened the Member's envelope before: the Reveal then shows it open. */
+  protected readonly envelopeAlreadyOpened = computed(() => {
+    const state = this.drawState();
+    return state.status === 'drawn' && envelopeWasOpened(this.groupId(), state.receiver.id);
+  });
+
+  protected rememberEnvelope(): void {
+    const state = this.drawState();
+    if (state.status === 'drawn') {
+      rememberOpenedEnvelope(this.groupId(), state.receiver.id);
+    }
+  }
 
   /** Once the API agrees, the Admin sees their own Receiver, like every other Member. */
   protected async runDraw(): Promise<void> {

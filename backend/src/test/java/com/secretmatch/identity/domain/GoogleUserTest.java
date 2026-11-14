@@ -3,6 +3,7 @@ package com.secretmatch.identity.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.secretmatch.shared.domain.Language;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 

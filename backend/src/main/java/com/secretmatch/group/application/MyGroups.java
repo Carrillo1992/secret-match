@@ -6,9 +6,11 @@ import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.GroupNotFoundException;
 import com.secretmatch.group.domain.InviteCode;
 import com.secretmatch.group.domain.MemberId;
+import com.secretmatch.identity.application.EmailRecipient;
 import com.secretmatch.identity.application.UserDeleted;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
@@ -263,15 +265,31 @@ public class MyGroups {
         String admin = users.displayNamesOf(List.of(group.admin().value()))
                 .get(group.admin().value());
         String groupName = group.name().value();
-        String subject = "Se ha borrado el grupo «%s»".formatted(groupName);
-        String message = """
-                %s, que administraba el grupo «%s», lo ha borrado junto con todo lo que había en él.
-
-                Ya no lo verás en SecretMatch.""".formatted(admin, groupName);
         for (MemberId member : toTell) {
-            String to =
-                    users.emailOf(member.value()).orElseThrow(() -> new IllegalStateException("a Member has no User"));
-            events.publishEvent(new EmailRequested(to, subject, message, "/home"));
+            EmailRecipient to = recipientOf(member);
+            events.publishEvent(
+                    switch (to.language()) {
+                        case SPANISH ->
+                            new EmailRequested(
+                                    to.email(),
+                                    Language.SPANISH,
+                                    "Se ha borrado el grupo «%s»".formatted(groupName),
+                                    """
+                                    %s, que administraba el grupo «%s», lo ha borrado junto con todo lo que había en él.
+
+                                    Ya no lo verás en SecretMatch.""".formatted(admin, groupName),
+                                    "/home");
+                        case ENGLISH ->
+                            new EmailRequested(
+                                    to.email(),
+                                    Language.ENGLISH,
+                                    "The Group “%s” was deleted".formatted(groupName),
+                                    """
+                                    %s, the Admin of the Group “%s”, deleted it along with everything in it.
+
+                                    You will no longer see it in SecretMatch.""".formatted(admin, groupName),
+                                    "/home");
+                    });
         }
     }
 
@@ -279,13 +297,35 @@ public class MyGroups {
     private void emailRemovedMember(Group group, MemberId removed) {
         String admin = users.displayNamesOf(List.of(group.admin().value()))
                 .get(group.admin().value());
-        String to = users.emailOf(removed.value()).orElseThrow(() -> new IllegalStateException("a Member has no User"));
+        EmailRecipient to = recipientOf(removed);
         String groupName = group.name().value();
-        events.publishEvent(new EmailRequested(
-                to, "Ya no estás en «%s»".formatted(groupName), """
-                %s, que administra el grupo «%s», te ha quitado del grupo.
+        events.publishEvent(
+                switch (to.language()) {
+                    case SPANISH ->
+                        new EmailRequested(
+                                to.email(),
+                                Language.SPANISH,
+                                "Ya no estás en «%s»".formatted(groupName),
+                                """
+                                %s, que administra el grupo «%s», te ha quitado del grupo.
 
-                Si crees que es un error, habla con %s.""".formatted(admin, groupName, admin), "/home"));
+                                Si crees que es un error, habla con %s.""".formatted(admin, groupName, admin),
+                                "/home");
+                    case ENGLISH ->
+                        new EmailRequested(
+                                to.email(),
+                                Language.ENGLISH,
+                                "You are no longer in “%s”".formatted(groupName),
+                                """
+                                %s, the Admin of the Group “%s”, removed you from the Group.
+
+                                If you think this is a mistake, talk to %s.""".formatted(admin, groupName, admin),
+                                "/home");
+                });
+    }
+
+    private EmailRecipient recipientOf(MemberId member) {
+        return users.recipientOf(member.value()).orElseThrow(() -> new IllegalStateException("a Member has no User"));
     }
 
     /** The Group, only if the User is one of its Members. Every use case on one Group goes through here. */

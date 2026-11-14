@@ -59,7 +59,7 @@ infrastructure ──▶ application ──▶ domain
 | `wishlist` | Wish items, personal preferences, the "please don't" list |
 | `draw` | Exclusions, the draw engine, assignments and their lifecycle |
 | `mailbox` | Anonymous giver→receiver questions and answers |
-| `notification` | Email delivery: the shared Spanish template and sending (Resend adapter). The module that triggers an email writes its text (ADR 0003) |
+| `notification` | Email delivery: the shared template, in Spanish and English, and sending (Resend adapter). The module that triggers an email writes its text (ADR 0003) |
 | `shared` | Truly cross-cutting bits only (typed id base, error model, clock config) |
 
 The module list is a starting point. Grilling and specs may merge or split modules, and if they do, update this table.
@@ -105,12 +105,12 @@ The module list is a starting point. Grilling and specs may merge or split modul
 
 Every email in the catalogue (#6) goes through the same path. The module that triggers it writes the text, and `notification` owns the layout and the sending (ADR 0003).
 
-1. **Publish from the use case, inside its transaction.** Inject `ApplicationEventPublisher` and publish a `notification.application.EmailRequested(recipient, subject, message, linkPath)` from the `@Transactional` use case method. It goes out only after the commit. Published outside a transaction it is sent right away, because nothing can roll back.
-2. **Write the text in Spanish, plain text only.** `subject` and `message` are plain text: a blank line separates paragraphs, and the template escapes everything. Do not add a greeting from a person, a signature or a call-to-action button: the base template already adds the SecretMatch sender, an "Abrir SecretMatch" link and a footer. `linkPath` is a path inside the SPA (e.g. `/groups/{groupId}`), never a full URL.
-3. **Check anonymity.** An email to a Receiver must not reveal the Giver: no name, email or anything that could identify them, not even in the subject (section 4 of `docs/verification.md`).
+1. **Publish from the use case, inside its transaction.** Inject `ApplicationEventPublisher` and publish a `notification.application.EmailRequested(recipient, language, subject, message, linkPath)` from the `@Transactional` use case method. It goes out only after the commit. Published outside a transaction it is sent right away, because nothing can roll back.
+2. **Write the text in both Languages, plain text only, and pick the recipient's** (ADR 0005). Read the recipient's address and `shared.domain.Language` together, through the port that gives you the address (`identity.application.UserDirectory.recipientOf`, or a port of your own such as `mailbox.application.MemberEmails`), and `switch` over the Language to write the subject and message. An email to several people is written once per recipient, each in theirs. English copy uses the `GLOSSARY.md` terms as they are. `subject` and `message` are plain text: a blank line separates paragraphs, and the template escapes everything. Do not add a greeting from a person, a signature or a call-to-action button: the base template already adds the SecretMatch sender, an "Abrir SecretMatch" / "Open SecretMatch" link and a footer, in the email's Language. `linkPath` is a path inside the SPA (e.g. `/groups/{groupId}`), never a full URL.
+3. **Check anonymity, in both Languages.** An email to a Receiver must not reveal the Giver: no name, email or anything that could identify them, not even in the subject (section 4 of `docs/verification.md`).
 4. **Never log emails.** Do not log the event, the recipient or the text. `EmailRequested` and `OutgoingEmail` print as `[redacted]`. Adapters report failures only as `EmailDeliveryException` with a message that is safe to log (e.g. the HTTP status).
 5. **Test it.**
-   - In the use case's integration test, replace `EmailSender` with a recording fake (see `EmailDeliveryIT`) and assert the recipient and subject.
+   - In the use case's integration test, replace `EmailSender` with a recording fake (see `EmailDeliveryIT`) and assert the recipient and subject, for a Spanish and an English recipient.
    - For a Receiver-facing email, also assert that the Giver's identity is absent.
    - In the running stack, check the email in Mailpit (http://localhost:8025).
 

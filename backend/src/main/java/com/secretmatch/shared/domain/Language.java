@@ -1,8 +1,11 @@
-package com.secretmatch.identity.domain;
+package com.secretmatch.shared.domain;
 
 import java.util.Arrays;
 
-/** The Language a User reads SecretMatch and its emails in. Stored and transported as its code. */
+/**
+ * The Language a User reads SecretMatch and its emails in. Stored and transported as its code. Shared, because every
+ * module that emails a User writes that email in the User's Language (ADR 0003, ADR 0005).
+ */
 public enum Language {
     SPANISH("es"),
     ENGLISH("en");
@@ -19,12 +22,12 @@ public enum Language {
     }
 
     /**
-     * @throws InvalidUserDetailsException if no Language has this code
+     * @throws UnsupportedLanguageException if no Language has this code
      */
     public static Language ofCode(String code) {
         return Arrays.stream(values())
                 .filter(language -> language.code.equals(code))
                 .findFirst()
-                .orElseThrow(InvalidUserDetailsException::language);
+                .orElseThrow(UnsupportedLanguageException::new);
     }
 }

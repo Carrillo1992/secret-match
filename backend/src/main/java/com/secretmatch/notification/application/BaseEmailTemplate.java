@@ -1,18 +1,36 @@
 package com.secretmatch.notification.application;
 
+import com.secretmatch.shared.domain.Language;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.HtmlUtils;
 
-/** The Spanish layout every SecretMatch email shares: sender, branding, a link into the app. */
+/**
+ * The layout every SecretMatch email shares, in the email's Language: sender, branding, a link into the app and a
+ * footer.
+ */
 @Component
 class BaseEmailTemplate {
 
     private static final String SENDER_NAME = "SecretMatch";
-    private static final String CALL_TO_ACTION = "Abrir SecretMatch";
-    private static final String FOOTER =
-            "Este correo lo envía SecretMatch automáticamente. No respondas a este mensaje.";
+
+    /** The template's own words in one Language. */
+    private record Copy(String callToAction, String footer) {
+
+        static Copy in(Language language) {
+            return switch (language) {
+                case SPANISH ->
+                    new Copy(
+                            "Abrir SecretMatch",
+                            "Este correo lo envía SecretMatch automáticamente. No respondas a este mensaje.");
+                case ENGLISH ->
+                    new Copy(
+                            "Open SecretMatch",
+                            "This email is sent automatically by SecretMatch. Please do not reply to it.");
+            };
+        }
+    }
 
     private final MailProperties properties;
 
@@ -22,13 +40,14 @@ class BaseEmailTemplate {
 
     OutgoingEmail render(EmailRequested request) {
         String link = linkTo(request.linkPath());
+        Copy copy = Copy.in(request.language());
         return new OutgoingEmail(
                 SENDER_NAME,
                 properties.fromAddress(),
                 request.recipient(),
                 request.subject(),
-                html(request, link),
-                text(request, link));
+                html(request, copy, link),
+                text(request, copy, link));
     }
 
     private String linkTo(String path) {
@@ -36,13 +55,13 @@ class BaseEmailTemplate {
         return (base.endsWith("/") ? base.substring(0, base.length() - 1) : base) + path;
     }
 
-    private static String html(EmailRequested request, String link) {
+    private static String html(EmailRequested request, Copy copy, String link) {
         String paragraphs = Arrays.stream(request.message().split("\\R\\s*\\R"))
                 .map(paragraph -> "<p style=\"margin:0 0 16px;\">" + escape(paragraph.strip()) + "</p>")
                 .collect(Collectors.joining("\n"));
         return """
                 <!doctype html>
-                <html lang="es">
+                <html lang="%s">
                 <head>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -59,14 +78,22 @@ class BaseEmailTemplate {
                 </div>
                 </body>
                 </html>
-                """.formatted(escape(request.subject()), SENDER_NAME, paragraphs, escape(link), CALL_TO_ACTION, FOOTER);
+                """.formatted(
+                        request.language().code(),
+                        escape(request.subject()),
+                        SENDER_NAME,
+                        paragraphs,
+                        escape(link),
+                        copy.callToAction(),
+                        copy.footer());
     }
 
     private static String escape(String value) {
         return HtmlUtils.htmlEscape(value, "UTF-8");
     }
 
-    private static String text(EmailRequested request, String link) {
-        return request.message().strip() + "\n\n" + CALL_TO_ACTION + ": " + link + "\n\n--\n" + FOOTER + "\n";
+    private static String text(EmailRequested request, Copy copy, String link) {
+        return request.message().strip() + "\n\n" + copy.callToAction() + ": " + link + "\n\n--\n" + copy.footer()
+                + "\n";
     }
 }

@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -521,12 +523,15 @@ class MailboxIT {
         assertThat(mail.sentTo(giver.user().email())).hasSize(1);
     }
 
-    @Test
+    @ParameterizedTest(name = "in {0}")
+    @ValueSource(strings = {"es", "en"})
     @DisplayName("the new-Message email has no names, no Message text and no Giver data, and is the same both ways")
-    void newMessageEmailSaysNothingAboutTheSender() {
+    void newMessageEmailSaysNothingAboutTheSender(String language) {
         Drawn drawn = drawnFamily();
         Member giver = drawn.family().luis();
         Member receiver = drawn.receiverOf(giver);
+        speaks(giver.user(), language);
+        speaks(receiver.user(), language);
         String mailbox = mailboxIdOf(giver, drawn, "GIVER");
         mail.clear();
 
@@ -548,6 +553,28 @@ class MailboxIT {
                 .usingRecursiveComparison()
                 .ignoringFields("to")
                 .isEqualTo(toGiver);
+    }
+
+    @Test
+    @DisplayName("the new-Message email goes out in the Language of the side it is sent to")
+    void newMessageEmailInTheRecipientsLanguage() {
+        Drawn drawn = drawnFamily();
+        Member giver = drawn.family().luis();
+        Member receiver = drawn.receiverOf(giver);
+        speaks(receiver.user(), "en");
+        String mailbox = mailboxIdOf(giver, drawn, "GIVER");
+        mail.clear();
+
+        send(giver, mailbox, "¿Qué talla usas?").expectStatus().isCreated();
+        send(receiver, mailbox, "La M").expectStatus().isCreated();
+
+        OutgoingEmail toReceiver = mail.sentTo(receiver.user().email()).getFirst();
+        assertThat(toReceiver.subject()).isEqualTo("You have a new Message in “Navidad”");
+        assertThat(toReceiver.text())
+                .contains("Open the Group to read it and reply.")
+                .contains("/groups/" + drawn.family().groupId());
+        assertThat(mail.sentTo(giver.user().email()).getFirst().subject())
+                .isEqualTo("Tienes un mensaje nuevo en «Navidad»");
     }
 
     @Test
@@ -706,6 +733,18 @@ class MailboxIT {
                 .uri(path)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
                 .exchange();
+    }
+
+    /** From now on the User reads SecretMatch, and gets its emails, in this Language. */
+    private void speaks(User user, String language) {
+        http.put()
+                .uri("/api/v1/users/me/language")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("language", language))
+                .exchange()
+                .expectStatus()
+                .isOk();
     }
 
     private RestTestClient.ResponseSpec post(User user, String path, Map<String, ?> body) {

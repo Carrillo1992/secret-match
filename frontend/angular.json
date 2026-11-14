@@ -12,6 +12,9 @@
       "root": "",
       "sourceRoot": "src",
       "prefix": "app",
+      "i18n": {
+        "sourceLocale": "es"
+      },
       "architect": {
         "build": {
           "builder": "@angular/build:application",
@@ -24,7 +27,8 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.css"]
+            "styles": ["src/styles.css"],
+            "polyfills": ["@angular/localize/init"]
           },
           "configurations": {
             "production": {
@@ -62,6 +66,15 @@
           },
           "defaultConfiguration": "development"
         },
+        "extract-i18n": {
+          "builder": "@angular/build:extract-i18n",
+          "options": {
+            "buildTarget": "secret-match:build",
+            "format": "json",
+            "outputPath": "src/locale",
+            "outFile": "messages.json"
+          }
+        },
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
@@ -71,6 +84,7 @@
             "coverageExclude": [
               "src/**/*.spec.ts",
               "src/main.ts",
+              "src/bootstrap.ts",
               "src/test-setup.ts",
               "src/app/app.config.ts",
               "src/app/core/api/generated/**"

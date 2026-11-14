@@ -1,0 +1,21 @@
+{
+  "locale": "es",
+  "translations": {
+    "158616734160395511": " Tu cuenta se ha borrado. Te hemos enviado un email para confirmarlo. ",
+    "2817702664641173202": "Tu amigo invisible, sin papelitos.",
+    "8180795891255083525": "Crear cuenta",
+    "4311569858228721961": "Iniciar sesión",
+    "1930211400764357": "Comprobando la API…",
+    "6098291934234084130": " API OK ",
+    "6039821132239273514": " No se puede conectar con la API ",
+    "326575377012477304": " Reintentar ",
+    "4798961227159743968": "Cerrar",
+    "5417396314870135122": "Sistema",
+    "3906034958359540712": "Claro",
+    "4560550641194494267": "Oscuro",
+    "4361390512338905551": "Preferencias",
+    "2473708249335920209": "Tema",
+    "1500181871307171807": "Idioma",
+    "1199908807070149151": "SecretMatch no se ha podido iniciar. Recarga la página en unos minutos."
+  }
+}

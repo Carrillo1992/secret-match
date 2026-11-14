@@ -15,6 +15,14 @@ A `PreToolUse` hook (`.claude/hooks/require-design.sh`) enforces this: creating 
 - A new token goes into `@theme`, its dark value into the `@variant dark` block, and both into `DESIGN.md` in the same change.
 - Icons: `@lucide/angular`, one standalone import per icon (`LucideGift` → `<svg lucideGift>`).
 
+## Copy in two Languages
+
+The Spanish copy in the templates is the source; English is `src/locale/messages.en.json`, loaded at runtime before bootstrap (ADR 0005, `main.ts`). To add or change copy:
+
+- Mark it: `i18n` on the element, `i18n-<attr>` for an attribute or input (`i18n-aria-label`, `i18n-label`), `` $localize`…` `` in TypeScript.
+- Run `npm run extract-i18n` (rewrites `src/locale/messages.json`), then add the English entry under the same id in `messages.en.json`, using the `GLOSSARY.md` terms. Changing a Spanish message changes its id, so its English entry has to move too. `src/locale/translations.spec.ts` fails while any message has no English, and CI fails when `messages.json` is stale.
+- Dates and numbers go through `intlLocale()` (`core/language.ts`), never a hard-coded locale. Specs run in Spanish (`test-setup.ts`); set `secretmatch.language` in `localStorage` to test English.
+
 ## Gotchas
 
 - The Preferences menu button sits in both layouts' headers, so a page spec that looks for "the first `button`" finds it. Query inside `main`, where the page's own content is.

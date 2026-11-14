@@ -42,7 +42,7 @@ let nextId = 0;
         <h2 [id]="titleId" class="font-display text-xl font-semibold">{{ heading() }}</h2>
         <ng-content />
         <div class="mt-6 text-center">
-          <button type="button" appLink standalone (click)="closed.emit()">Cerrar</button>
+          <button type="button" appLink standalone (click)="closed.emit()" i18n>Cerrar</button>
         </div>
       </div>
     </dialog>

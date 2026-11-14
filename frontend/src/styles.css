@@ -55,6 +55,93 @@
   /* A Message just sent rises into its conversation */
   --animate-pop: pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 
+  /*
+   * The envelope Reveal (#30): the seal pops, the flap opens and the letter peeks out; then the
+   * envelope settles small, the letter grows with the Receiver's name and the rest rises after it.
+   */
+  --animate-seal-pop: seal-pop 280ms ease-in both;
+  --animate-flap-open: flap-open 480ms 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  --animate-letter-peek: letter-peek 560ms 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-envelope-settle: envelope-settle 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-letter-grow: letter-grow 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-reveal-name: reveal-rise 440ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-reveal-rest: reveal-rise 440ms 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes seal-pop {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    45% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0);
+    }
+  }
+
+  @keyframes flap-open {
+    0% {
+      transform: rotateX(0);
+      z-index: 4;
+    }
+    50% {
+      z-index: 4;
+    }
+    51% {
+      z-index: 1;
+    }
+    100% {
+      transform: rotateX(180deg);
+      z-index: 1;
+    }
+  }
+
+  @keyframes letter-peek {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-48%);
+    }
+  }
+
+  @keyframes envelope-settle {
+    from {
+      transform: translateY(40px) scale(1.66);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes letter-grow {
+    from {
+      opacity: 0;
+      transform: translateY(60px) scale(0.55);
+    }
+    55% {
+      opacity: 1;
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes reveal-rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
   @keyframes pop {
     from {
       opacity: 0;

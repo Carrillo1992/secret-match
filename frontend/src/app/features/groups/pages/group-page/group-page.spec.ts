@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideApiConfiguration } from '../../../../core/api/generated/api-configuration';
 import { authInterceptor } from '../../../../core/auth/auth.interceptor';
+import { envelopeWasOpened, rememberOpenedEnvelope } from '../../data-access/opened-envelopes';
 import { GroupPage } from './group-page';
 
 const GROUP_URL = 'http://api.test/api/v1/groups/g-1';
@@ -79,6 +80,7 @@ describe('GroupPage', () => {
     // A drawn Group's page asks for its Mailboxes; tests about something else answer with none.
     http.match(MAILBOXES_URL).forEach((request) => request.flush([]));
     http.verify();
+    localStorage.clear();
   });
 
   const page = () => harness.routeNativeElement as HTMLElement;
@@ -960,6 +962,13 @@ describe('GroupPage', () => {
       }
       await settle();
     };
+    /** Opens the envelope and skips its animation (jsdom plays no animations anyway). */
+    const openEnvelope = async () => {
+      button('Abrir el sobre')?.click();
+      await settle();
+      button('Saltar animación')?.click();
+      await settle();
+    };
     const runDraw = async () => {
       button('Sortear')?.click();
       await settle();
@@ -975,13 +984,32 @@ describe('GroupPage', () => {
       expect(button('Sortear')).toBeUndefined();
     });
 
-    it('shows each Member their own Receiver once the Draw is made', async () => {
+    it('shows each Member their own Receiver once they open the envelope', async () => {
       await open(navidad, { myReceiver: { id: 'u-marta', displayName: 'Marta' } });
+      expect(text(section())).toContain('Tienes un sobre cerrado');
+      expect(text(section())).not.toContain('Marta');
+
+      await openEnvelope();
 
       expect(text(section())).toContain('Te toca regalar a Marta');
       const link = section()?.querySelector('a');
       expect(text(link)).toBe('Ver sus deseos');
       expect(link?.getAttribute('href')).toBe('/groups/g-1/members/u-marta/wishlist');
+    });
+
+    it('remembers on this device that the envelope was opened', async () => {
+      await open(navidad, { myReceiver: { id: 'u-marta', displayName: 'Marta' } });
+      await openEnvelope();
+      expect(envelopeWasOpened('g-1', 'u-marta')).toBe(true);
+    });
+
+    it('shows an envelope opened before already open', async () => {
+      rememberOpenedEnvelope('g-1', 'u-marta');
+
+      await open(navidad, { myReceiver: { id: 'u-marta', displayName: 'Marta' } });
+
+      expect(text(section())).toContain('Te toca regalar a Marta');
+      expect(button('Abrir el sobre')).toBeUndefined();
     });
 
     it('lets the Admin run the Draw after confirming, then shows their Receiver', async () => {
@@ -993,9 +1021,10 @@ describe('GroupPage', () => {
         { status: 201, statusText: 'Created' },
       );
       await settle();
-
-      expect(text(section())).toContain('Te toca regalar a Pedro');
       expect(button('Sortear')).toBeUndefined();
+
+      await openEnvelope();
+      expect(text(section())).toContain('Te toca regalar a Pedro');
     });
 
     it('does not draw when the Admin cancels the confirmation', async () => {
@@ -1048,7 +1077,7 @@ describe('GroupPage', () => {
         .flush({ myReceiver: { id: 'u-marta', displayName: 'Marta' } });
       await settle();
 
-      expect(text(section())).toContain('Te toca regalar a Marta');
+      expect(text(section())).toContain('Tienes un sobre cerrado');
     });
 
     describe('cancelling it', () => {
@@ -1089,6 +1118,7 @@ describe('GroupPage', () => {
 
       it('does nothing when the Admin cancels the confirmation', async () => {
         await open(drawnWithFour, PEDRO);
+        await openEnvelope();
 
         button('Anular el sorteo')?.click();
         await settle();
@@ -1157,6 +1187,7 @@ describe('GroupPage', () => {
 
       it('says so when the Draw could not be cancelled, and keeps it', async () => {
         await open(drawnWithFour, PEDRO);
+        await openEnvelope();
 
         const request = await cancelDraw();
         request.flush(

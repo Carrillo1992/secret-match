@@ -1,11 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { LucideChevronRight, LucideGift, LucideShuffle, LucideUndo2 } from '@lucide/angular';
+import { LucideGift, LucideShuffle, LucideUndo2 } from '@lucide/angular';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
-import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { DrawOutcome } from '../../data-access/draw-api';
+import { EnvelopeReveal } from '../envelope-reveal/envelope-reveal';
 
 /** A Draw needs at least 4 Members (ADR 0001); the API refuses fewer too. */
 const MINIMUM_MEMBERS = 4;
@@ -21,24 +20,14 @@ export type CancelStatus = 'idle' | 'cancelling' | 'failed';
 
 /**
  * The Group's Draw, at the top of its page (#28, option A): the Admin runs it behind an inline
- * confirmation; once it is made, each Member sees their own Receiver, with a link to the Receiver's
- * Wishlist, which only their Giver can open (#32). A plain view until the envelope Reveal (#30).
+ * confirmation; once it is made, each Member opens an envelope to discover their own Receiver (the
+ * Reveal, #30), with a link to the Receiver's Wishlist, which only their Giver can open (#32).
  * Until the Group is finished, the Admin can cancel the Draw behind the same confirmation (#31).
  */
 @Component({
   selector: 'app-draw-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    Alert,
-    Button,
-    ConfirmPanel,
-    RouterLink,
-    TextLink,
-    LucideChevronRight,
-    LucideGift,
-    LucideShuffle,
-    LucideUndo2,
-  ],
+  imports: [Alert, Button, ConfirmPanel, EnvelopeReveal, LucideGift, LucideShuffle, LucideUndo2],
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-draw" class="rounded-card bg-surface p-5 shadow-card">
@@ -68,24 +57,13 @@ export type CancelStatus = 'idle' | 'cancelling' | 'failed';
           </button>
         }
         @case ('drawn') {
-          <p class="mt-4 text-ink-muted">
-            Te toca regalar a
-            <strong
-              class="mt-1 block font-display text-3xl font-bold tracking-tight break-words text-ink"
-            >
-              {{ receiver() }}
-            </strong>
-          </p>
-          <p class="mt-2 text-ink-muted">Nadie más lo sabe. 🤫</p>
-          <a
-            [routerLink]="['members', receiverId(), 'wishlist']"
-            appLink
-            standalone
-            class="mt-2 gap-0.5"
-          >
-            Ver sus deseos
-            <svg lucideChevronRight [size]="18"></svg>
-          </a>
+          @if (drawnReceiver(); as receiver) {
+            <app-envelope-reveal
+              [receiver]="receiver"
+              [alreadyOpened]="alreadyOpened()"
+              (opened)="envelopeOpened.emit()"
+            />
+          }
           <p class="mt-4 text-sm text-ink-muted">
             Con el sorteo hecho, el grupo queda cerrado: ya no entra ni sale nadie.
           </p>
@@ -198,18 +176,18 @@ export class DrawCard {
   readonly cancelDraw = output();
   /** The Draw could not be loaded: the page asks for it again. */
   readonly retry = output();
+  /** Whether this device already opened the Member's envelope: it then shows open. */
+  readonly alreadyOpened = input(false);
+  /** The Member opened their envelope: the page remembers it for their next visit. */
+  readonly envelopeOpened = output();
 
   protected readonly minimum = MINIMUM_MEMBERS;
   protected readonly confirming = signal(false);
   protected readonly confirmingCancel = signal(false);
   protected readonly enoughMembers = computed(() => this.memberCount() >= MINIMUM_MEMBERS);
-  protected readonly receiverId = computed(() => {
+  protected readonly drawnReceiver = computed(() => {
     const state = this.state();
-    return state.status === 'drawn' ? state.receiver.id : '';
-  });
-  protected readonly receiver = computed(() => {
-    const state = this.state();
-    return state.status === 'drawn' ? state.receiver.displayName : '';
+    return state.status === 'drawn' ? state.receiver : null;
   });
 
   protected confirm(): void {

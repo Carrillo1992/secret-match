@@ -30,6 +30,8 @@
       [cancelStatus]="cancelStatus()"
       (cancelDraw)="cancelDraw()"
       (retry)="reloadDraw()"
+      [alreadyOpened]="envelopeAlreadyOpened()"
+      (envelopeOpened)="rememberEnvelope()"
     />
 
     @if (mailboxes(); as mailboxes) {

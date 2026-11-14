@@ -1,5 +1,6 @@
 package com.secretmatch.mailbox.application;
 
+import com.secretmatch.draw.application.DrawCancelled;
 import com.secretmatch.group.application.GroupDeleted;
 import com.secretmatch.identity.application.UserDeleted;
 import com.secretmatch.mailbox.domain.GroupNotFoundException;
@@ -105,6 +106,16 @@ public class MemberMailboxes {
     /** A deleted Group's Mailboxes go with it, in the same transaction, before its Members' rows. */
     @EventListener
     void on(GroupDeleted event) {
+        mailboxes.removeAllIn(event.groupId());
+    }
+
+    /**
+     * A cancelled Draw's Mailboxes go with it, in the same transaction, so no Message between a former Giver and
+     * Receiver survives into the next Draw. The database cascade from {@code draws} would also take them; this keeps
+     * the rule visible here.
+     */
+    @EventListener
+    void on(DrawCancelled event) {
         mailboxes.removeAllIn(event.groupId());
     }
 

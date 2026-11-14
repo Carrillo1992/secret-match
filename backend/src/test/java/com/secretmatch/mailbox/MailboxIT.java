@@ -349,10 +349,9 @@ class MailboxIT {
         send(luis, mailbox, "Hola").expectStatus().isCreated();
         UUID groupId = UUID.fromString(drawn.family().groupId());
 
-        // What cancelling a Draw will do: its Assignments and its row go, and the Group is no longer drawn.
-        jdbc.update("DELETE FROM assignments WHERE group_id = ?", groupId);
-        jdbc.update("DELETE FROM draws WHERE group_id = ?", groupId);
-        jdbc.update("UPDATE groups SET drawn = FALSE WHERE id = ?", groupId);
+        delete(drawn.family().carmen().user(), "/api/v1/groups/" + groupId + "/draw")
+                .expectStatus()
+                .isNoContent();
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM mailboxes WHERE group_id = ?", Long.class, groupId))
                 .isZero();

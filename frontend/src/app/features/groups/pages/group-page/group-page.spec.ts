@@ -1119,6 +1119,28 @@ describe('GroupPage', () => {
         expect(document.activeElement?.id).toBe('group-draw');
       });
 
+      it('takes the Mailbox card away with the Draw', async () => {
+        await open(drawnWithFour, PEDRO);
+        http.expectOne(MAILBOXES_URL).flush([
+          { id: 'm-1', side: 'GIVER', receiverDisplayName: 'Pedro' },
+          { id: 'm-2', side: 'RECEIVER', receiverDisplayName: null },
+        ]);
+        await settle();
+        http.match(messagesUrl('m-1')).forEach((request) => request.flush([]));
+        await settle();
+        expect(page().querySelector('app-mailbox-card section')).not.toBeNull();
+
+        const request = await cancelDraw();
+        request.flush(null, { status: 204, statusText: 'No Content' });
+        await settle();
+        await answerRefresh();
+        http.match(EXCLUSIONS_URL).forEach((one) => one.flush([]));
+        await settle();
+
+        http.expectNone(MAILBOXES_URL);
+        expect(page().querySelector('app-mailbox-card section')).toBeNull();
+      });
+
       it('shows the Group as not drawn when the Draw was already cancelled elsewhere', async () => {
         await open(drawnWithFour, PEDRO);
 

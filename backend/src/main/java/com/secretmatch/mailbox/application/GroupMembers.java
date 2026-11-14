@@ -13,4 +13,11 @@ public interface GroupMembers {
      * @return empty if there is no such Group or {@code viewer} is not one of its Members
      */
     Optional<List<GroupMember>> of(UUID groupId, UUID viewer);
+
+    /**
+     * The Group's name, as {@code viewer} sees it.
+     *
+     * @return empty if there is no such Group or {@code viewer} is not one of its Members
+     */
+    Optional<String> nameOf(UUID groupId, UUID viewer);
 }

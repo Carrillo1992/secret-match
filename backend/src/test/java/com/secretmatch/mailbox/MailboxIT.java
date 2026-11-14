@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.secretmatch.MutableClock;
 import com.secretmatch.RecordingEmailSender;
 import com.secretmatch.TestPostgres;
+import com.secretmatch.notification.application.OutgoingEmail;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -424,6 +425,87 @@ class MailboxIT {
         String logged = output.getAll().substring(before);
         assertThat(logged).doesNotContain(mailboxIds).doesNotContain("Mensaje secreto");
         drawn.family().members().forEach(member -> assertThat(logged).doesNotContain(member.id()));
+    }
+
+    @Test
+    @DisplayName("each Message emails the other side once, linking to the Group, and never the sender")
+    void eachMessageEmailsTheOtherSideOnce() {
+        Drawn drawn = drawnFamily();
+        Member giver = drawn.family().luis();
+        Member receiver = drawn.receiverOf(giver);
+        String mailbox = mailboxIdOf(giver, drawn, "GIVER");
+        mail.clear();
+
+        send(giver, mailbox, "¿Qué talla usas?").expectStatus().isCreated();
+
+        assertThat(mail.sent()).hasSize(1);
+        OutgoingEmail toReceiver = mail.sentTo(receiver.user().email()).getFirst();
+        assertThat(toReceiver.subject()).isEqualTo("Tienes un mensaje nuevo en «Navidad»");
+        assertThat(toReceiver.text())
+                .contains("Tienes un mensaje nuevo en «Navidad»")
+                .contains("/groups/" + drawn.family().groupId());
+
+        mail.clear();
+        send(receiver, mailbox, "La M").expectStatus().isCreated();
+
+        assertThat(mail.sent()).hasSize(1);
+        assertThat(mail.sentTo(giver.user().email())).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("the new-Message email has no names, no Message text and no Giver data, and is the same both ways")
+    void newMessageEmailSaysNothingAboutTheSender() {
+        Drawn drawn = drawnFamily();
+        Member giver = drawn.family().luis();
+        Member receiver = drawn.receiverOf(giver);
+        String mailbox = mailboxIdOf(giver, drawn, "GIVER");
+        mail.clear();
+
+        send(giver, mailbox, "Mensaje secreto del Giver").expectStatus().isCreated();
+        send(receiver, mailbox, "Mensaje secreto del Receiver").expectStatus().isCreated();
+
+        OutgoingEmail toReceiver = mail.sentTo(receiver.user().email()).getFirst();
+        OutgoingEmail toGiver = mail.sentTo(giver.user().email()).getFirst();
+        List<String> forbidden = new ArrayList<>(
+                List.of("Mensaje secreto", giver.id(), giver.user().email()));
+        drawn.family().members().forEach(member -> forbidden.add(member.name()));
+        for (OutgoingEmail email : List.of(toReceiver, toGiver)) {
+            for (String content : List.of(email.subject(), email.text(), email.html())) {
+                assertThat(content).doesNotContain(forbidden);
+            }
+        }
+        assertThat(toReceiver)
+                .as("only the recipient tells the two directions apart")
+                .usingRecursiveComparison()
+                .ignoringFields("to")
+                .isEqualTo(toGiver);
+    }
+
+    @Test
+    @DisplayName("a Message that is not stored emails nobody, and a Receiver whose Giver is gone emails nobody")
+    void noEmailWithoutAStoredMessageOrAnOtherSide() {
+        Drawn drawn = drawnFamily();
+        Member luis = drawn.family().luis();
+        Member receiver = drawn.receiverOf(luis);
+        String mailbox = mailboxIdOf(luis, drawn, "GIVER");
+        Member outsider = drawn.family().members().stream()
+                .filter(member -> member != luis && member != receiver)
+                .findFirst()
+                .orElseThrow();
+        mail.clear();
+
+        send(luis, mailbox, "").expectStatus().isEqualTo(422);
+        send(outsider, mailbox, "Intruso").expectStatus().isNotFound();
+        assertThat(mail.sent()).isEmpty();
+
+        clock.set(Instant.parse("2026-12-26T10:00:00Z"));
+        User luisNow = signedInAgain(luis.user().email());
+        User receiverNow = signedInAgain(receiver.user().email());
+        delete(luisNow, "/api/v1/users/me").expectStatus().isNoContent();
+        mail.clear();
+
+        send(receiverNow, mailbox, "¿Sigues ahí?").expectStatus().isCreated();
+        assertThat(mail.sent()).isEmpty();
     }
 
     // --- helpers ---

@@ -1,5 +1,6 @@
 package com.secretmatch.identity.domain;
 
+import com.secretmatch.shared.domain.Language;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;

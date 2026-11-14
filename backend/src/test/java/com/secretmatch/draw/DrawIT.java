@@ -202,19 +202,27 @@ class DrawIT {
     }
 
     @Test
-    @DisplayName("every Member gets exactly one email saying the Draw is made, without anyone's name in it")
+    @DisplayName("every Member gets exactly one email saying the Draw is made, in their own Language, without anyone's"
+            + " name in it")
     void everyMemberIsEmailedOnceWithoutTheirReceiversName() {
         Family family = family();
+        speaks(family.luis(), "en");
+        speaks(family.marta(), "en");
         mail.clear();
 
         runDraw(family.carmen(), family).expectStatus().isCreated();
 
         assertThat(mail.sent()).hasSize(4);
+        Map<User, String> subjects = Map.of(
+                family.carmen(), "Ya está hecho el sorteo de «Navidad»",
+                family.pedro(), "Ya está hecho el sorteo de «Navidad»",
+                family.luis(), "The Draw for “Navidad” is done",
+                family.marta(), "The Draw for “Navidad” is done");
         for (User member : family.everyone()) {
             List<OutgoingEmail> received = mail.sentTo(member.email());
             assertThat(received).hasSize(1);
             OutgoingEmail email = received.getFirst();
-            assertThat(email.subject()).isEqualTo("Ya está hecho el sorteo de «Navidad»");
+            assertThat(email.subject()).isEqualTo(subjects.get(member));
             assertThat(email.text()).contains("/groups/" + family.groupId());
             for (String name : family.idsByName().keySet()) {
                 assertThat(email.subject()).doesNotContain(name);
@@ -522,6 +530,18 @@ class DrawIT {
                 .uri(path)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
                 .exchange();
+    }
+
+    /** From now on the User reads SecretMatch, and gets its emails, in this Language. */
+    private void speaks(User user, String language) {
+        http.put()
+                .uri("/api/v1/users/me/language")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("language", language))
+                .exchange()
+                .expectStatus()
+                .isOk();
     }
 
     /** Signs up, verifies and signs in a new User. */

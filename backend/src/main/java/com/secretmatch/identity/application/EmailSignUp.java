@@ -3,7 +3,6 @@ package com.secretmatch.identity.application;
 import com.secretmatch.identity.domain.DisplayName;
 import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.EmailLinkToken;
-import com.secretmatch.identity.domain.Language;
 import com.secretmatch.identity.domain.NewPassword;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.SignUpId;
@@ -12,6 +11,7 @@ import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.VerificationLinkInvalidException;
 import com.secretmatch.identity.domain.VerificationLinkUsedException;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,8 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class EmailSignUp {
-
-    static final String SUBJECT = "Confirma tu correo en SecretMatch";
 
     private final Users users;
     private final SignUpVerifications signUps;
@@ -117,15 +115,33 @@ public class EmailSignUp {
      */
     private void saveAndSendLink(SignUpVerification signUp, EmailLinkToken token) {
         signUps.save(signUp);
-        events.publishEvent(new EmailRequested(
-                signUp.email().value(),
-                SUBJECT,
-                """
-                Hola:
+        events.publishEvent(verificationEmail(signUp, token));
+    }
 
-                Para terminar de crear tu cuenta en SecretMatch, confirma que este correo es tuyo con el enlace de abajo. Caduca en %d horas y solo se puede usar una vez.
+    /** The Verification email, in the Language the sign-up was made in. */
+    private static EmailRequested verificationEmail(SignUpVerification signUp, EmailLinkToken token) {
+        String to = signUp.email().value();
+        String link = "/verify-email?token=" + token.value();
+        long hours = SignUpVerification.VALIDITY.toHours();
+        return switch (signUp.language()) {
+            case SPANISH ->
+                new EmailRequested(
+                        to, Language.SPANISH, "Confirma tu correo en SecretMatch", """
+                        Hola:
 
-                Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(SignUpVerification.VALIDITY.toHours()),
-                "/verify-email?token=" + token.value()));
+                        Para terminar de crear tu cuenta en SecretMatch, confirma que este correo es tuyo con el enlace \
+                        de abajo. Caduca en %d horas y solo se puede usar una vez.
+
+                        Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(hours), link);
+            case ENGLISH ->
+                new EmailRequested(
+                        to, Language.ENGLISH, "Confirm your email on SecretMatch", """
+                        Hello,
+
+                        To finish creating your SecretMatch account, confirm that this email is yours with the link \
+                        below. It expires in %d hours and can only be used once.
+
+                        If this wasn't you, ignore this message: no account will be created.""".formatted(hours), link);
+        };
     }
 }

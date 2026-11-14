@@ -3,6 +3,7 @@ package com.secretmatch.notification.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
+import com.secretmatch.shared.domain.Language;
 import java.net.URI;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,8 +16,8 @@ class BaseEmailTemplateTest {
     @Test
     @DisplayName("sends from the generic SecretMatch sender to the requested recipient")
     void sendsFromGenericSender() {
-        OutgoingEmail email = template.render(
-                new EmailRequested("ana@example.com", "Tu sorteo está listo", "Ya puedes ver a quién regalas.", "/"));
+        OutgoingEmail email = template.render(new EmailRequested(
+                "ana@example.com", Language.SPANISH, "Tu sorteo está listo", "Ya puedes ver a quién regalas.", "/"));
 
         assertThat(email.senderName()).isEqualTo("SecretMatch");
         assertThat(email.senderAddress()).isEqualTo("no-reply@secretmatch.example");
@@ -27,8 +28,8 @@ class BaseEmailTemplateTest {
     @Test
     @DisplayName("renders a Spanish HTML body with each paragraph of the message")
     void rendersSpanishHtmlBody() {
-        OutgoingEmail email = template.render(
-                new EmailRequested("ana@example.com", "Asunto", "Primer párrafo.\n\nSegundo párrafo.", "/groups/42"));
+        OutgoingEmail email = template.render(new EmailRequested(
+                "ana@example.com", Language.SPANISH, "Asunto", "Primer párrafo.\n\nSegundo párrafo.", "/groups/42"));
 
         assertThat(email.html())
                 .contains("<html lang=\"es\">")
@@ -41,8 +42,8 @@ class BaseEmailTemplateTest {
     @Test
     @DisplayName("links to the requested page of the app, in both HTML and plain text")
     void linksToTheApp() {
-        OutgoingEmail email =
-                template.render(new EmailRequested("ana@example.com", "Asunto", "Mensaje.", "/groups/42"));
+        OutgoingEmail email = template.render(
+                new EmailRequested("ana@example.com", Language.SPANISH, "Asunto", "Mensaje.", "/groups/42"));
 
         assertThat(email.html()).contains("href=\"https://secretmatch.example/groups/42\"");
         assertThat(email.text())
@@ -53,8 +54,8 @@ class BaseEmailTemplateTest {
     @Test
     @DisplayName("escapes the message so names cannot inject HTML")
     void escapesMessage() {
-        OutgoingEmail email =
-                template.render(new EmailRequested("ana@example.com", "Asunto", "<b>Ana & Luis</b> se unieron", "/"));
+        OutgoingEmail email = template.render(
+                new EmailRequested("ana@example.com", Language.SPANISH, "Asunto", "<b>Ana & Luis</b> se unieron", "/"));
 
         assertThat(email.html())
                 .contains("&lt;b&gt;Ana &amp; Luis&lt;/b&gt; se unieron")
@@ -62,9 +63,46 @@ class BaseEmailTemplateTest {
     }
 
     @Test
+    @DisplayName("renders an English HTML body, button and footer for an email in English")
+    void rendersEnglishHtmlBody() {
+        OutgoingEmail email = template.render(new EmailRequested(
+                "ana@example.com", Language.ENGLISH, "Subject", "First paragraph.\n\nSecond paragraph.", "/groups/42"));
+
+        assertThat(email.html())
+                .contains("<html lang=\"en\">")
+                .contains("<p style=\"margin:0 0 16px;\">First paragraph.</p>")
+                .contains("<p style=\"margin:0 0 16px;\">Second paragraph.</p>")
+                .contains(">Open SecretMatch</a>")
+                .contains("This email is sent automatically by SecretMatch. Please do not reply to it.")
+                .doesNotContain("Abrir", "No respondas");
+        assertThat(email.senderName()).isEqualTo("SecretMatch");
+    }
+
+    @Test
+    @DisplayName("an English email links to the app in its plain text too, with English wording")
+    void englishPlainText() {
+        OutgoingEmail email = template.render(
+                new EmailRequested("ana@example.com", Language.ENGLISH, "Subject", "Message.", "/groups/42"));
+
+        assertThat(email.text())
+                .startsWith("Message.\n")
+                .contains("Open SecretMatch: https://secretmatch.example/groups/42")
+                .contains("This email is sent automatically by SecretMatch. Please do not reply to it.")
+                .doesNotContain("Abrir", "No respondas");
+    }
+
+    @Test
+    @DisplayName("an email request must say which Language it is written in")
+    void languageIsRequired() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new EmailRequested("ana@example.com", null, "Asunto", "Mensaje.", "/"));
+    }
+
+    @Test
     @DisplayName("rejects a link that is not a path inside the app")
     void rejectsLinkOutsideTheApp() {
         assertThatIllegalArgumentException()
-                .isThrownBy(() -> new EmailRequested("ana@example.com", "Asunto", "Mensaje.", "https://evil.example/"));
+                .isThrownBy(() -> new EmailRequested(
+                        "ana@example.com", Language.SPANISH, "Asunto", "Mensaje.", "https://evil.example/"));
     }
 }

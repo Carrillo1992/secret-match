@@ -1,7 +1,7 @@
 package com.secretmatch.identity.application;
 
-import com.secretmatch.identity.domain.Language;
 import com.secretmatch.identity.domain.User;
+import com.secretmatch.shared.domain.Language;
 
 /**
  * What the signed-in User may read about themselves. {@code hasPassword} is false for a User who only signs

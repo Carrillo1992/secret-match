@@ -6,7 +6,10 @@ import com.secretmatch.mailbox.domain.MemberId;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
-/** Reads a Member's email address through the Identity module's application API: a Member id is a User id. */
+/**
+ * Reads where and in which Language to email a Member through the Identity module's application API: a Member id is
+ * a User id.
+ */
 @Component
 class UserDirectoryMemberEmails implements MemberEmails {
 
@@ -17,7 +20,7 @@ class UserDirectoryMemberEmails implements MemberEmails {
     }
 
     @Override
-    public Optional<String> emailOf(MemberId member) {
-        return users.emailOf(member.value());
+    public Optional<Recipient> recipientOf(MemberId member) {
+        return users.recipientOf(member.value()).map(user -> new Recipient(user.email(), user.language()));
     }
 }

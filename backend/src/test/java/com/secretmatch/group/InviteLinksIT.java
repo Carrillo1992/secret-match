@@ -131,6 +131,26 @@ class InviteLinksIT {
     }
 
     @Test
+    @DisplayName("the Admin is emailed in their own Language, whatever the joining Member's")
+    void adminIsEmailedInTheirLanguage() {
+        User carmen = signedInUser("Abuela Carmen", "en");
+        User luis = signedInUser("Luis", "es");
+        String groupId = createGroup(carmen, "Navidad");
+        String code = inviteCodeOf(carmen, groupId);
+        mail.clear();
+
+        join(luis, code).expectStatus().isOk();
+
+        assertThat(mail.sentTo(carmen.email())).singleElement().satisfies(email -> {
+            assertThat(email.subject()).isEqualTo("Luis joined “Navidad”");
+            assertThat(email.text())
+                    .contains("Luis joined your Group “Navidad” with the Invite Link.")
+                    .contains("There are 2 of you in the Group now.")
+                    .contains("/groups/" + groupId);
+        });
+    }
+
+    @Test
     @DisplayName("the Admin regenerates the Invite Link: the new one works and the previous one stops working")
     void adminRegeneratesTheInviteLink() {
         User carmen = signedInUser("Abuela Carmen");
@@ -270,10 +290,15 @@ class InviteLinksIT {
 
     /** Signs up, verifies and signs in a new User. */
     private User signedInUser(String displayName) {
+        return signedInUser(displayName, "es");
+    }
+
+    /** Signs up, verifies and signs in a new User who reads SecretMatch in this Language. */
+    private User signedInUser(String displayName, String language) {
         String email = "user-" + UUID.randomUUID() + "@example.com";
         anonymousPost(
                         "/api/v1/sign-ups",
-                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", "es"))
+                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", language))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(email).getLast().text());

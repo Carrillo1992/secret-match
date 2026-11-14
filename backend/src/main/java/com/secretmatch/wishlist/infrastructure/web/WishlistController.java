@@ -76,7 +76,7 @@ class WishlistController {
     PreferencesResponse editPreferences(
             @AuthenticationPrincipal Jwt accessToken,
             @PathVariable UUID groupId,
-            @RequestBody PreferencesRequest request) {
+            @Valid @RequestBody PreferencesRequest request) {
         return PreferencesResponse.of(
                 wishlists.editPreferences(groupId, signedIn(accessToken), request.toPreferences()));
     }
@@ -87,7 +87,7 @@ class WishlistController {
     DontListEntryResponse addDontListEntry(
             @AuthenticationPrincipal Jwt accessToken,
             @PathVariable UUID groupId,
-            @RequestBody DontListEntryRequest request) {
+            @Valid @RequestBody DontListEntryRequest request) {
         return DontListEntryResponse.of(wishlists.addDontListEntry(groupId, signedIn(accessToken), request.toEntry()));
     }
 

@@ -2,12 +2,12 @@ package com.secretmatch.wishlist.infrastructure.web;
 
 import com.secretmatch.wishlist.domain.DontListEntry;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
-/** Only the domain checks the text (422), so an empty or too long entry is one error kind for the frontend. */
+/** Mirrors the domain's length rule so a mistake is a 400. */
 record DontListEntryRequest(
-        @Schema(
-                requiredMode = Schema.RequiredMode.REQUIRED,
-                description = "What the Member does not want, 1 to " + DontListEntry.MAX_LENGTH + " characters.")
+        @Schema(description = "What the Member does not want.") @NotBlank @Size(max = DontListEntry.MAX_LENGTH)
         String text) {
 
     DontListEntry toEntry() {

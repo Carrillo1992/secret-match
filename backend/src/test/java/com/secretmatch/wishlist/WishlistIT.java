@@ -381,18 +381,18 @@ class WishlistIT {
 
         put(family.luis(), preferencesOf(family), Map.of("preferences", "p".repeat(2001)))
                 .expectStatus()
-                .isEqualTo(422)
-                .expectBody()
-                .jsonPath("$.type")
-                .isEqualTo("urn:secretmatch:problem:invalid-preferences");
+                .isBadRequest();
         put(family.luis(), preferencesOf(family), Map.of("preferences", " " + "p".repeat(2000) + " "))
                 .expectStatus()
-                .isOk();
+                .isBadRequest();
 
         assertThat(json(get(family.luis(), wishlistOf(family, family.luisId())))
                         .get("preferences")
                         .asString())
-                .hasSize(2000);
+                .isEqualTo("Talla M");
+        put(family.luis(), preferencesOf(family), Map.of("preferences", "p".repeat(2000)))
+                .expectStatus()
+                .isOk();
     }
 
     @Test
@@ -432,12 +432,7 @@ class WishlistIT {
 
         for (Map<String, ?> entry : List.<Map<String, ?>>of(
                 Map.of("text", ""), Map.of("text", "   "), Map.of(), Map.of("text", "x".repeat(101)))) {
-            post(family.luis(), dontListOf(family), entry)
-                    .expectStatus()
-                    .isEqualTo(422)
-                    .expectBody()
-                    .jsonPath("$.type")
-                    .isEqualTo("urn:secretmatch:problem:invalid-dont-list-entry");
+            post(family.luis(), dontListOf(family), entry).expectStatus().isBadRequest();
         }
         addDontListEntry(family.luis(), family, "x".repeat(100)).expectStatus().isCreated();
 

@@ -48,7 +48,7 @@ The build fails below these floors: JaCoCo `check` goal in the backend, the test
 | Backend, `draw.domain` | 90 % |
 | Frontend, overall | 80 % |
 
-Excluded from measurement, because testing them adds no confidence: the application `main` class, Spring `@Configuration` classes, plain DTOs/records without logic, the generated API client, and frontend bootstrap files (`main.ts`, `app.config.ts`).
+Excluded from measurement, because testing them adds no confidence: the application `main` class, Spring `@Configuration` classes, plain DTOs/records without logic, the generated API client, and frontend bootstrap files (`main.ts`, `bootstrap.ts`, `app.config.ts`).
 
 In the backend the exclusions are by class name (see the JaCoCo plugin in `backend/pom.xml`): `SecretMatchApplication`, `*Configuration`, and web DTOs named `*Request` / `*Response`. Name classes accordingly, and keep logic out of anything that matches those patterns.
 
@@ -65,6 +65,7 @@ Run from `frontend/` with Node 26, the version CI and the frontend image use (`f
 | `npx ng test --watch=false --include='src/app/features/groups/**/*.spec.ts'` | Only the specs matching the glob, while iterating |
 | `npm run build` | Production build compiles with strict TypeScript |
 | `npm run api:generate` + `git status --porcelain src/app/core/api/generated` (must print nothing) | Generated API client matches the committed OpenAPI snapshot `backend/openapi.json` |
+| `npm run extract-i18n` + `git status --porcelain src/locale` (must print nothing) | The committed source messages `src/locale/messages.json` match the templates; the English entries for them are checked by `src/locale/translations.spec.ts` |
 
 ### Whole stack
 
@@ -98,6 +99,6 @@ GitHub Actions runs the section 2 checks on every PR, filtered by path (`.github
 | Workflow | Runs when the PR touches | Checks |
 |---|---|---|
 | `backend.yml` | `backend/**`, the workflow file itself | Spotless check, `./mvnw verify` |
-| `frontend.yml` | `frontend/**`, `backend/openapi.json`, the workflow file itself | Generated-client drift, lint, tests with coverage, production build |
+| `frontend.yml` | `frontend/**`, `backend/openapi.json`, the workflow file itself | Generated-client drift, extracted-messages drift, lint, tests with coverage (including missing English messages), production build |
 
 The frontend workflow also runs on snapshot changes because the generated client is built from it: a PR that changes the API contract must carry the regenerated client too. A PR is mergeable only when CI is green. Today that is a review rule, not a GitHub setting: both workflows are path-filtered, and a required status check that a PR skips stays "Expected" forever and blocks the merge. Making it enforced needs a check that always runs (for example a gate job), which is a separate decision. Local verification is still required: CI confirms it, it does not replace it.

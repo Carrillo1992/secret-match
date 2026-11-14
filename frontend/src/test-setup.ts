@@ -16,3 +16,10 @@ dialog.close ??= function (this: HTMLDialogElement) {
   this.open = false;
   this.dispatchEvent(new Event('close'));
 };
+
+/**
+ * Specs run in Spanish, the source Language of the templates (ADR 0005), whatever the machine's
+ * own: jsdom would otherwise report `en-US`. A spec that needs another browser Language spies on
+ * `navigator.languages`, and restoring the spy comes back here.
+ */
+Object.defineProperty(navigator, 'languages', { get: () => ['es-ES'], configurable: true });

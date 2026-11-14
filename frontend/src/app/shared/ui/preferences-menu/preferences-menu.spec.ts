@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { PAGE_RELOAD } from '../../../core/preferences/language-preference';
 import { PreferencesMenu } from './preferences-menu';
 
 @Component({
@@ -15,10 +16,13 @@ class Host {}
 describe('PreferencesMenu', () => {
   let page: HTMLElement;
   let fixture: ReturnType<typeof TestBed.createComponent<Host>>;
+  let reload: ReturnType<typeof vi.fn>;
 
   beforeAll(() => import('@lucide/angular'), 90_000);
 
   beforeEach(async () => {
+    reload = vi.fn();
+    TestBed.configureTestingModule({ providers: [{ provide: PAGE_RELOAD, useValue: reload }] });
     fixture = TestBed.createComponent(Host);
     page = fixture.nativeElement as HTMLElement;
     document.body.appendChild(page);
@@ -87,6 +91,25 @@ describe('PreferencesMenu', () => {
 
     expect(row('Español')?.getAttribute('aria-checked')).toBe('true');
     expect(row('English')?.querySelector('[lang="en"]')).not.toBeNull();
+  });
+
+  it('switches the Language by saving it and reloading the page in it', async () => {
+    await openMenu();
+
+    row('English')?.click();
+    await fixture.whenStable();
+
+    expect(localStorage.getItem('secretmatch.language')).toBe('en');
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('does not reload when the Language chosen is the one the app already speaks', async () => {
+    await openMenu();
+
+    row('Español')?.click();
+    await fixture.whenStable();
+
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it('closes on Escape and gives focus back to the button', async () => {

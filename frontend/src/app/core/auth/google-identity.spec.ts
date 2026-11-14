@@ -51,6 +51,20 @@ describe('GoogleIdentity', () => {
     expect(onIdToken).toHaveBeenCalledWith('google-id-token');
   });
 
+  it("writes Google's button in the current Language", async () => {
+    localStorage.setItem('secretmatch.language', 'en');
+    const accounts = { initialize: vi.fn(), renderButton: vi.fn() };
+    vi.stubGlobal('google', { accounts: { id: accounts } });
+
+    await setUp('id.apps.test').renderButton(document.createElement('div'), 320, vi.fn());
+
+    expect(accounts.renderButton).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ locale: 'en' }),
+    );
+    localStorage.clear();
+  });
+
   it("loads Google's script once, and draws nothing when it fails to load", async () => {
     const google = setUp('id.apps.test');
 

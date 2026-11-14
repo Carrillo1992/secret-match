@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
+import { intlLocale } from '../../../../core/language';
 import { MailboxSide, Message } from '../../data-access/mailbox-api';
 
 /**
@@ -19,8 +20,8 @@ interface Day {
   readonly messages: readonly { readonly message: Message; readonly fresh: boolean }[];
 }
 
-/** "12 de diciembre": Messages carry the day only, in UTC. */
-const DAY = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+/** "12 de diciembre" / "December 12": Messages carry the day only, in UTC. */
+const DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', timeZone: 'UTC' };
 
 /**
  * One conversation of the Mailbox card (#36, option B): the Messages grouped by day, mine on the
@@ -150,5 +151,5 @@ export class MailboxThread {
 }
 
 function dayLabel(sentOn: string): string {
-  return DAY.format(new Date(`${sentOn}T00:00:00Z`));
+  return new Intl.DateTimeFormat(intlLocale(), DAY).format(new Date(`${sentOn}T00:00:00Z`));
 }

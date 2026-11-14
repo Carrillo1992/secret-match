@@ -1,5 +1,6 @@
 import { DOCUMENT, inject, Injectable } from '@angular/core';
 import { APP_CONFIG } from '../config/app-config';
+import { currentLanguage } from '../language';
 
 const SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 
@@ -55,7 +56,7 @@ export class GoogleIdentity {
       shape: 'pill',
       text: 'continue_with',
       logo_alignment: 'center',
-      locale: 'es',
+      locale: currentLanguage(),
       width: Math.round(Math.min(400, Math.max(200, width))),
     });
     return true;

@@ -3,6 +3,7 @@ import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel'
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { Group } from '../../data-access/groups-api';
+import { intlLocale } from '../../../../core/language';
 import { Alert } from '../../../../shared/ui/alert/alert';
 
 export type Member = Group['members'][number];
@@ -112,7 +113,7 @@ export class MembersCard {
   }
 
   protected initial(displayName: string): string {
-    return displayName.charAt(0).toLocaleUpperCase('es-ES');
+    return displayName.charAt(0).toLocaleUpperCase(intlLocale());
   }
 
   /** The row may be about to disappear, so the panel moves focus to the list's heading. */

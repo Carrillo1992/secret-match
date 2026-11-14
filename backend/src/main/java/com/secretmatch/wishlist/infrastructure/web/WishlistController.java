@@ -69,6 +69,38 @@ class WishlistController {
         wishlists.deleteWish(groupId, signedIn(accessToken), wishId);
     }
 
+    @PutMapping(path = "/preferences", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Write your own Preferences in the Group",
+            description = "Replaces what they said before; blank or left out clears them.")
+    PreferencesResponse editPreferences(
+            @AuthenticationPrincipal Jwt accessToken,
+            @PathVariable UUID groupId,
+            @Valid @RequestBody PreferencesRequest request) {
+        return PreferencesResponse.of(
+                wishlists.editPreferences(groupId, signedIn(accessToken), request.toPreferences()));
+    }
+
+    @PostMapping(path = "/dont-list", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Add an entry to your own Don't List in the Group")
+    DontListEntryResponse addDontListEntry(
+            @AuthenticationPrincipal Jwt accessToken,
+            @PathVariable UUID groupId,
+            @Valid @RequestBody DontListEntryRequest request) {
+        return DontListEntryResponse.of(wishlists.addDontListEntry(groupId, signedIn(accessToken), request.toEntry()));
+    }
+
+    @DeleteMapping("/dont-list/{entryId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+            summary = "Remove an entry from your own Don't List",
+            description = "Only its owner can; to anyone else it does not exist (404).")
+    void deleteDontListEntry(
+            @AuthenticationPrincipal Jwt accessToken, @PathVariable UUID groupId, @PathVariable UUID entryId) {
+        wishlists.deleteDontListEntry(groupId, signedIn(accessToken), entryId);
+    }
+
     private static UUID signedIn(Jwt accessToken) {
         return UUID.fromString(accessToken.getSubject());
     }

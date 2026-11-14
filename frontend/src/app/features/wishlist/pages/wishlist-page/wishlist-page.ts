@@ -21,14 +21,32 @@ import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel'
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { euros } from '../../../../shared/format/euros';
+import {
+  DontListAddition,
+  DontListCard,
+  DontListRemoval,
+} from '../../components/dont-list-card/dont-list-card';
+import {
+  PreferencesCard,
+  PreferencesStatus,
+} from '../../components/preferences-card/preferences-card';
 import { SaveStatus, WishForm } from '../../components/wish-form/wish-form';
-import { PRIORITY_LABELS } from '../../data-access/wish-rules';
-import { Wish, WishInput, WishlistApi } from '../../data-access/wishlist-api';
+import { PRIORITY_LABELS } from '../../data-access/wishlist-rules';
+import {
+  DontListEntry,
+  Wish,
+  WishInput,
+  Wishlist,
+  WishlistApi,
+} from '../../data-access/wishlist-api';
 
 /**
  * A Member's Wishlist in a Group (#32, option A). Private (ADR 0004): its owner reads and changes it
  * (adding Wishes through the inline form, editing one in place with the same form, deleting one
  * behind an inline confirmation), and once there is a Draw their Giver reads it, from the Draw card.
+ * Under the Wishes come the Don't List and the Preferences (#33), each on its own card: the page saves
+ * what the owner changes there and keeps it without reloading the Wishlist. The Giver reads them,
+ * and an empty one is hidden from them.
  */
 @Component({
   selector: 'app-wishlist-page',
@@ -39,6 +57,8 @@ import { Wish, WishInput, WishlistApi } from '../../data-access/wishlist-api';
     Button,
     Chip,
     ConfirmPanel,
+    DontListCard,
+    PreferencesCard,
     RouterLink,
     StatusHeader,
     TextLink,
@@ -54,7 +74,7 @@ export class WishlistPage {
   private readonly api = inject(WishlistApi);
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);
-  private readonly params = toSignal(
+  protected readonly params = toSignal(
     inject(ActivatedRoute).paramMap.pipe(
       map((params) => ({
         groupId: params.get('groupId') ?? '',
@@ -166,6 +186,53 @@ export class WishlistPage {
     }
     this.statusText.set(`«${wish.title}» ya no está en tu lista.`);
     this.outcome.reload();
+  }
+
+  protected readonly preferencesStatus = signal<PreferencesStatus>('idle');
+  protected readonly dontListAddition = signal<DontListAddition | null>(null);
+  protected readonly dontListRemoval = signal<DontListRemoval | null>(null);
+
+  protected async savePreferences(text: string): Promise<void> {
+    this.preferencesStatus.set('saving');
+    const outcome = await this.api.editPreferences(this.params().groupId, text);
+    if (outcome.status === 'saved') {
+      this.changeWishlist(() => ({ preferences: outcome.preferences }));
+    }
+    this.preferencesStatus.set(outcome.status);
+  }
+
+  /** Once the API agrees, the entry goes at the end: the Don't List is oldest first. */
+  protected async addDontListEntry(text: string): Promise<void> {
+    this.dontListAddition.set({ status: 'adding' });
+    const outcome = await this.api.addDontListEntry(this.params().groupId, text);
+    if (outcome.status === 'added') {
+      this.changeWishlist(({ dontList }) => ({ dontList: [...dontList, outcome.entry] }));
+    }
+    this.dontListAddition.set(outcome);
+  }
+
+  /** Removed at once, without asking: it is short and easy to type again. */
+  protected async removeDontListEntry(entry: DontListEntry): Promise<void> {
+    this.dontListRemoval.set({ entry, status: 'removing' });
+    const outcome = await this.api.deleteDontListEntry(this.params().groupId, entry.id);
+    if (outcome.status === 'deleted') {
+      this.changeWishlist(({ dontList }) => ({
+        dontList: dontList.filter((other) => other.id !== entry.id),
+      }));
+    }
+    this.dontListRemoval.set({
+      entry,
+      status: outcome.status === 'deleted' ? 'removed' : 'failed',
+    });
+  }
+
+  /** Part of the Wishlist changed: the page keeps it without reloading the whole Wishlist. */
+  private changeWishlist(change: (wishlist: Wishlist) => Partial<Wishlist>): void {
+    this.outcome.update((outcome) =>
+      outcome?.status === 'found'
+        ? { ...outcome, wishlist: { ...outcome.wishlist, ...change(outcome.wishlist) } }
+        : outcome,
+    );
   }
 
   private focusOnceRendered(id: string): void {

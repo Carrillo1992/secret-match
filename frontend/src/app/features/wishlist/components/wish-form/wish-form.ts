@@ -29,7 +29,7 @@ import {
   TITLE_MAX_LENGTH,
   wishFormValue,
   wishInput,
-} from '../../data-access/wish-rules';
+} from '../../data-access/wishlist-rules';
 import { Wish, WishInput, WishPriority } from '../../data-access/wishlist-api';
 
 /** How the page's last save of this form went. */

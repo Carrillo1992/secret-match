@@ -142,6 +142,24 @@
         }
       </ul>
     }
+
+    <app-dont-list-card
+      class="mt-6"
+      [entries]="wishlist.dontList"
+      [owner]="wishlist.owner.you"
+      [ownerName]="wishlist.owner.displayName"
+      [addition]="dontListAddition()"
+      [removal]="dontListRemoval()"
+      (add)="addDontListEntry($event)"
+      (remove)="removeDontListEntry($event)"
+    />
+    <app-preferences-card
+      class="mt-6"
+      [preferences]="wishlist.preferences"
+      [owner]="wishlist.owner.you"
+      [status]="preferencesStatus()"
+      (save)="savePreferences($event)"
+    />
   } @else if (notFound()) {
     <div class="mt-6">
       <app-status-header>

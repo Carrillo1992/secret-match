@@ -9,6 +9,8 @@ import { WishlistPage } from './wishlist-page';
 
 const LUIS_WISHLIST_URL = 'http://api.test/api/v1/groups/g-1/members/u-luis/wishlist';
 const WISHES_URL = 'http://api.test/api/v1/groups/g-1/wishes';
+const PREFERENCES_URL = 'http://api.test/api/v1/groups/g-1/preferences';
+const DONT_LIST_URL = 'http://api.test/api/v1/groups/g-1/dont-list';
 
 const auriculares = {
   id: 'w-1',
@@ -19,14 +21,21 @@ const auriculares = {
   priority: 'HIGH',
 };
 const libro = { id: 'w-2', title: 'Libro', priority: 'MEDIUM' };
+const noChocolate = { id: 'd-1', text: 'Nada de chocolate' };
+const noVelas = { id: 'd-2', text: 'Velas' };
 
 /** Luis's Wishlist as Marta, another Member, sees it. */
 const seenByMarta = {
   owner: { id: 'u-luis', displayName: 'Luis', you: false },
   wishes: [auriculares, libro],
+  dontList: [],
 };
 /** Luis's own Wishlist, still empty. */
-const ownEmpty = { owner: { id: 'u-luis', displayName: 'Luis', you: true }, wishes: [] };
+const ownEmpty = {
+  owner: { id: 'u-luis', displayName: 'Luis', you: true },
+  wishes: [],
+  dontList: [],
+};
 const own = { ...ownEmpty, wishes: [auriculares, libro] };
 
 describe('WishlistPage', () => {
@@ -319,5 +328,241 @@ describe('WishlistPage', () => {
     await open(seenByMarta);
 
     expect(rows()).toHaveLength(2);
+  });
+
+  describe("Preferences and Don't List", () => {
+    const headings = () => [...page().querySelectorAll('h2')].map(text);
+    const preferencesCard = () => page().querySelector('app-preferences-card');
+    const dontListCard = () => page().querySelector('app-dont-list-card');
+
+    it("shows the Giver their Receiver's Don't List and Preferences after the Wishes, read-only", async () => {
+      await open({
+        ...seenByMarta,
+        preferences: 'Talla M.\nMe encanta el café.',
+        dontList: [noChocolate, noVelas],
+      });
+
+      expect(text(dontListCard())).toContain('Nada de chocolate');
+      expect(text(dontListCard())).toContain('Velas');
+      expect(text(preferencesCard())).toContain('Sus gustos');
+      expect(text(preferencesCard())).toContain('Talla M. Me encanta el café.');
+      expect(dontListCard()?.querySelector('button')).toBeNull();
+      expect(preferencesCard()?.querySelector('button')).toBeNull();
+
+      const wishes = page().querySelector('ul[aria-label="Deseos"]');
+      const dontList = dontListCard();
+      const preferences = preferencesCard();
+      if (!wishes || !dontList || !preferences) throw new Error('a section is missing');
+      expect(
+        wishes.compareDocumentPosition(dontList) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        dontList.compareDocumentPosition(preferences) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('hides from the Giver the sections their Receiver left empty', async () => {
+      await open(seenByMarta);
+
+      expect(headings()).not.toContain('Nada de…');
+      expect(headings()).not.toContain('Sus gustos');
+    });
+
+    it("lets the owner change their Don't List and Preferences, even while empty", async () => {
+      await open({ ...own, dontList: [noChocolate] });
+
+      expect(headings()).toEqual(['Auriculares', 'Libro', 'Nada de…', 'Tus gustos']);
+      expect(
+        dontListCard()?.querySelector('button[aria-label="Quitar «Nada de chocolate»"]'),
+      ).not.toBeNull();
+      expect(button('Escribir mis gustos', preferencesCard() ?? page())).toBeDefined();
+    });
+
+    const within = (section: Element | null) => {
+      if (!section) throw new Error('the card is missing');
+      return section;
+    };
+    const cardStatus = (section: Element | null) =>
+      text(within(section).querySelector('p[role="status"]'));
+    const cardAlert = (section: Element | null) =>
+      text(within(section).querySelector('[role="alert"]'));
+    const submitIn = async (section: Element | null) => {
+      within(section).querySelector('form')?.dispatchEvent(new Event('submit'));
+      await settle();
+    };
+    const refusal = (code: string) =>
+      [
+        { type: `urn:secretmatch:problem:${code}`, status: 422 },
+        { status: 422, statusText: 'Unprocessable Content' },
+      ] as const;
+    const badRequest = [
+      { title: 'Bad Request', status: 400 },
+      { status: 400, statusText: 'Bad Request' },
+    ] as const;
+
+    async function writePreferences(value: string): Promise<void> {
+      button('Escribir mis gustos', within(preferencesCard()))?.click();
+      await settle();
+      type('Tus gustos', value);
+      await submitIn(preferencesCard());
+    }
+
+    async function addToDontList(value: string): Promise<void> {
+      button('Añadir', within(dontListCard()))?.click();
+      await settle();
+      type('¿Qué no quieres recibir?', value);
+      await submitIn(dontListCard());
+    }
+
+    it('saves the Preferences the owner writes and keeps them without loading the Wishlist again', async () => {
+      await open(ownEmpty);
+
+      await writePreferences('  Talla M, pie 42.\nMe encanta el café.\n ');
+      const request = http.expectOne(PREFERENCES_URL);
+      expect(request.request.method).toBe('PUT');
+      expect(request.request.body).toEqual({
+        preferences: 'Talla M, pie 42.\nMe encanta el café.',
+      });
+      expect(button('Guardando…', within(preferencesCard()))?.disabled).toBe(true);
+      request.flush({ preferences: 'Talla M, pie 42.\nMe encanta el café.' });
+      await settle();
+
+      expect(within(preferencesCard()).querySelector('textarea')).toBeNull();
+      expect(text(preferencesCard())).toContain('Talla M, pie 42. Me encanta el café.');
+      expect(cardStatus(preferencesCard())).toBe('Gustos guardados.');
+      expect(document.activeElement?.id).toBe('edit-preferences');
+    });
+
+    it('clears the Preferences when the owner saves them blank', async () => {
+      await open({ ...ownEmpty, preferences: 'Talla M.' });
+
+      button('Editar', within(preferencesCard()))?.click();
+      await settle();
+      type('Tus gustos', '   ');
+      await submitIn(preferencesCard());
+      const request = http.expectOne(PREFERENCES_URL);
+      expect(request.request.body).toEqual({ preferences: '' });
+      request.flush({});
+      await settle();
+
+      expect(cardStatus(preferencesCard())).toBe('Gustos borrados.');
+      expect(button('Escribir mis gustos', within(preferencesCard()))).toBeDefined();
+    });
+
+    for (const [name, [body, init]] of [
+      ['its own check (400)', badRequest],
+      ['a problem (422)', refusal('invalid-preferences')],
+    ] as const) {
+      it(`points at the Preferences when the API refuses them with ${name}`, async () => {
+        await open(ownEmpty);
+        await writePreferences('Talla M.');
+
+        http.expectOne(PREFERENCES_URL).flush(body, init);
+        await settle();
+
+        expect(field('Tus gustos')?.getAttribute('aria-invalid')).toBe('true');
+        expect(text(preferencesCard())).toContain('Como mucho 2000 caracteres.');
+      });
+    }
+
+    it('says when the Preferences could not be saved, and keeps what was typed', async () => {
+      await open(ownEmpty);
+      await writePreferences('Talla M.');
+
+      http.expectOne(PREFERENCES_URL).flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(cardAlert(preferencesCard())).toBe(
+        'No hemos podido guardar tus gustos. Inténtalo de nuevo.',
+      );
+      expect(field('Tus gustos')?.value).toBe('Talla M.');
+      expect(cardStatus(preferencesCard())).toBe('');
+    });
+
+    it("adds an entry at the end of the owner's Don't List without loading the Wishlist again", async () => {
+      await open({ ...ownEmpty, dontList: [noChocolate] });
+
+      await addToDontList('  Velas ');
+      const request = http.expectOne((r) => r.url === DONT_LIST_URL && r.method === 'POST');
+      expect(request.request.body).toEqual({ text: 'Velas' });
+      expect(button('Añadiendo…', within(dontListCard()))?.disabled).toBe(true);
+      request.flush(noVelas, { status: 201, statusText: 'Created' });
+      await settle();
+
+      expect([...within(dontListCard()).querySelectorAll('li')].map(text)).toEqual([
+        'Nada de chocolate',
+        'Velas',
+      ]);
+      expect(within(dontListCard()).querySelector('form')).toBeNull();
+      expect(cardStatus(dontListCard())).toBe('Añadido «Velas».');
+      expect(document.activeElement?.id).toBe('add-dont-list-entry');
+    });
+
+    for (const [name, [body, init]] of [
+      ['its own check (400)', badRequest],
+      ['a problem (422)', refusal('invalid-dont-list-entry')],
+    ] as const) {
+      it(`points at the entry when the API refuses it with ${name}`, async () => {
+        await open(ownEmpty);
+        await addToDontList('Velas');
+
+        http.expectOne(DONT_LIST_URL).flush(body, init);
+        await settle();
+
+        expect(field('¿Qué no quieres recibir?')?.getAttribute('aria-invalid')).toBe('true');
+        expect(field('¿Qué no quieres recibir?')?.value).toBe('Velas');
+        expect(text(dontListCard())).toContain('Como mucho 100 caracteres.');
+      });
+    }
+
+    it('says when the entry could not be added, keeping what was typed', async () => {
+      await open(ownEmpty);
+      await addToDontList('Velas');
+
+      http.expectOne(DONT_LIST_URL).flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(cardAlert(dontListCard())).toBe('No hemos podido añadirlo. Inténtalo de nuevo.');
+      expect(field('¿Qué no quieres recibir?')?.value).toBe('Velas');
+    });
+
+    it("removes an entry from the owner's Don't List at once", async () => {
+      await open({ ...ownEmpty, dontList: [noChocolate, noVelas] });
+      const remove = () =>
+        within(dontListCard()).querySelector<HTMLButtonElement>(
+          'button[aria-label="Quitar «Nada de chocolate»"]',
+        );
+
+      remove()?.click();
+      await settle();
+      expect(remove()?.disabled).toBe(true);
+      const request = http.expectOne(`${DONT_LIST_URL}/d-1`);
+      expect(request.request.method).toBe('DELETE');
+      request.flush(null, { status: 204, statusText: 'No Content' });
+      await settle();
+
+      expect([...within(dontListCard()).querySelectorAll('li')].map(text)).toEqual(['Velas']);
+      expect(cardStatus(dontListCard())).toBe('Quitado «Nada de chocolate».');
+      expect(document.activeElement?.getAttribute('aria-label')).toBe('Quitar «Velas»');
+    });
+
+    it('keeps the entry and says so when it could not be removed', async () => {
+      await open({ ...ownEmpty, dontList: [noChocolate, noVelas] });
+
+      within(dontListCard())
+        .querySelector<HTMLButtonElement>('button[aria-label="Quitar «Velas»"]')
+        ?.click();
+      await settle();
+      http
+        .expectOne(`${DONT_LIST_URL}/d-2`)
+        .flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect([...within(dontListCard()).querySelectorAll('li')].map(text)).toEqual([
+        'Nada de chocolate',
+        'Velas',
+      ]);
+      expect(cardAlert(dontListCard())).toBe('No hemos podido quitar «Velas». Inténtalo de nuevo.');
+    });
   });
 });

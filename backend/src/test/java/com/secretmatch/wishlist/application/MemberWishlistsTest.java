@@ -5,9 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.secretmatch.group.application.GroupDeleted;
 import com.secretmatch.group.application.MembershipEnded;
+import com.secretmatch.wishlist.domain.DontListEntry;
+import com.secretmatch.wishlist.domain.DontListEntryNotFoundException;
 import com.secretmatch.wishlist.domain.GroupNotFoundException;
 import com.secretmatch.wishlist.domain.MemberId;
 import com.secretmatch.wishlist.domain.NotYourWishException;
+import com.secretmatch.wishlist.domain.Preferences;
 import com.secretmatch.wishlist.domain.Priority;
 import com.secretmatch.wishlist.domain.Wish;
 import com.secretmatch.wishlist.domain.WishNotFoundException;
@@ -34,10 +37,17 @@ class MemberWishlistsTest {
     private static final UUID STRANGER = UUID.fromString("00000000-0000-0000-0000-000000000009");
 
     private final InMemoryWishes stored = new InMemoryWishes();
+    private final InMemoryPreferences storedPreferences = new InMemoryPreferences();
+    private final InMemoryDontListEntries storedDontList = new InMemoryDontListEntries();
     private final FakeGroupMembers members = new FakeGroupMembers();
     private final FakeReceivers receivers = new FakeReceivers();
     private final MemberWishlists wishlists = new MemberWishlists(
-            stored, members, receivers, Clock.fixed(Instant.parse("2026-12-01T10:00:00Z"), ZoneOffset.UTC));
+            stored,
+            storedPreferences,
+            storedDontList,
+            members,
+            receivers,
+            Clock.fixed(Instant.parse("2026-12-01T10:00:00Z"), ZoneOffset.UTC));
 
     {
         members.put(GROUP, List.of(member(CARMEN, "Abuela Carmen"), member(LUIS, "Luis"), member(MARTA, "Marta")));
@@ -204,6 +214,150 @@ class MemberWishlistsTest {
         assertThat(stored.all()).containsExactly(luisElsewhere);
     }
 
+    @Test
+    @DisplayName("a Wishlist nobody has filled in has no Preferences and an empty Don't List")
+    void anEmptyWishlist() {
+        WishlistDetails own = wishlists.wishlistOf(GROUP, LUIS, LUIS);
+
+        assertThat(own.preferences()).isEqualTo(Preferences.NONE);
+        assertThat(own.dontList()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("the owner writes their Preferences, rewrites them, and clears them with blank text")
+    void ownerEditsPreferences() {
+        Preferences written = wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla M, senderismo"));
+
+        assertThat(written).isEqualTo(new Preferences("Talla M, senderismo"));
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).preferences().text()).isEqualTo("Talla M, senderismo");
+
+        wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla L"));
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).preferences().text()).isEqualTo("Talla L");
+
+        assertThat(wishlists.editPreferences(GROUP, LUIS, new Preferences("  ")))
+                .isEqualTo(Preferences.NONE);
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).preferences()).isEqualTo(Preferences.NONE);
+        assertThat(wishlists.wishlistOf(GROUP, CARMEN, CARMEN).preferences()).isEqualTo(Preferences.NONE);
+    }
+
+    @Test
+    @DisplayName("Preferences are per Group: the same Member's Preferences in another Group are not in it")
+    void preferencesArePerGroup() {
+        wishlists.editPreferences(OTHER_GROUP, LUIS, new Preferences("Ciclismo"));
+
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).preferences()).isEqualTo(Preferences.NONE);
+        assertThat(wishlists.wishlistOf(OTHER_GROUP, LUIS, LUIS).preferences().text())
+                .isEqualTo("Ciclismo");
+    }
+
+    @Test
+    @DisplayName("the owner adds Don't List entries, oldest first, and removes them")
+    void ownerKeepsTheirDontList() {
+        StoredDontListEntry chocolate = wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de chocolate"));
+        StoredDontListEntry candles = wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de velas"));
+
+        assertThat(chocolate.entry().text()).isEqualTo("nada de chocolate");
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).dontList()).containsExactly(chocolate, candles);
+
+        wishlists.deleteDontListEntry(GROUP, LUIS, chocolate.id());
+
+        assertThat(wishlists.wishlistOf(GROUP, LUIS, LUIS).dontList()).containsExactly(candles);
+        assertThatThrownBy(() -> wishlists.deleteDontListEntry(GROUP, LUIS, chocolate.id()))
+                .as("an entry that is gone")
+                .isInstanceOf(DontListEntryNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName(
+            "nobody else, the Admin and the Giver included, can remove someone's Don't List entry: it is not found")
+    void othersCannotRemoveAnEntry() {
+        StoredDontListEntry chocolate = wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de chocolate"));
+        receivers.draw(GROUP, Map.of(MARTA, LUIS, LUIS, CARMEN, CARMEN, MARTA));
+
+        assertThatThrownBy(() -> wishlists.deleteDontListEntry(GROUP, CARMEN, chocolate.id()))
+                .as("the Admin")
+                .isInstanceOf(DontListEntryNotFoundException.class)
+                .hasFieldOrPropertyWithValue("code", "dont-list-entry-not-found");
+        assertThatThrownBy(() -> wishlists.deleteDontListEntry(GROUP, MARTA, chocolate.id()))
+                .as("Luis's Giver")
+                .isInstanceOf(DontListEntryNotFoundException.class);
+        StoredDontListEntry elsewhere =
+                wishlists.addDontListEntry(OTHER_GROUP, LUIS, new DontListEntry("nada de tazas"));
+        assertThatThrownBy(() -> wishlists.deleteDontListEntry(GROUP, LUIS, elsewhere.id()))
+                .as("an entry in another Group")
+                .isInstanceOf(DontListEntryNotFoundException.class);
+        assertThat(storedDontList.all()).containsExactlyInAnyOrder(chocolate, elsewhere);
+    }
+
+    @Test
+    @DisplayName("after the Draw the Giver reads the owner's Preferences and Don't List; before it nobody else does")
+    void preferencesAndDontListAreAsPrivateAsTheWishlist() {
+        wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla M"));
+        StoredDontListEntry chocolate = wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de chocolate"));
+
+        assertThatThrownBy(() -> wishlists.wishlistOf(GROUP, MARTA, LUIS))
+                .isInstanceOf(WishlistNotFoundException.class);
+
+        receivers.draw(GROUP, Map.of(MARTA, LUIS, LUIS, CARMEN, CARMEN, MARTA));
+        WishlistDetails seenByGiver = wishlists.wishlistOf(GROUP, MARTA, LUIS);
+
+        assertThat(seenByGiver.preferences().text()).isEqualTo("Talla M");
+        assertThat(seenByGiver.dontList()).containsExactly(chocolate);
+        assertThatThrownBy(() -> wishlists.wishlistOf(GROUP, CARMEN, LUIS))
+                .isInstanceOf(WishlistNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName(
+            "someone outside the Group gets 'no such Group' on Preferences and the Don't List, and nothing changes")
+    void nonMembersCannotTouchPreferencesOrTheDontList() {
+        wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla M"));
+        StoredDontListEntry chocolate = wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de chocolate"));
+
+        assertThatThrownBy(() -> wishlists.editPreferences(GROUP, STRANGER, new Preferences("Intruso")))
+                .isInstanceOf(GroupNotFoundException.class);
+        assertThatThrownBy(() -> wishlists.addDontListEntry(GROUP, STRANGER, new DontListEntry("Intruso")))
+                .isInstanceOf(GroupNotFoundException.class);
+        assertThatThrownBy(() -> wishlists.deleteDontListEntry(GROUP, STRANGER, chocolate.id()))
+                .isInstanceOf(GroupNotFoundException.class);
+        assertThat(storedPreferences.all()).containsExactly(new Preferences("Talla M"));
+        assertThat(storedDontList.all()).containsExactly(chocolate);
+    }
+
+    @Test
+    @DisplayName("when a membership ends, that Member's Preferences and Don't List in that Group go, and nobody else's")
+    void membershipEndedDeletesPreferencesAndDontList() {
+        wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla M"));
+        wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de chocolate"));
+        wishlists.editPreferences(GROUP, CARMEN, new Preferences("Plantas"));
+        StoredDontListEntry carmens = wishlists.addDontListEntry(GROUP, CARMEN, new DontListEntry("nada de velas"));
+        wishlists.editPreferences(OTHER_GROUP, LUIS, new Preferences("Ciclismo"));
+        StoredDontListEntry luisElsewhere =
+                wishlists.addDontListEntry(OTHER_GROUP, LUIS, new DontListEntry("nada de tazas"));
+
+        wishlists.on(new MembershipEnded(GROUP, LUIS));
+
+        assertThat(storedPreferences.all())
+                .containsExactlyInAnyOrder(new Preferences("Plantas"), new Preferences("Ciclismo"));
+        assertThat(storedDontList.all()).containsExactlyInAnyOrder(carmens, luisElsewhere);
+    }
+
+    @Test
+    @DisplayName(
+            "when a Group is deleted, every Preferences and Don't List entry in it goes, and other Groups keep theirs")
+    void groupDeletedDeletesPreferencesAndDontList() {
+        wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla M"));
+        wishlists.addDontListEntry(GROUP, CARMEN, new DontListEntry("nada de velas"));
+        wishlists.editPreferences(OTHER_GROUP, LUIS, new Preferences("Ciclismo"));
+        StoredDontListEntry luisElsewhere =
+                wishlists.addDontListEntry(OTHER_GROUP, LUIS, new DontListEntry("nada de tazas"));
+
+        wishlists.on(new GroupDeleted(GROUP));
+
+        assertThat(storedPreferences.all()).containsExactly(new Preferences("Ciclismo"));
+        assertThat(storedDontList.all()).containsExactly(luisElsewhere);
+    }
+
     // --- fakes and helpers ---
 
     private static Wish wish(String title, Priority priority) {
@@ -297,6 +451,94 @@ class MemberWishlistsTest {
         public void removeAllOf(UUID groupId, MemberId owner) {
             rows.removeIf(
                     row -> row.groupId().equals(groupId) && row.wish().owner().equals(owner));
+        }
+
+        @Override
+        public void removeAllIn(UUID groupId) {
+            rows.removeIf(row -> row.groupId().equals(groupId));
+        }
+    }
+
+    private static final class InMemoryPreferences implements AllPreferences {
+
+        private record Key(UUID groupId, MemberId owner) {}
+
+        private final Map<Key, Preferences> rows = new HashMap<>();
+
+        List<Preferences> all() {
+            return List.copyOf(rows.values());
+        }
+
+        @Override
+        public Preferences of(UUID groupId, MemberId owner) {
+            return rows.getOrDefault(new Key(groupId, owner), Preferences.NONE);
+        }
+
+        @Override
+        public void save(UUID groupId, MemberId owner, Preferences preferences) {
+            if (preferences.equals(Preferences.NONE)) {
+                rows.remove(new Key(groupId, owner));
+            } else {
+                rows.put(new Key(groupId, owner), preferences);
+            }
+        }
+
+        @Override
+        public void removeAllOf(UUID groupId, MemberId owner) {
+            rows.remove(new Key(groupId, owner));
+        }
+
+        @Override
+        public void removeAllIn(UUID groupId) {
+            rows.keySet().removeIf(key -> key.groupId().equals(groupId));
+        }
+    }
+
+    private static final class InMemoryDontListEntries implements DontListEntries {
+
+        private record Row(UUID groupId, StoredDontListEntry entry) {}
+
+        private final List<Row> rows = new ArrayList<>();
+
+        List<StoredDontListEntry> all() {
+            return rows.stream().map(Row::entry).toList();
+        }
+
+        @Override
+        public List<StoredDontListEntry> of(UUID groupId, MemberId owner) {
+            return rows.stream()
+                    .filter(row ->
+                            row.groupId().equals(groupId) && row.entry().owner().equals(owner))
+                    .map(Row::entry)
+                    .toList();
+        }
+
+        @Override
+        public Optional<StoredDontListEntry> find(UUID groupId, UUID entryId) {
+            return rows.stream()
+                    .filter(row ->
+                            row.groupId().equals(groupId) && row.entry().id().equals(entryId))
+                    .map(Row::entry)
+                    .findFirst();
+        }
+
+        @Override
+        public StoredDontListEntry add(UUID groupId, MemberId owner, DontListEntry entry, Instant createdAt) {
+            StoredDontListEntry stored = new StoredDontListEntry(UUID.randomUUID(), owner, entry);
+            rows.add(new Row(groupId, stored));
+            return stored;
+        }
+
+        @Override
+        public void remove(UUID groupId, UUID entryId) {
+            rows.removeIf(
+                    row -> row.groupId().equals(groupId) && row.entry().id().equals(entryId));
+        }
+
+        @Override
+        public void removeAllOf(UUID groupId, MemberId owner) {
+            rows.removeIf(
+                    row -> row.groupId().equals(groupId) && row.entry().owner().equals(owner));
         }
 
         @Override

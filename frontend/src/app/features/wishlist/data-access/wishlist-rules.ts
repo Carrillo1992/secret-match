@@ -1,11 +1,17 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
 import { Wish, WishInput, WishPriority } from './wishlist-api';
 
-/** The rules of a Wish, mirroring the API's: lengths, an http(s) link, a price to the cent. */
+/**
+ * The rules of a Wishlist, mirroring the API's, which checks them too. A Wish: lengths, an http(s)
+ * link, a price to the cent. Preferences and Don't List entries: lengths, counted on the trimmed
+ * text, because the API strips it before checking.
+ */
 
 export const TITLE_MAX_LENGTH = 100;
 export const LINK_MAX_LENGTH = 2000;
 export const NOTES_MAX_LENGTH = 1000;
+export const PREFERENCES_MAX_LENGTH = 2000;
+export const DONT_LIST_ENTRY_MAX_LENGTH = 100;
 const PRICE = /^\d{1,6}([.,]\d{1,2})?$/;
 const HTTP_LINK = /^https?:\/\/[^\s/?#]+\S*$/i;
 
@@ -24,6 +30,15 @@ export function httpLink(control: AbstractControl<string>): ValidationErrors | n
 export function priceInEuros(control: AbstractControl<string>): ValidationErrors | null {
   const amount = control.value.trim();
   return !amount || PRICE.test(amount) ? null : { price: true };
+}
+
+/** A Don't List entry as it will be sent, trimmed: not blank, and short. */
+export function dontListEntry(control: AbstractControl<string>): ValidationErrors | null {
+  const text = control.value.trim();
+  if (text === '') {
+    return { blank: true };
+  }
+  return text.length > DONT_LIST_ENTRY_MAX_LENGTH ? { tooLong: true } : null;
 }
 
 export interface WishFormValue {

@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideApiConfiguration } from '../../../core/api/generated/api-configuration';
+import { authInterceptor } from '../../../core/auth/auth.interceptor';
+import { AuthSession } from '../../../core/auth/auth-session';
 import { PAGE_RELOAD } from '../../../core/preferences/language-preference';
 import { PreferencesMenu } from './preferences-menu';
 
@@ -17,12 +22,21 @@ describe('PreferencesMenu', () => {
   let page: HTMLElement;
   let fixture: ReturnType<typeof TestBed.createComponent<Host>>;
   let reload: ReturnType<typeof vi.fn>;
+  let http: HttpTestingController;
 
   beforeAll(() => import('@lucide/angular'), 90_000);
 
   beforeEach(async () => {
     reload = vi.fn();
-    TestBed.configureTestingModule({ providers: [{ provide: PAGE_RELOAD, useValue: reload }] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+        provideApiConfiguration('http://api.test'),
+        { provide: PAGE_RELOAD, useValue: reload },
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(Host);
     page = fixture.nativeElement as HTMLElement;
     document.body.appendChild(page);
@@ -30,6 +44,7 @@ describe('PreferencesMenu', () => {
   });
 
   afterEach(() => {
+    http.verify();
     page.remove();
     localStorage.clear();
     delete document.documentElement.dataset['theme'];
@@ -110,6 +125,93 @@ describe('PreferencesMenu', () => {
     await fixture.whenStable();
 
     expect(reload).not.toHaveBeenCalled();
+  });
+
+  it('says nothing about emails while nobody is signed in', async () => {
+    await openMenu();
+
+    expect(dialog().textContent).not.toContain('emails');
+  });
+
+  describe('signed in', () => {
+    const LANGUAGE_URL = 'http://api.test/api/v1/users/me/language';
+
+    beforeEach(async () => {
+      const restored = TestBed.inject(AuthSession).refresh();
+      http
+        .expectOne('http://api.test/api/v1/sessions/refresh')
+        .flush({ accessToken: 'access-1', expiresAt: '2026-12-01T10:15:00Z' });
+      await restored;
+      await openMenu();
+    });
+
+    const chooseEnglish = async () => {
+      row('English')?.click();
+      await fixture.whenStable();
+      return http.expectOne(LANGUAGE_URL);
+    };
+    /** Lets the awaited save resume, then renders. */
+    const settle = async () => {
+      await new Promise((resolve) => setTimeout(resolve));
+      await fixture.whenStable();
+    };
+    const languageRows = () =>
+      Array.from(groupNamed('Idioma')?.querySelectorAll<HTMLButtonElement>('[role="radio"]') ?? []);
+
+    it('says the Language is used for emails too', () => {
+      const note = dialog().querySelector(
+        '#' + groupNamed('Idioma')?.getAttribute('aria-describedby'),
+      );
+
+      expect(note?.textContent).toContain('También se usa en tus emails.');
+    });
+
+    it('saves the Language to the User before reloading the page in it', async () => {
+      const request = await chooseEnglish();
+
+      expect(request.request.method).toBe('PUT');
+      expect(request.request.body).toEqual({ language: 'en' });
+      expect(reload).not.toHaveBeenCalled();
+      expect(localStorage.getItem('secretmatch.language')).toBeNull();
+
+      request.flush({
+        displayName: 'Ana',
+        email: 'ana@example.com',
+        hasPassword: true,
+        language: 'en',
+      });
+      await settle();
+
+      expect(localStorage.getItem('secretmatch.language')).toBe('en');
+      expect(reload).toHaveBeenCalledOnce();
+    });
+
+    it('shows the chosen Language saving, and holds the Language rows still, while Theme still works', async () => {
+      await chooseEnglish();
+
+      expect(row('English')?.textContent).toContain('Guardando…');
+      expect(languageRows().every((r) => r.disabled)).toBe(true);
+      expect(row('Español')?.getAttribute('aria-checked')).toBe('true');
+
+      row('Oscuro')?.click();
+      await fixture.whenStable();
+      expect(row('Oscuro')?.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('stays in the current Language and says so when the User Language cannot be saved', async () => {
+      const request = await chooseEnglish();
+      request.flush(null, { status: 500, statusText: 'Internal Server Error' });
+      await settle();
+
+      expect(reload).not.toHaveBeenCalled();
+      expect(localStorage.getItem('secretmatch.language')).toBeNull();
+      expect(row('Español')?.getAttribute('aria-checked')).toBe('true');
+      expect(row('English')?.textContent).not.toContain('Guardando…');
+      expect(languageRows().some((r) => r.disabled)).toBe(false);
+      expect(dialog().querySelector('[role="alert"]')?.textContent).toContain(
+        'No hemos podido cambiar el idioma. Inténtalo de nuevo.',
+      );
+    });
   });
 
   it('closes on Escape and gives focus back to the button', async () => {

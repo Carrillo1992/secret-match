@@ -1,5 +1,10 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { LucideCheck, LucideDynamicIcon, LucideIconInput } from '@lucide/angular';
+import { booleanAttribute, ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  LucideCheck,
+  LucideDynamicIcon,
+  LucideIconInput,
+  LucideLoaderCircle,
+} from '@lucide/angular';
 
 /** One row: the value it stands for, its label and, optionally, a leading icon and its language. */
 export interface ChoiceOption<T extends string> {
@@ -22,13 +27,18 @@ let nextId = 0;
 @Component({
   selector: 'app-choice-rows',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideCheck, LucideDynamicIcon],
+  imports: [LucideCheck, LucideDynamicIcon, LucideLoaderCircle],
   host: { class: 'block' },
   template: `
     <p [id]="labelId" class="font-display text-sm font-semibold text-ink-muted">{{ label() }}</p>
+    @if (hint(); as hint) {
+      <p [id]="hintId" class="mt-1 text-sm text-ink-muted">{{ hint }}</p>
+    }
     <div
       role="radiogroup"
       [attr.aria-labelledby]="labelId"
+      [attr.aria-describedby]="hint() ? hintId : null"
+      [attr.aria-busy]="pending() !== null || null"
       class="mt-2 divide-y divide-line/30 overflow-hidden rounded-field bg-canvas"
     >
       @for (option of options(); track option.value) {
@@ -38,8 +48,10 @@ let nextId = 0;
           role="radio"
           [attr.aria-checked]="checked"
           [tabIndex]="checked ? 0 : -1"
-          class="flex min-h-13 w-full items-center gap-3 px-4 text-left font-semibold text-ink transition-colors duration-200 hover:bg-subtle focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-primary"
+          [disabled]="disabled()"
+          class="flex min-h-13 w-full items-center gap-3 px-4 text-left font-semibold text-ink transition-colors duration-200 enabled:hover:bg-subtle disabled:cursor-not-allowed focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-primary"
           [class.bg-surface]="checked"
+          [class.opacity-60]="disabled() && option.value !== pending()"
           (click)="choose(option.value)"
           (keydown)="moveFocus($event)"
         >
@@ -47,7 +59,12 @@ let nextId = 0;
             <svg [lucideIcon]="icon" [size]="20"></svg>
           }
           <span class="flex-1" [attr.lang]="option.lang ?? null">{{ option.label }}</span>
-          @if (checked) {
+          @if (option.value === pending()) {
+            <span class="inline-flex items-center gap-1.5 text-sm text-ink-muted">
+              <svg lucideLoaderCircle [size]="16" class="motion-safe:animate-spin"></svg>
+              <ng-container i18n>Guardando…</ng-container>
+            </span>
+          } @else if (checked) {
             <svg lucideCheck [size]="20" class="text-primary"></svg>
           }
         </button>
@@ -61,10 +78,18 @@ export class ChoiceRows<T extends string> {
   readonly options = input.required<readonly ChoiceOption<T>[]>();
   /** The value of the checked row. */
   readonly selected = input.required<T>();
+  /** A line under the label that says more about the choice; it describes the group. */
+  readonly hint = input<string>();
+  /** The value of a row whose choice is being saved: it reads "Guardando…" with a spinner. */
+  readonly pending = input<T | null>(null);
+  /** Rows that cannot be chosen for now, e.g. while a choice is being saved. */
+  readonly disabled = input(false, { transform: booleanAttribute });
   /** A row other than the selected one was clicked, or Enter or Space was pressed on it. */
   readonly chosen = output<T>();
 
-  protected readonly labelId = `choice-rows-label-${nextId++}`;
+  private readonly id = nextId++;
+  protected readonly labelId = `choice-rows-label-${this.id}`;
+  protected readonly hintId = `choice-rows-hint-${this.id}`;
 
   protected choose(value: T): void {
     if (value !== this.selected()) {

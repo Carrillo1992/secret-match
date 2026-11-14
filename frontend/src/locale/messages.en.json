@@ -10,12 +10,15 @@
     "6039821132239273514": " Can't connect to the API ",
     "326575377012477304": " Try again ",
     "4798961227159743968": "Close",
+    "3348885058742055564": "Saving…",
     "5417396314870135122": "System",
     "3906034958359540712": "Light",
     "4560550641194494267": "Dark",
     "4361390512338905551": "Preferences",
     "2473708249335920209": "Theme",
     "1500181871307171807": "Language",
+    "8951812121956160613": "We couldn't change the language. Try again.",
+    "7141801258089700354": "Your emails use it too.",
     "1199908807070149151": "SecretMatch couldn't start. Reload the page in a few minutes."
   }
 }

@@ -1,10 +1,12 @@
 import { DOCUMENT } from '@angular/common';
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
+  Injector,
   resource,
   signal,
   untracked,
@@ -87,7 +89,9 @@ export class GroupPage {
   private readonly drawApi = inject(DrawApi);
   private readonly mailboxApi = inject(MailboxApi);
   private readonly router = inject(Router);
-  private readonly origin = inject(DOCUMENT).location.origin;
+  private readonly document = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
+  private readonly origin = this.document.location.origin;
   private readonly groupId = toSignal(
     inject(ActivatedRoute).paramMap.pipe(map((params) => params.get('groupId') ?? '')),
     { requireSync: true },
@@ -238,10 +242,23 @@ export class GroupPage {
     this.mailboxesOutcome.reload();
   }
 
-  /** Once the API agrees, the Message joins the end of its conversation and pops in. */
+  /**
+   * Once the API agrees, the Message joins the end of its conversation and pops in. If the Group
+   * finished meanwhile, the Group is asked for again so the whole page shows it finished, the
+   * Mailbox read-only.
+   */
   protected async sendMessage({ mailboxId, text }: MessageToSend): Promise<void> {
     this.setSend(mailboxId, 'sending');
     const outcome = await this.mailboxApi.send(mailboxId, text);
+    if (outcome.status === 'finished') {
+      this.setSend(mailboxId, 'finished');
+      await this.finishedMeanwhile();
+      // The composer that had the focus is gone: keep the Member in the same Mailbox.
+      afterNextRender(() => this.document.getElementById(`mailbox-tab-${mailboxId}`)?.focus(), {
+        injector: this.injector,
+      });
+      return;
+    }
     if (outcome.status === 'sent') {
       const thread = this.threads()[mailboxId];
       if (thread?.status === 'loaded') {
@@ -253,6 +270,21 @@ export class GroupPage {
       }
     }
     this.setSend(mailboxId, outcome.status);
+  }
+
+  /**
+   * The Group is asked for again quietly, as after cancelling the Draw: reloading the resource would
+   * replace the whole page with "Cargando…" and lose the open Mailbox. Should that request fail, the
+   * page still knows the Group is finished.
+   */
+  private async finishedMeanwhile(): Promise<void> {
+    const refreshed = await this.groupsApi.group(this.groupId());
+    const group = this.group();
+    if (refreshed.status === 'found') {
+      this.outcome.set(refreshed);
+    } else if (group) {
+      this.outcome.set({ status: 'found', group: { ...group, finished: true } });
+    }
   }
 
   private setThread(mailboxId: string, thread: ThreadState): void {

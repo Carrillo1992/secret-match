@@ -143,6 +143,31 @@ describe('MailboxCard', () => {
     expect(sent).toEqual([{ mailboxId: 'm-1', text: '¿Para leer o para la cocina?' }]);
   });
 
+  it('once the Group is finished, shows the conversation without the composer', async () => {
+    const hello = { mine: false, text: '¿Qué talla usas?', sentOn: '2026-12-01' };
+    await render(both, { 'm-1': { status: 'loaded', messages: [hello], fresh: 0 } });
+    fixture.componentRef.setInput('finished', true);
+    await fixture.whenStable();
+
+    expect(text(panel('m-1'))).toContain('¿Qué talla usas?');
+    expect(panel('m-1')?.querySelector('textarea')).toBeNull();
+    expect(text(panel('m-1'))).toContain(
+      'El grupo ha finalizado: ya solo se pueden leer los mensajes.',
+    );
+  });
+
+  it('says a Message was not sent when the Group finished meanwhile', async () => {
+    await render(both, { 'm-1': empty });
+    fixture.componentRef.setInput('finished', true);
+    fixture.componentRef.setInput('sends', { 'm-1': 'finished' });
+    await fixture.whenStable();
+
+    expect(text(panel('m-1')?.querySelector('[role="status"]'))).toBe(
+      'No se ha enviado: el grupo acaba de finalizar y ya solo se pueden leer los mensajes.',
+    );
+    expect(text(panel('m-1'))).toContain('No hubo mensajes');
+  });
+
   it('offers to retry when the Mailboxes cannot be loaded', async () => {
     await render({ status: 'failed' });
 

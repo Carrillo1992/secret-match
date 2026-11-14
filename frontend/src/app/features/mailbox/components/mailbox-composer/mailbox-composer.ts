@@ -18,9 +18,11 @@ import { MESSAGE_MAX_LENGTH, messageLength, messageProblem } from '../../data-ac
 
 /**
  * Where the last Message written here stands, as the page tells it. `invalid`: the API refused the
- * text, which the composer's own check should have caught.
+ * text, which the composer's own check should have caught. `finished`: the Group finished meanwhile;
+ * the card then shows no composer, and says so itself.
  */
-export type SendStatus = 'idle' | 'sending' | 'sent' | 'failed' | 'invalid' | 'not-found';
+export type SendStatus =
+  'idle' | 'sending' | 'sent' | 'failed' | 'invalid' | 'not-found' | 'finished';
 
 /**
  * Writes a Message in the Mailbox card (#36, option B): a textarea whose hint counts the characters

@@ -55,7 +55,8 @@ class MailboxController {
     @Operation(
             summary = "Send a Message in a Mailbox",
             description = "Text only, 1 to 1000 characters, not blank. Only its Giver and Receiver can; anyone"
-                    + " else, the Admin included, gets a 404.")
+                    + " else, the Admin included, gets a 404. Once the Group is finished the Mailbox is read-only:"
+                    + " 422 group-finished.")
     MessageResponse sendMessage(
             @AuthenticationPrincipal Jwt accessToken,
             @PathVariable UUID mailboxId,

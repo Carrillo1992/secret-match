@@ -102,6 +102,18 @@ describe('MailboxApi', () => {
       await expect(done).resolves.toEqual({ status: 'invalid' });
     });
 
+    it('says the Group is finished when the API refuses it for that', async () => {
+      const done = mailboxApi.send('m-1', '¡Hola!');
+      http
+        .expectOne(MESSAGES_URL)
+        .flush(
+          { type: 'urn:secretmatch:problem:group-finished', status: 422 },
+          { status: 422, statusText: 'Unprocessable Content' },
+        );
+
+      await expect(done).resolves.toEqual({ status: 'finished' });
+    });
+
     it('says the Mailbox is not found when it is no longer the caller’s', async () => {
       const done = mailboxApi.send('m-1', '¡Hola!');
       http.expectOne(MESSAGES_URL).flush({ status: 404 }, NOT_FOUND);

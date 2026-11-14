@@ -23,8 +23,27 @@ interface MailboxRepository extends JpaRepository<MailboxEntity, UUID> {
     @Query(value = "DELETE FROM mailboxes WHERE group_id = :groupId", nativeQuery = true)
     int removeAllIn(UUID groupId);
 
+    @Query(
+            value = "SELECT * FROM mailboxes WHERE group_id = :groupId AND receiver_id = :receiverId"
+                    + " AND giver_id IS NULL",
+            nativeQuery = true)
+    Optional<MailboxEntity> findWithGoneGiver(UUID groupId, UUID receiverId);
+
     /** Its Messages go along ({@code ON DELETE CASCADE}). */
     @Modifying
-    @Query(value = "DELETE FROM mailboxes WHERE giver_id = :userId OR receiver_id = :userId", nativeQuery = true)
-    int removeAllOf(UUID userId);
+    @Query(value = "DELETE FROM mailboxes WHERE receiver_id = :userId", nativeQuery = true)
+    int removeAllReceivedBy(UUID userId);
+
+    /** Run after {@link #forgetAuthor}, which finds the Messages through this column. */
+    @Modifying
+    @Query(value = "UPDATE mailboxes SET giver_id = NULL WHERE giver_id = :userId", nativeQuery = true)
+    int forgetGiver(UUID userId);
+
+    /** Forgets who wrote the Messages this User wrote as the Giver of a Mailbox. */
+    @Modifying
+    @Query(value = """
+            UPDATE messages SET author_id = NULL
+            WHERE author_id = :userId AND mailbox_id IN (SELECT id FROM mailboxes WHERE giver_id = :userId)
+            """, nativeQuery = true)
+    int forgetAuthor(UUID userId);
 }

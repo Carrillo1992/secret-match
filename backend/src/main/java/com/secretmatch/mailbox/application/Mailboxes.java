@@ -25,9 +25,21 @@ public interface Mailboxes {
 
     StoredMessage addMessage(MailboxId id, MemberId author, MessageText text, Instant sentAt);
 
+    /**
+     * The Mailbox in the Group whose Receiver is {@code receiver} and whose Giver deleted their account; empty if
+     * there is none.
+     */
+    Optional<Mailbox> withGoneGiver(UUID groupId, MemberId receiver);
+
     /** Deletes every Mailbox in the Group, with its Messages. */
     void removeAllIn(UUID groupId);
 
-    /** Deletes every Mailbox, in any Group, this User is the Giver or the Receiver of, with its Messages. */
-    void removeAllOf(MemberId user);
+    /** Deletes every Mailbox, in any Group, this User is the Receiver of, with its Messages. */
+    void removeAllReceivedBy(MemberId user);
+
+    /**
+     * Keeps every Mailbox, in any Group, this User is the Giver of, and its Messages, but forgets that they are its
+     * Giver and wrote those Messages.
+     */
+    void forgetGiver(MemberId user);
 }

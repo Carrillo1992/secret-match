@@ -53,7 +53,18 @@ class JpaMailboxes implements Mailboxes {
     }
 
     @Override
-    public void removeAllOf(MemberId user) {
-        mailboxes.removeAllOf(user.value());
+    public Optional<Mailbox> withGoneGiver(UUID groupId, MemberId receiver) {
+        return mailboxes.findWithGoneGiver(groupId, receiver.value()).map(MailboxEntity::toMailbox);
+    }
+
+    @Override
+    public void removeAllReceivedBy(MemberId user) {
+        mailboxes.removeAllReceivedBy(user.value());
+    }
+
+    @Override
+    public void forgetGiver(MemberId user) {
+        mailboxes.forgetAuthor(user.value());
+        mailboxes.forgetGiver(user.value());
     }
 }

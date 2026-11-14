@@ -12,8 +12,13 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +45,8 @@ public class MemberMailboxes {
 
     /**
      * The Member's Mailboxes in the Group: the one with their Receiver first, then the one with their Giver. None
-     * before the Draw. Each is created the first time it is listed.
+     * before the Draw. Each is created the first time it is listed. If their Giver deleted their account, the
+     * Member keeps the Mailbox they had with them, which looks just as before.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code member} is not one of its Members
      */
@@ -48,22 +54,28 @@ public class MemberMailboxes {
     public List<MyMailbox> mailboxesOf(UUID groupId, UUID member) {
         List<GroupMember> members = groupMembers.of(groupId, member).orElseThrow(GroupNotFoundException::new);
         MemberId me = new MemberId(member);
+        Optional<MemberId> receiver = assignments.receiverOf(groupId, me);
+        Optional<MemberId> giver = assignments.giverOf(groupId, me);
+        Map<Pair, Mailbox> opened = openInGlobalOrder(
+                groupId,
+                Stream.concat(
+                                receiver.map(theirs -> new Pair(me, theirs)).stream(),
+                                giver.map(theirs -> new Pair(theirs, me)).stream())
+                        .toList());
         List<MyMailbox> mine = new ArrayList<>(2);
-        assignments
-                .receiverOf(groupId, me)
-                .ifPresent(receiver -> mine.add(new MyMailbox.WithMyReceiver(
-                        mailboxes.open(groupId, me, receiver).id(), displayNameOf(receiver, members))));
-        assignments
-                .giverOf(groupId, me)
-                .ifPresent(giver -> mine.add(new MyMailbox.WithMyGiver(
-                        mailboxes.open(groupId, giver, me).id())));
+        receiver.ifPresent(theirs -> mine.add(
+                new MyMailbox.WithMyReceiver(opened.get(new Pair(me, theirs)).id(), displayNameOf(theirs, members))));
+        giver.map(theirs -> opened.get(new Pair(theirs, me)))
+                .or(() -> mailboxes.withGoneGiver(groupId, me))
+                .ifPresent(mailbox -> mine.add(new MyMailbox.WithMyGiver(mailbox.id())));
         return List.copyOf(mine);
     }
 
     /**
      * The Mailbox's Messages, oldest first.
      *
-     * @throws MailboxNotFoundException if there is no such Mailbox, or {@code member} is not its Giver or Receiver
+     * @throws MailboxNotFoundException if there is no such Mailbox, {@code member} is not its Giver or Receiver, or
+     *     it no longer belongs to the Group's Draw
      */
     @Transactional(readOnly = true)
     public List<MailboxMessage> messagesIn(UUID mailboxId, UUID member) {
@@ -95,10 +107,16 @@ public class MemberMailboxes {
         mailboxes.removeAllIn(event.groupId());
     }
 
-    /** A deleted User's Mailboxes go with them, on both sides, in the same transaction. */
+    /**
+     * A deleted User's Mailboxes with their Giver go with them, in the same transaction. Those with their Receiver
+     * stay, with their Messages, but no longer say who wrote them: if they disappeared just as the User leaves the
+     * Group, the Receiver would learn who their Giver was (ADR 0001).
+     */
     @EventListener
     void on(UserDeleted event) {
-        mailboxes.removeAllOf(new MemberId(event.userId()));
+        MemberId user = new MemberId(event.userId());
+        mailboxes.removeAllReceivedBy(user);
+        mailboxes.forgetGiver(user);
     }
 
     /** The Mailbox, if {@code member} is on one side of it and its Assignment is still part of the Group's Draw. */
@@ -110,11 +128,37 @@ public class MemberMailboxes {
         return mailbox;
     }
 
+    /**
+     * Whether the Mailbox's Assignment is still part of the Group's Draw. One whose Giver is gone is current while
+     * its Receiver has no Giver.
+     */
     private boolean isCurrent(Mailbox mailbox) {
+        if (mailbox.giverIsGone()) {
+            return assignments.giverOf(mailbox.groupId(), mailbox.receiver()).isEmpty();
+        }
         return assignments
                 .receiverOf(mailbox.groupId(), mailbox.giver())
                 .filter(mailbox.receiver()::equals)
                 .isPresent();
+    }
+
+    /**
+     * Opens the Mailboxes in one order shared by every request, so two Members listing theirs at once never wait
+     * for each other's rows in opposite orders (a deadlock).
+     */
+    private Map<Pair, Mailbox> openInGlobalOrder(UUID groupId, List<Pair> pairs) {
+        Map<Pair, Mailbox> opened = new HashMap<>();
+        pairs.stream()
+                .sorted(Pair.GLOBAL_ORDER)
+                .forEach(pair -> opened.put(pair, mailboxes.open(groupId, pair.giver(), pair.receiver())));
+        return opened;
+    }
+
+    private record Pair(MemberId giver, MemberId receiver) {
+
+        static final Comparator<Pair> GLOBAL_ORDER = Comparator.<Pair, UUID>comparing(
+                        pair -> pair.giver().value())
+                .thenComparing(pair -> pair.receiver().value());
     }
 
     private static String displayNameOf(MemberId member, List<GroupMember> members) {
@@ -127,6 +171,6 @@ public class MemberMailboxes {
 
     private static MailboxMessage seenBy(MemberId viewer, StoredMessage stored) {
         return new MailboxMessage(
-                stored.author().equals(viewer), stored.text(), LocalDate.ofInstant(stored.sentAt(), ZoneOffset.UTC));
+                viewer.equals(stored.author()), stored.text(), LocalDate.ofInstant(stored.sentAt(), ZoneOffset.UTC));
     }
 }

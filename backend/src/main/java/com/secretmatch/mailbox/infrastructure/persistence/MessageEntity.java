@@ -22,7 +22,8 @@ class MessageEntity {
     @Column(name = "mailbox_id", nullable = false)
     private UUID mailboxId;
 
-    @Column(name = "author_id", nullable = false)
+    /** {@code null} once a Giver who deleted their account wrote it. */
+    @Column(name = "author_id")
     private UUID authorId;
 
     @Column(nullable = false)
@@ -44,6 +45,6 @@ class MessageEntity {
     }
 
     StoredMessage toStored() {
-        return new StoredMessage(new MemberId(authorId), new MessageText(text), sentAt);
+        return new StoredMessage(authorId == null ? null : new MemberId(authorId), new MessageText(text), sentAt);
     }
 }

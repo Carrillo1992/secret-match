@@ -296,6 +296,15 @@ class DrawIT {
         runDraw(family.carmen(), family).expectStatus().isCreated();
         JsonNode document =
                 json(http.get().uri("/v3/api-docs").exchange().expectStatus().isOk());
+        List<String> emails = family.everyone().stream().map(User::email).toList();
+        // A Message on each side of every Mailbox, so there is something in them to check.
+        for (User member : family.everyone()) {
+            for (JsonNode mailbox : json(get(member, "/api/v1/groups/" + family.groupId() + "/mailboxes"))) {
+                post(member, "/api/v1/mailboxes/" + mailbox.get("id").asString() + "/messages", Map.of("text", "Hola"))
+                        .expectStatus()
+                        .isCreated();
+            }
+        }
 
         for (User member : family.everyone()) {
             JsonNode myDraw = json(get(member, drawOf(family)));
@@ -330,7 +339,7 @@ class DrawIT {
                             .getResponseBody();
                     if (uri.endsWith("/draw")) {
                         assertThat(json(body).at("/myReceiver/id").asString()).isEqualTo(own);
-                    } else if (uri.endsWith("/mailboxes")) {
+                    } else if (path.getKey().equals("/api/v1/groups/{groupId}/mailboxes")) {
                         // The Mailbox with their Receiver names only them; the one with their Giver names nobody.
                         JsonNode mailboxes = json(body);
                         assertThat(mailboxes).hasSize(2);
@@ -338,10 +347,21 @@ class DrawIT {
                                 .isEqualTo(ownName);
                         assertThat(mailboxes.get(1).get("receiverDisplayName").isNull())
                                 .isTrue();
-                        assertThat(body).as(uri).doesNotContain(family.ids());
+                        assertThat(body).as(uri).doesNotContain(family.ids()).doesNotContain(emails);
                         family.idsByName().keySet().stream()
                                 .filter(name -> !name.equals(ownName))
                                 .forEach(name -> assertThat(body).as(uri).doesNotContain(name));
+                    } else if (path.getKey().equals("/api/v1/mailboxes/{mailboxId}/messages")) {
+                        // One Message from each side, saying only whether it is the caller's, its text and its date.
+                        JsonNode messages = json(body);
+                        assertThat(messages).as(uri).hasSize(2);
+                        messages.forEach(message -> assertThat(message.propertyNames())
+                                .containsExactlyInAnyOrder("mine", "text", "sentOn"));
+                        assertThat(body)
+                                .as(uri)
+                                .doesNotContain(family.ids())
+                                .doesNotContain(emails)
+                                .doesNotContain(family.idsByName().keySet());
                     } else {
                         assertThat(String.valueOf(body))
                                 .as(uri)

@@ -20,7 +20,8 @@ class MailboxEntity {
     @Column(name = "group_id", nullable = false)
     private UUID groupId;
 
-    @Column(name = "giver_id", nullable = false)
+    /** {@code null} once the Giver deleted their account. */
+    @Column(name = "giver_id")
     private UUID giverId;
 
     @Column(name = "receiver_id", nullable = false)
@@ -29,6 +30,7 @@ class MailboxEntity {
     protected MailboxEntity() {}
 
     Mailbox toMailbox() {
-        return new Mailbox(new MailboxId(id), groupId, new MemberId(giverId), new MemberId(receiverId));
+        return new Mailbox(
+                new MailboxId(id), groupId, giverId == null ? null : new MemberId(giverId), new MemberId(receiverId));
     }
 }

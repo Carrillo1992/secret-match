@@ -17,13 +17,17 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import tools.jackson.databind.JsonNode;
@@ -37,6 +41,7 @@ import tools.jackson.databind.json.JsonMapper;
 @AutoConfigureRestTestClient
 @ActiveProfiles("test")
 @Import({TestPostgres.class, RecordingEmailSender.Config.class, MutableClock.Config.class})
+@ExtendWith(OutputCaptureExtension.class)
 class MailboxIT {
 
     private static final String PASSWORD = "turrón-y-polvorones";
@@ -52,6 +57,9 @@ class MailboxIT {
 
     @Autowired
     MutableClock clock;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     @BeforeEach
     void firstOfDecember() {
@@ -198,12 +206,14 @@ class MailboxIT {
         String mailbox = mailboxIdOf(giver, drawn, "GIVER");
         send(giver, mailbox, "Hola").expectStatus().isCreated();
         User stranger = signedInUser("Desconocido");
+        Member otherGroupMember = drawnFamily().family().luis();
+        get(otherGroupMember.user(), mailboxesOf(drawn.family())).expectStatus().isNotFound();
 
-        List<User> outsiders = new ArrayList<>(List.of(stranger));
+        List<User> outsiders = new ArrayList<>(List.of(stranger, otherGroupMember.user()));
         drawn.family().members().stream()
                 .filter(member -> member != giver && member != receiver)
                 .forEach(member -> outsiders.add(member.user()));
-        assertThat(outsiders).hasSize(3).contains(admin.user());
+        assertThat(outsiders).hasSize(4).contains(admin.user());
         for (User outsider : outsiders) {
             get(outsider, messagesOf(mailbox))
                     .expectStatus()
@@ -230,8 +240,13 @@ class MailboxIT {
         Map<String, Object> noText = new HashMap<>();
         noText.put("text", null);
 
-        for (Map<String, ?> message :
-                List.of(Map.of("text", ""), Map.of("text", "   \n "), Map.of("text", "a".repeat(1001)), noText)) {
+        for (Map<String, ?> message : List.of(
+                Map.of("text", ""),
+                Map.of("text", "   \n "),
+                Map.of("text", "\u200b\u00a0\ufeff"),
+                Map.of("text", "hola\u0000"),
+                Map.of("text", "a".repeat(1001)),
+                noText)) {
             post(giver.user(), messagesOf(mailbox), message)
                     .expectStatus()
                     .isEqualTo(422)
@@ -268,31 +283,148 @@ class MailboxIT {
     }
 
     @Test
-    @DisplayName("once the Group is finished a Member can delete their account, and their Mailboxes go with them")
-    void deletingAnAccountTakesTheirMailboxesAlong() {
+    @DisplayName("a Giver who deletes their account leaves their Receiver the Mailbox, anonymous, with its Messages")
+    void aDeletedGiverLeavesTheMailboxToTheReceiver() {
         Drawn drawn = drawnFamily();
         Member luis = drawn.family().luis();
-        Member giver = drawn.giverOf(luis);
         Member receiver = drawn.receiverOf(luis);
-        String fromGiver = mailboxIdOf(luis, drawn, "RECEIVER");
-        String toReceiver = mailboxIdOf(luis, drawn, "GIVER");
-        send(giver, fromGiver, "Hola").expectStatus().isCreated();
-        send(luis, toReceiver, "Hola").expectStatus().isCreated();
+        Member luisGiver = drawn.giverOf(luis);
+        String mailbox = mailboxIdOf(luis, drawn, "GIVER");
+        send(luis, mailbox, "¿Qué talla usas?").expectStatus().isCreated();
+        send(receiver, mailbox, "La M").expectStatus().isCreated();
+        String before = body(get(receiver.user(), mailboxesOf(drawn.family())));
         clock.set(Instant.parse("2026-12-26T10:00:00Z"));
         User luisNow = signedInAgain(luis.user().email());
-        User giverNow = signedInAgain(giver.user().email());
         User receiverNow = signedInAgain(receiver.user().email());
+        User luisGiverNow = signedInAgain(luisGiver.user().email());
 
         delete(luisNow, "/api/v1/users/me").expectStatus().isNoContent();
 
-        get(giverNow, messagesOf(fromGiver)).expectStatus().isNotFound();
-        get(receiverNow, messagesOf(toReceiver)).expectStatus().isNotFound();
-        JsonNode giverMailboxes = json(get(giverNow, mailboxesOf(drawn.family())));
-        assertThat(giverMailboxes
+        String after = body(get(receiverNow, mailboxesOf(drawn.family())));
+        assertThat(JSON.readTree(after))
+                .as("the Receiver's Mailboxes look just as before, \"Tu Giver\" included")
+                .isEqualTo(JSON.readTree(before));
+        JsonNode messages = json(get(receiverNow, messagesOf(mailbox)));
+        assertThat(messages.valueStream().map(message -> message.get("mine").asBoolean()))
+                .containsExactly(false, true);
+        assertThat(messages.get(0).get("text").asString()).isEqualTo("¿Qué talla usas?");
+        send(receiverNow, mailbox, "¿Sigues ahí?").expectStatus().isCreated();
+        for (String luisDetail : List.of(luis.id(), luis.name(), luis.user().email())) {
+            assertThat(after).doesNotContain(luisDetail);
+            assertThat(body(get(receiverNow, messagesOf(mailbox)))).doesNotContain(luisDetail);
+        }
+        // Still nobody else's.
+        get(luisGiverNow, messagesOf(mailbox)).expectStatus().isNotFound();
+    }
+
+    @Test
+    @DisplayName("a Receiver who deletes their account takes the Mailbox with their Giver along")
+    void aDeletedReceiverTakesTheMailboxAlong() {
+        Drawn drawn = drawnFamily();
+        Member luis = drawn.family().luis();
+        Member giver = drawn.giverOf(luis);
+        String mailbox = mailboxIdOf(luis, drawn, "RECEIVER");
+        send(giver, mailbox, "Hola").expectStatus().isCreated();
+        clock.set(Instant.parse("2026-12-26T10:00:00Z"));
+        User luisNow = signedInAgain(luis.user().email());
+        User giverNow = signedInAgain(giver.user().email());
+
+        delete(luisNow, "/api/v1/users/me").expectStatus().isNoContent();
+
+        get(giverNow, messagesOf(mailbox)).expectStatus().isNotFound();
+        send(giverNow, mailbox, "¿Hola?").expectStatus().isNotFound();
+        assertThat(json(get(giverNow, mailboxesOf(drawn.family())))
                         .valueStream()
-                        .map(mailbox -> mailbox.get("side").asString()))
-                .as("Luis's Giver still has their own Giver, but no Receiver any more")
+                        .map(item -> item.get("side").asString()))
+                .as("Luis's Giver keeps the Mailbox with their own Giver, and has no Receiver any more")
                 .containsExactly("RECEIVER");
+    }
+
+    @Test
+    @DisplayName("cancelling the Draw takes its Mailboxes and Messages along, and no longer blocks leaving")
+    void cancellingTheDrawTakesMailboxesAlong() {
+        Drawn drawn = drawnFamily();
+        Member luis = drawn.family().luis();
+        String mailbox = mailboxIdOf(luis, drawn, "GIVER");
+        send(luis, mailbox, "Hola").expectStatus().isCreated();
+        UUID groupId = UUID.fromString(drawn.family().groupId());
+
+        // What cancelling a Draw will do: its Assignments and its row go, and the Group is no longer drawn.
+        jdbc.update("DELETE FROM assignments WHERE group_id = ?", groupId);
+        jdbc.update("DELETE FROM draws WHERE group_id = ?", groupId);
+        jdbc.update("UPDATE groups SET drawn = FALSE WHERE id = ?", groupId);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM mailboxes WHERE group_id = ?", Long.class, groupId))
+                .isZero();
+        assertThat(jdbc.queryForObject(
+                        "SELECT count(*) FROM messages WHERE mailbox_id = ?", Long.class, UUID.fromString(mailbox)))
+                .isZero();
+        get(luis.user(), messagesOf(mailbox)).expectStatus().isNotFound();
+        assertThat(json(get(luis.user(), mailboxesOf(drawn.family())))).isEmpty();
+        delete(luis.user(), "/api/v1/groups/" + groupId + "/members/" + luis.id())
+                .expectStatus()
+                .isNoContent();
+    }
+
+    @Test
+    @DisplayName("a Mailbox whose Assignment changed is a 404 to its old pair, who get new Mailboxes")
+    void aMailboxOfAnOldAssignmentIsGone() {
+        Drawn drawn = drawnFamily();
+        // In the 4-cycle g1 -> r1 -> g2 -> r2 -> g1, swap the Receivers of g1 and g2.
+        Member g1 = drawn.family().luis();
+        Member r1 = drawn.receiverOf(g1);
+        Member g2 = drawn.receiverOf(r1);
+        Member r2 = drawn.receiverOf(g2);
+        String old = mailboxIdOf(g1, drawn, "GIVER");
+        send(g1, old, "Hola").expectStatus().isCreated();
+        UUID groupId = UUID.fromString(drawn.family().groupId());
+
+        jdbc.update(
+                "DELETE FROM assignments WHERE group_id = ? AND giver_id IN (?, ?)",
+                groupId,
+                UUID.fromString(g1.id()),
+                UUID.fromString(g2.id()));
+        jdbc.update(
+                "INSERT INTO assignments (group_id, giver_id, receiver_id) VALUES (?, ?, ?), (?, ?, ?)",
+                groupId,
+                UUID.fromString(g1.id()),
+                UUID.fromString(r2.id()),
+                groupId,
+                UUID.fromString(g2.id()),
+                UUID.fromString(r1.id()));
+
+        for (Member oldPair : List.of(g1, r1)) {
+            get(oldPair.user(), messagesOf(old)).expectStatus().isNotFound();
+            send(oldPair, old, "¿Hola?").expectStatus().isNotFound();
+            assertThat(json(get(oldPair.user(), mailboxesOf(drawn.family())))
+                            .valueStream()
+                            .map(mailbox -> mailbox.get("id").asString()))
+                    .hasSize(2)
+                    .doesNotContain(old);
+        }
+    }
+
+    @Test
+    @DisplayName("listing Mailboxes and sending Messages logs no Mailbox id, Message text or Member id")
+    void theMailboxLogsNothingAboutWhoTalks(CapturedOutput output) {
+        Drawn drawn = drawnFamily();
+        int before = output.getAll().length();
+        List<String> mailboxIds = new ArrayList<>();
+
+        for (Member member : drawn.family().members()) {
+            json(get(member.user(), mailboxesOf(drawn.family())))
+                    .forEach(mailbox -> mailboxIds.add(mailbox.get("id").asString()));
+            String mine = mailboxIdOf(member, drawn, "GIVER");
+            send(member, mine, "Mensaje secreto de " + member.name())
+                    .expectStatus()
+                    .isCreated();
+            get(member.user(), messagesOf(mine)).expectStatus().isOk();
+            send(member, mine, "").expectStatus().isEqualTo(422);
+        }
+
+        String logged = output.getAll().substring(before);
+        assertThat(logged).doesNotContain(mailboxIds).doesNotContain("Mensaje secreto");
+        drawn.family().members().forEach(member -> assertThat(logged).doesNotContain(member.id()));
     }
 
     // --- helpers ---

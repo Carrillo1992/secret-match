@@ -26,7 +26,7 @@ class MessageTextTest {
     }
 
     @Test
-    @DisplayName("characters are counted as people see them, so 1000 emoji fit")
+    @DisplayName("characters are counted in code points, as the database does, so 1000 emoji fit")
     void countsEmojiAsOneCharacter() {
         String thousandGifts = "🎁".repeat(1000);
 
@@ -48,5 +48,31 @@ class MessageTextTest {
     @DisplayName("an empty or blank Message is rejected, not trimmed into nothing")
     void rejectsEmptyOrBlankText(String text) {
         assertThatThrownBy(() -> new MessageText(text)).isInstanceOf(InvalidMessageException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\u00a0", "\u200b", "\ufeff", " \u200b\u00a0\u2007\u202f\u200d\n "})
+    @DisplayName("a Message of only invisible characters (no-break or zero-width spaces, a BOM) is rejected")
+    void rejectsInvisibleOnlyText(String text) {
+        assertThatThrownBy(() -> new MessageText(text)).isInstanceOf(InvalidMessageException.class);
+    }
+
+    @Test
+    @DisplayName("invisible characters around visible text are kept")
+    void keepsInvisibleCharactersAroundText() {
+        assertThat(new MessageText("\u00a0hola\u200b").value()).isEqualTo("\u00a0hola\u200b");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"hola\u0000", "\u0001hola", "ho\u0007la", "hola\u001b[31m", "hola\u007f"})
+    @DisplayName("a Message with a NUL or another control character is rejected")
+    void rejectsControlCharacters(String text) {
+        assertThatThrownBy(() -> new MessageText(text)).isInstanceOf(InvalidMessageException.class);
+    }
+
+    @Test
+    @DisplayName("line breaks and tabs are allowed")
+    void allowsLineBreaksAndTabs() {
+        assertThat(new MessageText("una\r\ndos\n\ttres").value()).isEqualTo("una\r\ndos\n\ttres");
     }
 }

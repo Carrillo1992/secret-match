@@ -337,30 +337,19 @@ describe('WishlistPage', () => {
     const preferencesCard = () => page().querySelector('app-preferences-card');
     const dontListCard = () => page().querySelector('app-dont-list-card');
 
-    it("shows the Giver their Receiver's Don't List and Preferences after the Wishes, read-only", async () => {
+    it("opens the Giver's view of their Receiver's Wishlist with the Don't List at the top, read-only", async () => {
       await open({
         ...seenByMarta,
         preferences: 'Talla M.\nMe encanta el café.',
         dontList: [noChocolate, noVelas],
       });
 
+      expect(headings()).toEqual(['Nada de…', 'Auriculares', 'Libro', 'Sus gustos']);
       expect(text(dontListCard())).toContain('Nada de chocolate');
       expect(text(dontListCard())).toContain('Velas');
-      expect(text(preferencesCard())).toContain('Sus gustos');
       expect(text(preferencesCard())).toContain('Talla M. Me encanta el café.');
       expect(dontListCard()?.querySelector('button')).toBeNull();
       expect(preferencesCard()?.querySelector('button')).toBeNull();
-
-      const wishes = page().querySelector('ul[aria-label="Deseos"]');
-      const dontList = dontListCard();
-      const preferences = preferencesCard();
-      if (!wishes || !dontList || !preferences) throw new Error('a section is missing');
-      expect(
-        wishes.compareDocumentPosition(dontList) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
-      expect(
-        dontList.compareDocumentPosition(preferences) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
     });
 
     it('hides from the Giver the sections their Receiver left empty', async () => {

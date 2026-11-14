@@ -1,6 +1,6 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { GroupEdit } from './groups-api';
-import { currentLanguage } from '../../../core/language';
+import { editableEuros } from '../../../shared/format/euros';
 
 /**
  * The rules and shapes shared by the forms that create and edit a Group. They mirror the API's
@@ -49,10 +49,5 @@ export function groupDetailsInput(form: {
  * `25.5` → "25,50" ("25.50" in English), none → "".
  */
 export function budgetText(budget: number | undefined): string {
-  if (budget === undefined) {
-    return '';
-  }
-  return Number.isInteger(budget)
-    ? String(budget)
-    : budget.toFixed(2).replace('.', currentLanguage() === 'es' ? ',' : '.');
+  return budget === undefined ? '' : editableEuros(budget);
 }

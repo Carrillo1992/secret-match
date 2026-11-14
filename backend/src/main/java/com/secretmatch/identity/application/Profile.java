@@ -1,7 +1,6 @@
 package com.secretmatch.identity.application;
 
 import com.secretmatch.identity.domain.DisplayName;
-import com.secretmatch.identity.domain.Language;
 import com.secretmatch.identity.domain.NewPassword;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.SessionExpiredException;
@@ -10,6 +9,7 @@ import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
 import com.secretmatch.identity.domain.WrongPasswordException;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.shared.domain.Language;
 import java.time.Clock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -107,12 +107,22 @@ public class Profile {
 
     /** "Your account was deleted", to the User who deleted it: sent once it is done, so they know it worked. */
     private void emailAccountDeleted(User user) {
+        String to = user.email().value();
         events.publishEvent(
-                new EmailRequested(user.email().value(), "Hemos borrado tu cuenta de SecretMatch", """
-                Hemos borrado tu cuenta de SecretMatch, como pediste. Has salido de todos tus grupos, y los que \
-                administrabas se han borrado.
+                switch (user.language()) {
+                    case SPANISH ->
+                        new EmailRequested(to, Language.SPANISH, "Hemos borrado tu cuenta de SecretMatch", """
+                                Hemos borrado tu cuenta de SecretMatch, como pediste. Has salido de todos tus grupos, y \
+                                los que administrabas se han borrado.
 
-                Si algún día quieres volver, puedes crear una cuenta nueva.""", "/"));
+                                Si algún día quieres volver, puedes crear una cuenta nueva.""", "/");
+                    case ENGLISH ->
+                        new EmailRequested(to, Language.ENGLISH, "We have deleted your SecretMatch account", """
+                                We have deleted your SecretMatch account, as you asked. You have left all your Groups, \
+                                and the ones you were the Admin of have been deleted.
+
+                                If you ever want to come back, you can create a new account.""", "/");
+                });
     }
 
     private User existing(UserId id) {

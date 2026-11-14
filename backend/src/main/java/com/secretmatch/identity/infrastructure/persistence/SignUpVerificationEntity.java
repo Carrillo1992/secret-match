@@ -2,11 +2,11 @@ package com.secretmatch.identity.infrastructure.persistence;
 
 import com.secretmatch.identity.domain.DisplayName;
 import com.secretmatch.identity.domain.EmailAddress;
-import com.secretmatch.identity.domain.Language;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.SignUpId;
 import com.secretmatch.identity.domain.SignUpVerification;
 import com.secretmatch.identity.domain.TokenHash;
+import com.secretmatch.shared.domain.Language;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

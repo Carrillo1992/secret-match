@@ -256,9 +256,12 @@ class CancelDrawIT {
     }
 
     @Test
-    @DisplayName("every Member gets exactly one email saying the Draw is cancelled, naming nobody")
+    @DisplayName("every Member gets exactly one email saying the Draw is cancelled, in their own Language, naming"
+            + " nobody")
     void everyMemberIsEmailedOnceNamingNobody() {
         Family family = drawnFamily();
+        speaks(family.carmen(), "en");
+        speaks(family.pedro(), "en");
         mail.clear();
 
         cancelDraw(family.carmen(), family).expectStatus().isNoContent();
@@ -268,8 +271,15 @@ class CancelDrawIT {
             List<OutgoingEmail> received = mail.sentTo(member.email());
             assertThat(received).hasSize(1);
             OutgoingEmail email = received.getFirst();
-            assertThat(email.subject()).isEqualTo("Se ha cancelado el sorteo de «Navidad»");
-            assertThat(email.text()).contains("ya no cuentan").contains("/groups/" + family.groupId());
+            if (member.equals(family.carmen()) || member.equals(family.pedro())) {
+                assertThat(email.subject()).isEqualTo("The Draw for “Navidad” was cancelled");
+                assertThat(email.text())
+                        .contains("the previous Assignments no longer count")
+                        .contains("/groups/" + family.groupId());
+            } else {
+                assertThat(email.subject()).isEqualTo("Se ha cancelado el sorteo de «Navidad»");
+                assertThat(email.text()).contains("ya no cuentan").contains("/groups/" + family.groupId());
+            }
             for (String name : family.idsByName().keySet()) {
                 assertThat(email.subject()).doesNotContain(name);
                 assertThat(email.text()).doesNotContain(name);
@@ -436,6 +446,18 @@ class CancelDrawIT {
                 .uri(path)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
                 .exchange();
+    }
+
+    /** From now on the User reads SecretMatch, and gets its emails, in this Language. */
+    private void speaks(User user, String language) {
+        http.put()
+                .uri("/api/v1/users/me/language")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("language", language))
+                .exchange()
+                .expectStatus()
+                .isOk();
     }
 
     private RestTestClient.ResponseSpec post(User user, String path, Map<String, ?> body) {

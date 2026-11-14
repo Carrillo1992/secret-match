@@ -72,7 +72,8 @@ class EmailSignUpIT {
 
         OutgoingEmail sent = onlyEmailTo(email);
         assertThat(sent.subject()).isEqualTo("Confirma tu correo en SecretMatch");
-        assertThat(sent.text()).contains("24 horas");
+        assertThat(sent.text()).contains("Caduca en 24 horas y solo se puede usar una vez.");
+        assertThat(sent.html()).contains("<html lang=\"es\">");
         assertThat(sent.subject() + sent.text())
                 .as("the sender chose the display name, so the email does not repeat it")
                 .doesNotContain("Abuela Carmen");
@@ -84,6 +85,22 @@ class EmailSignUpIT {
 
         assertThat(new BCryptPasswordEncoder().matches(PASSWORD, userPasswordHash(email)))
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("a sign-up in English gets the Verification email in English, whose link works the same")
+    void verificationEmailInEnglish() {
+        signUp(email, "Abuela Carmen", PASSWORD, "en").expectStatus().isAccepted();
+
+        OutgoingEmail sent = onlyEmailTo(email);
+        assertThat(sent.subject()).isEqualTo("Confirm your email on SecretMatch");
+        assertThat(sent.text())
+                .contains("It expires in 24 hours and can only be used once.")
+                .contains("Open SecretMatch: ")
+                .doesNotContain("horas", "Abrir");
+        assertThat(sent.html()).contains("<html lang=\"en\">");
+
+        verify(tokenIn(sent)).expectStatus().isNoContent();
     }
 
     @Test

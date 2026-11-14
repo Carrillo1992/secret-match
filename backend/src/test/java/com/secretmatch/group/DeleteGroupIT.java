@@ -145,6 +145,32 @@ class DeleteGroupIT {
     }
 
     @Test
+    @DisplayName("each other Member is emailed in their own Language")
+    void eachMemberIsEmailedInTheirLanguage() {
+        User carmen = signedInUser("Abuela Carmen", "es");
+        User luis = signedInUser("Luis", "en");
+        User marta = signedInUser("Marta", "es");
+        String groupId = createGroup(carmen, "Navidad");
+        joinGroup(luis, carmen, groupId);
+        joinGroup(marta, carmen, groupId);
+        mail.clear();
+
+        deleteGroup(carmen, groupId).expectStatus().isNoContent();
+
+        assertThat(mail.sentTo(luis.email())).singleElement().satisfies(email -> {
+            assertThat(email.subject()).isEqualTo("The Group “Navidad” was deleted");
+            assertThat(email.text())
+                    .contains(
+                            "Abuela Carmen, the Admin of the Group “Navidad”, deleted it along with everything in it.")
+                    .contains("You will no longer see it in SecretMatch.");
+        });
+        assertThat(mail.sentTo(marta.email()))
+                .singleElement()
+                .extracting(OutgoingEmail::subject)
+                .isEqualTo("Se ha borrado el grupo «Navidad»");
+    }
+
+    @Test
     @DisplayName("only the Admin can delete: a Member gets admin-only, a non-Member 404, and the Group stays")
     void onlyTheAdminDeletes() {
         User carmen = signedInUser("Abuela Carmen");
@@ -242,10 +268,15 @@ class DeleteGroupIT {
 
     /** Signs up, verifies and signs in a new User. */
     private User signedInUser(String displayName) {
+        return signedInUser(displayName, "es");
+    }
+
+    /** Signs up, verifies and signs in a new User who reads SecretMatch in this Language. */
+    private User signedInUser(String displayName, String language) {
         String email = "user-" + UUID.randomUUID() + "@example.com";
         anonymousPost(
                         "/api/v1/sign-ups",
-                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", "es"))
+                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", language))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(email).getLast().text());

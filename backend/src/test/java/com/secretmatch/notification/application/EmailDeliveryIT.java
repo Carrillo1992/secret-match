@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.secretmatch.TestPostgres;
+import com.secretmatch.shared.domain.Language;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ class EmailDeliveryIT {
 
     private static final EmailRequested JOINED = new EmailRequested(
             "ana.garcia@example.com",
+            Language.SPANISH,
             "Luis Pérez se ha unido a tu grupo",
             "Luis Pérez ya forma parte de Navidad.",
             "/");

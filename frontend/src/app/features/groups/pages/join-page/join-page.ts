@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   LucideCalendarX,
   LucideLoaderCircle,
+  LucideLock,
   LucideUnlink,
   LucideUserPlus,
   LucideWifiOff,
@@ -14,7 +15,7 @@ import { StatusHeader } from '../../../../shared/ui/status-header/status-header'
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { GroupsApi } from '../../data-access/groups-api';
 
-type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'finished' | 'failed';
+type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'finished' | 'drawn' | 'failed';
 
 /**
  * Where an Invite Link lands: `/join/<code>`. A signed-in User joins the Group and goes to its page;
@@ -32,6 +33,7 @@ type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'finished' | 'failed';
     TextLink,
     LucideCalendarX,
     LucideLoaderCircle,
+    LucideLock,
     LucideUnlink,
     LucideUserPlus,
     LucideWifiOff,

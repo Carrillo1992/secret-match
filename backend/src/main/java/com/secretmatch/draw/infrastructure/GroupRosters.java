@@ -34,6 +34,16 @@ class GroupRosters implements Rosters {
                 .toList();
     }
 
+    @Override
+    public Optional<Roster> lockedOf(UUID groupId, UUID viewer) {
+        return groups.lockGroup(groupId, viewer).map(GroupRosters::rosterOf);
+    }
+
+    @Override
+    public void markDrawn(UUID groupId) {
+        groups.markDrawn(groupId);
+    }
+
     private static Roster rosterOf(GroupDetails group) {
         MemberId admin = group.members().stream()
                 .filter(GroupDetails.Member::admin)
@@ -46,6 +56,7 @@ class GroupRosters implements Rosters {
                 group.members().stream()
                         .map(member -> new Roster.Member(new MemberId(member.id()), member.displayName()))
                         .toList(),
-                group.finished());
+                group.finished(),
+                group.drawn());
     }
 }

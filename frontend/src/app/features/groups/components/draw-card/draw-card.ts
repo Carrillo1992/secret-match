@@ -55,6 +55,9 @@ export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';
             </strong>
           </p>
           <p class="mt-2 text-ink-muted">Nadie más lo sabe. 🤫</p>
+          <p class="mt-4 text-sm text-ink-muted">
+            Con el sorteo hecho, el grupo queda cerrado: ya no entra ni sale nadie.
+          </p>
         }
         @case ('not-drawn') {
           @if (finished()) {

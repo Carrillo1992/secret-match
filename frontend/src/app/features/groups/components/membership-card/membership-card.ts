@@ -13,7 +13,7 @@ export type DeleteStatus = 'idle' | 'deleting' | 'failed';
 /**
  * The Member's own place in the Group: a regular Member can leave it, behind an inline
  * confirmation. The Admin cannot; they can delete the Group instead, behind the same confirmation.
- * Nobody leaves a finished Group, but its Admin can still delete it (#25).
+ * Nobody leaves a finished Group (#25) or a drawn one (#29), but its Admin can still delete it.
  */
 @Component({
   selector: 'app-membership-card',
@@ -63,6 +63,10 @@ export type DeleteStatus = 'idle' | 'deleting' | 'failed';
         <p class="mt-1.5 text-ink-muted">
           El grupo ha finalizado, así que ya no puedes salir de él.
         </p>
+      } @else if (drawn()) {
+        <p class="mt-1.5 text-ink-muted">
+          El sorteo ya está hecho, así que ya no puedes salir del grupo.
+        </p>
       } @else {
         <p class="mt-1.5 text-ink-muted">Si sales, dejarás de ver este grupo.</p>
 
@@ -103,6 +107,8 @@ export class MembershipCard {
   readonly admin = input.required<boolean>();
   /** Whether the Group is finished: it is read-only, so a Member can no longer leave it. */
   readonly finished = input.required<boolean>();
+  /** Whether the Group's Draw is made: who is in it is frozen, so a Member can no longer leave it. */
+  readonly drawn = input.required<boolean>();
   readonly status = input<LeaveStatus>('idle');
   /** The Member confirmed: the page asks the API to take them out. */
   readonly leave = output();

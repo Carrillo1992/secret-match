@@ -37,11 +37,18 @@ public class InviteLinks {
      * @return the id of the Group
      * @throws InviteLinkInvalidException if no Group's current Invite Link has this code
      * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
+     * @throws com.secretmatch.group.domain.GroupDrawnException if the Group's Draw is made; like the other
+     *     refusals, it says nothing about the Group
      */
     @Transactional
     public GroupId join(String inviteCode, MemberId user) {
-        Group group = InviteCode.parse(inviteCode)
-                .flatMap(groups::findByInviteCode)
+        InviteCode code = InviteCode.parse(inviteCode).orElseThrow(InviteLinkInvalidException::new);
+        GroupId id = groups.findIdByInviteCode(code).orElseThrow(InviteLinkInvalidException::new);
+        // Locked before it is first read, so a Draw being made at the same moment either waits for this join or is
+        // seen by it: nobody joins a drawn Group. The code is checked again in case it was regenerated meanwhile.
+        groups.lock(id);
+        Group group = groups.findById(id)
+                .filter(locked -> locked.inviteCode().equals(code))
                 .orElseThrow(InviteLinkInvalidException::new);
         if (group.hasMember(user)) {
             return group.id();

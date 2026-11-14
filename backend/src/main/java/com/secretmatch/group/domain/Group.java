@@ -22,8 +22,12 @@ public final class Group {
     private final List<MemberId> members;
     private final InviteCode inviteCode;
     private final Instant createdAt;
+    private final boolean drawn;
 
-    /** Rebuilds a stored Group; {@code budget} is {@code null} for a Group without one. */
+    /**
+     * Rebuilds a stored Group; {@code budget} is {@code null} for a Group without one, and {@code drawn} says
+     * whether its Draw is made.
+     */
     public Group(
             GroupId id,
             GroupName name,
@@ -32,7 +36,8 @@ public final class Group {
             MemberId admin,
             List<MemberId> members,
             InviteCode inviteCode,
-            Instant createdAt) {
+            Instant createdAt,
+            boolean drawn) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
         this.exchangeDate = Objects.requireNonNull(exchangeDate, "exchangeDate");
@@ -41,6 +46,7 @@ public final class Group {
         this.members = List.copyOf(members);
         this.inviteCode = Objects.requireNonNull(inviteCode, "inviteCode");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
+        this.drawn = drawn;
     }
 
     /**
@@ -69,7 +75,8 @@ public final class Group {
                 creator,
                 List.of(creator),
                 inviteCode,
-                now);
+                now,
+                false);
     }
 
     /**
@@ -85,9 +92,11 @@ public final class Group {
      * Checks that a User may join the Group through its Invite Link at {@code now}.
      *
      * @throws GroupFinishedException if the Group is finished
+     * @throws GroupDrawnException if the Group's Draw is made
      */
     public void authoriseJoin(Instant now) {
         requireNotFinished(now);
+        requireNotDrawn();
     }
 
     /**
@@ -95,13 +104,15 @@ public final class Group {
      *
      * @throws AdminOnlyException if {@code by} is not the Admin
      * @throws GroupFinishedException if the Group is finished
+     * @throws GroupDrawnException if the Group's Draw is made: its Invite Link no longer works anyway
      */
     public Group regenerateInviteLink(MemberId by, InviteCode newCode, Instant now) {
         if (!admin.equals(by)) {
             throw new AdminOnlyException();
         }
         requireNotFinished(now);
-        return new Group(id, name, exchangeDate, budget, admin, members, newCode, createdAt);
+        requireNotDrawn();
+        return new Group(id, name, exchangeDate, budget, admin, members, newCode, createdAt, drawn);
     }
 
     /**
@@ -130,7 +141,8 @@ public final class Group {
                 admin,
                 members,
                 inviteCode,
-                createdAt);
+                createdAt,
+                drawn);
     }
 
     /**
@@ -141,6 +153,7 @@ public final class Group {
      * @throws AdminOnlyException if {@code by} removes someone else and is not the Admin
      * @throws MemberNotFoundException if {@code member} is not a Member
      * @throws GroupFinishedException if the Group is finished
+     * @throws GroupDrawnException if the Group's Draw is made
      */
     public Group removeMember(MemberId by, MemberId member, Instant now) {
         if (admin.equals(member) && admin.equals(by)) {
@@ -153,9 +166,18 @@ public final class Group {
             throw new MemberNotFoundException();
         }
         requireNotFinished(now);
+        requireNotDrawn();
         List<MemberId> remaining =
                 members.stream().filter(other -> !other.equals(member)).toList();
-        return new Group(id, name, exchangeDate, budget, admin, remaining, inviteCode, createdAt);
+        return new Group(id, name, exchangeDate, budget, admin, remaining, inviteCode, createdAt, drawn);
+    }
+
+    /**
+     * The same Group once its Draw is made: from then on nobody joins it, leaves it or is removed from it, so
+     * no Assignment is ever left without its Giver or its Receiver (ADR 0001).
+     */
+    public Group markDrawn() {
+        return new Group(id, name, exchangeDate, budget, admin, members, inviteCode, createdAt, true);
     }
 
     /**
@@ -207,9 +229,20 @@ public final class Group {
         return createdAt;
     }
 
+    /** Whether the Group's Draw is made, which freezes its membership. */
+    public boolean isDrawn() {
+        return drawn;
+    }
+
     private void requireNotFinished(Instant now) {
         if (isFinished(now)) {
             throw new GroupFinishedException();
+        }
+    }
+
+    private void requireNotDrawn() {
+        if (drawn) {
+            throw new GroupDrawnException();
         }
     }
 

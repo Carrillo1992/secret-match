@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.secretmatch.draw.domain.Exclusion;
 import com.secretmatch.draw.domain.ExclusionNotFoundException;
 import com.secretmatch.draw.domain.ExclusionsNotFoundException;
+import com.secretmatch.draw.domain.GroupDrawnException;
 import com.secretmatch.draw.domain.GroupFinishedException;
 import com.secretmatch.draw.domain.InvalidExclusionException;
 import com.secretmatch.draw.domain.MemberId;
@@ -39,7 +40,8 @@ class GroupExclusionsTest {
 
     {
         rosters.put(GROUP, roster(false));
-        rosters.put(OTHER_GROUP, new Roster("Otro grupo", new MemberId(LUIS), List.of(member(LUIS, "Luis")), false));
+        rosters.put(
+                OTHER_GROUP, new Roster("Otro grupo", new MemberId(LUIS), List.of(member(LUIS, "Luis")), false, false));
     }
 
     @Test
@@ -131,6 +133,21 @@ class GroupExclusionsTest {
     }
 
     @Test
+    @DisplayName("in a drawn Group the Admin still lists the Exclusions but cannot change them")
+    void drawnGroupIsFrozen() {
+        ExclusionDetails exclusion = exclusions.exclude(GROUP, CARMEN, LUIS, MARTA);
+        rosters.put(GROUP, drawnRoster());
+
+        assertThat(exclusions.exclusionsOf(GROUP, CARMEN)).hasSize(1);
+        assertThatThrownBy(() -> exclusions.exclude(GROUP, CARMEN, CARMEN, LUIS))
+                .isInstanceOf(GroupDrawnException.class)
+                .hasFieldOrPropertyWithValue("code", "group-drawn");
+        assertThatThrownBy(() -> exclusions.remove(GROUP, CARMEN, exclusion.id()))
+                .isInstanceOf(GroupDrawnException.class);
+        assertThat(stored.all()).hasSize(1);
+    }
+
+    @Test
     @DisplayName("when a membership ends, that Member's Exclusions in that Group go and the rest stay")
     void membershipEndedDeletesTheMembersExclusions() {
         exclusions.exclude(GROUP, CARMEN, LUIS, MARTA);
@@ -166,7 +183,17 @@ class GroupExclusionsTest {
                 "Navidad",
                 new MemberId(CARMEN),
                 List.of(member(CARMEN, "Abuela Carmen"), member(LUIS, "Luis"), member(MARTA, "Marta")),
-                finished);
+                finished,
+                false);
+    }
+
+    private static Roster drawnRoster() {
+        return new Roster(
+                "Navidad",
+                new MemberId(CARMEN),
+                List.of(member(CARMEN, "Abuela Carmen"), member(LUIS, "Luis"), member(MARTA, "Marta")),
+                false,
+                true);
     }
 
     private static Roster.Member member(UUID id, String displayName) {
@@ -195,6 +222,18 @@ class GroupExclusionsTest {
                             && entry.getValue().member(new MemberId(member)).isPresent())
                     .map(Map.Entry::getKey)
                     .toList();
+        }
+
+        @Override
+        public Optional<Roster> lockedOf(UUID groupId, UUID viewer) {
+            return of(groupId, viewer);
+        }
+
+        @Override
+        public void markDrawn(UUID groupId) {
+            Roster roster = byGroup.get(groupId);
+            byGroup.put(
+                    groupId, new Roster(roster.groupName(), roster.admin(), roster.members(), roster.finished(), true));
         }
     }
 

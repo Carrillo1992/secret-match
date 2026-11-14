@@ -105,6 +105,30 @@ public class MyGroups {
     }
 
     /**
+     * Like {@link #findGroup}, but first locks the Group until the transaction ends, so nobody joins or leaves it
+     * meanwhile: for other modules about to change data that depends on who is in it, such as its Draw.
+     *
+     * @return empty if there is no such Group or the viewer is not one of its Members
+     */
+    @Transactional
+    public Optional<GroupDetails> lockGroup(UUID groupId, UUID viewer) {
+        groups.lock(new GroupId(groupId));
+        return findGroup(groupId, viewer);
+    }
+
+    /**
+     * Records that the Group's Draw is made, which freezes who is in it. The Draw module calls it in the
+     * transaction that stores the Draw, after {@link #lockGroup}.
+     *
+     * @throws GroupNotFoundException if there is no such Group
+     */
+    @Transactional
+    public void markDrawn(UUID groupId) {
+        Group group = groups.findById(new GroupId(groupId)).orElseThrow(GroupNotFoundException::new);
+        groups.saveDrawn(group.markDrawn());
+    }
+
+    /**
      * Replaces the Group's name, budget and Exchange Date. Nobody is emailed: the Members see the change on the
      * Group page.
      *
@@ -129,6 +153,7 @@ public class MyGroups {
      * @throws GroupNotFoundException if there is no such Group or the User is not one of its Members
      * @throws com.secretmatch.group.domain.AdminOnlyException if the User is not its Admin
      * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
+     * @throws com.secretmatch.group.domain.GroupDrawnException if the Group's Draw is made
      */
     @Transactional
     public GroupDetails regenerateInviteLink(GroupId id, MemberId by) {
@@ -147,9 +172,12 @@ public class MyGroups {
      * @throws com.secretmatch.group.domain.AdminOnlyException if {@code by} removes someone else and is not the
      *     Admin
      * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
+     * @throws com.secretmatch.group.domain.GroupDrawnException if the Group's Draw is made
      */
     @Transactional
     public void removeMember(GroupId id, MemberId by, MemberId member) {
+        // Before reading it, so a Draw being made at the same moment either waits for this or is seen.
+        groups.lock(id);
         Group group = memberView(id, by);
         group.removeMember(by, member, clock.instant());
         if (!endMembership(group.id(), member)) {
@@ -264,6 +292,7 @@ public class MyGroups {
                         .toList(),
                 group.inviteCode().value(),
                 group.admin().equals(viewer),
-                group.isFinished(clock.instant()));
+                group.isFinished(clock.instant()),
+                group.isDrawn());
     }
 }

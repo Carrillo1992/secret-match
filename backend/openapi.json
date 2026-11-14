@@ -906,6 +906,10 @@
             "type" : "number",
             "description" : "In euros; absent when the Group has no budget."
           },
+          "drawn" : {
+            "type" : "boolean",
+            "description" : "Whether its Draw is made: from then on nobody joins it, leaves it or is removed from it, its Invite Link no longer works and its Exclusions cannot change."
+          },
           "exchangeDate" : {
             "type" : "string",
             "format" : "date"
@@ -933,7 +937,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "admin", "exchangeDate", "finished", "id", "inviteCode", "members", "name" ]
+        "required" : [ "admin", "drawn", "exchangeDate", "finished", "id", "inviteCode", "members", "name" ]
       },
       "GroupSummaryResponse" : {
         "type" : "object",

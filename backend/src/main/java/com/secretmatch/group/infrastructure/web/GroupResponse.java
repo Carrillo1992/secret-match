@@ -32,7 +32,13 @@ record GroupResponse(
                 requiredMode = Schema.RequiredMode.REQUIRED,
                 description =
                         "Whether its Exchange Date is over: a finished Group is read-only and can only be deleted.")
-        boolean finished) {
+        boolean finished,
+
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "Whether its Draw is made: from then on nobody joins it, leaves it or is removed from"
+                        + " it, its Invite Link no longer works and its Exclusions cannot change.")
+        boolean drawn) {
 
     static GroupResponse of(GroupDetails group) {
         return new GroupResponse(
@@ -46,7 +52,8 @@ record GroupResponse(
                         .toList(),
                 group.inviteCode(),
                 group.admin(),
-                group.finished());
+                group.finished(),
+                group.drawn());
     }
 
     record MemberResponse(

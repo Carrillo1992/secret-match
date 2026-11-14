@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideChevronRight, LucideGift, LucideShuffle } from '@lucide/angular';
+import { LucideChevronRight, LucideGift, LucideShuffle, LucideUndo2 } from '@lucide/angular';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
@@ -16,10 +16,14 @@ export type DrawState = { readonly status: 'loading' } | DrawOutcome;
 /** Where the Admin's request to run the Draw stands, as the page tells it. */
 export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';
 
+/** Where the Admin's request to cancel the Draw stands, as the page tells it. */
+export type CancelStatus = 'idle' | 'cancelling' | 'failed';
+
 /**
  * The Group's Draw, at the top of its page (#28, option A): the Admin runs it behind an inline
  * confirmation; once it is made, each Member sees their own Receiver, with a link to the Receiver's
  * Wishlist, which only their Giver can open (#32). A plain view until the envelope Reveal (#30).
+ * Until the Group is finished, the Admin can cancel the Draw behind the same confirmation (#31).
  */
 @Component({
   selector: 'app-draw-card',
@@ -33,6 +37,7 @@ export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';
     LucideChevronRight,
     LucideGift,
     LucideShuffle,
+    LucideUndo2,
   ],
   host: { class: 'block' },
   template: `
@@ -43,7 +48,13 @@ export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';
         >
           <svg lucideGift [size]="20"></svg>
         </div>
-        <h2 id="group-draw" class="font-display text-lg font-semibold">Sorteo</h2>
+        <h2
+          id="group-draw"
+          tabindex="-1"
+          class="font-display text-lg font-semibold focus:outline-none"
+        >
+          Sorteo
+        </h2>
       </div>
 
       @switch (state().status) {
@@ -78,6 +89,40 @@ export type RunStatus = 'idle' | 'drawing' | 'no-valid-draw' | 'failed';
           <p class="mt-4 text-sm text-ink-muted">
             Con el sorteo hecho, el grupo queda cerrado: ya no entra ni sale nadie.
           </p>
+
+          @if (admin() && !finished()) {
+            @if (cancelStatus() === 'failed') {
+              <p appAlert class="mt-4">No hemos podido anular el sorteo. Inténtalo de nuevo.</p>
+            }
+
+            @if (confirmingCancel()) {
+              <app-confirm-panel
+                class="mt-4"
+                question="¿Anular el sorteo?"
+                confirmLabel="Sí, anular"
+                returnFocusTo="cancel-draw"
+                focusAfterConfirm="group-draw"
+                (confirmed)="confirmCancel()"
+                (cancelled)="confirmingCancel.set(false)"
+              >
+                Nadie tendrá ya a quién regalar, aunque lo haya visto, y el grupo se volverá a
+                abrir: podrá entrar y salir gente y podrás cambiar las exclusiones antes de sortear
+                de nuevo. A todos les avisaremos por email.
+              </app-confirm-panel>
+            } @else {
+              <button
+                id="cancel-draw"
+                type="button"
+                appButton="secondary"
+                class="mt-4 w-full"
+                [disabled]="cancelStatus() === 'cancelling'"
+                (click)="confirmingCancel.set(true)"
+              >
+                <svg lucideUndo2 [size]="18"></svg>
+                {{ cancelStatus() === 'cancelling' ? 'Anulando…' : 'Anular el sorteo' }}
+              </button>
+            }
+          }
         }
         @case ('not-drawn') {
           @if (finished()) {
@@ -148,11 +193,15 @@ export class DrawCard {
   readonly runStatus = input<RunStatus>('idle');
   /** The Admin confirmed: the page asks the API to draw the Group. */
   readonly run = output();
+  readonly cancelStatus = input<CancelStatus>('idle');
+  /** The Admin confirmed: the page asks the API to cancel the Draw. */
+  readonly cancelDraw = output();
   /** The Draw could not be loaded: the page asks for it again. */
   readonly retry = output();
 
   protected readonly minimum = MINIMUM_MEMBERS;
   protected readonly confirming = signal(false);
+  protected readonly confirmingCancel = signal(false);
   protected readonly enoughMembers = computed(() => this.memberCount() >= MINIMUM_MEMBERS);
   protected readonly receiverId = computed(() => {
     const state = this.state();
@@ -166,5 +215,10 @@ export class DrawCard {
   protected confirm(): void {
     this.confirming.set(false);
     this.run.emit();
+  }
+
+  protected confirmCancel(): void {
+    this.confirmingCancel.set(false);
+    this.cancelDraw.emit();
   }
 }

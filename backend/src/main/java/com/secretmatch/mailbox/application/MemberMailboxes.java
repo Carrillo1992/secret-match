@@ -10,6 +10,7 @@ import com.secretmatch.mailbox.domain.MailboxNotFoundException;
 import com.secretmatch.mailbox.domain.MemberId;
 import com.secretmatch.mailbox.domain.MessageText;
 import com.secretmatch.mailbox.domain.UserId;
+import com.secretmatch.notification.application.EmailRequested;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,13 +38,23 @@ public class MemberMailboxes {
     private final Mailboxes mailboxes;
     private final GroupMembers groupMembers;
     private final Assignments assignments;
+    private final MemberEmails memberEmails;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    MemberMailboxes(Mailboxes mailboxes, GroupMembers groupMembers, Assignments assignments, Clock clock) {
+    MemberMailboxes(
+            Mailboxes mailboxes,
+            GroupMembers groupMembers,
+            Assignments assignments,
+            MemberEmails memberEmails,
+            Clock clock,
+            ApplicationEventPublisher events) {
         this.mailboxes = mailboxes;
         this.groupMembers = groupMembers;
         this.assignments = assignments;
+        this.memberEmails = memberEmails;
         this.clock = clock;
+        this.events = events;
     }
 
     /**
@@ -89,7 +101,8 @@ public class MemberMailboxes {
     }
 
     /**
-     * Sends a Message to the other side of the Mailbox.
+     * Sends a Message to the other side of the Mailbox, who is emailed about it once it is stored. If the Giver
+     * deleted their account there is nobody on the other side, and nobody is emailed.
      *
      * @throws MailboxNotFoundException if there is no such Mailbox, or {@code author} is not its Giver or Receiver;
      *     checked before the text, so someone outside learns nothing from an invalid Message either
@@ -100,6 +113,7 @@ public class MemberMailboxes {
         Mailbox mailbox = openTo(mailboxId, author);
         MemberId me = new MemberId(author);
         StoredMessage sent = mailboxes.addMessage(mailbox.id(), me, new MessageText(text), clock.instant());
+        mailbox.otherSideOf(me).ifPresent(recipient -> emailNewMessage(mailbox, me, recipient));
         return seenBy(me, sent);
     }
 
@@ -154,6 +168,24 @@ public class MemberMailboxes {
                 .receiverOf(mailbox.groupId().value(), mailbox.giver())
                 .filter(mailbox.receiver()::equals)
                 .isPresent();
+    }
+
+    /**
+     * Catalogue email 5: "you have a new Message", to the other side of the Mailbox. One template whichever side
+     * wrote it, with neither the Message nor anything about its author, so it never tells a Receiver who their
+     * Giver is (ADR 0001). Sent only once the Message is committed.
+     */
+    private void emailNewMessage(Mailbox mailbox, MemberId author, MemberId recipient) {
+        UUID groupId = mailbox.groupId().value();
+        String groupName = groupMembers
+                .nameOf(groupId, author.value())
+                .orElseThrow(() -> new IllegalStateException("a Mailbox author outside its Group"));
+        String to = memberEmails
+                .emailOf(recipient)
+                .orElseThrow(() -> new IllegalStateException("a Mailbox side has no User"));
+        String notice = "Tienes un mensaje nuevo en «%s»".formatted(groupName);
+        events.publishEvent(new EmailRequested(
+                to, notice, notice + ".\n\nEntra en el grupo para leerlo y contestar.", "/groups/" + groupId));
     }
 
     /**

@@ -40,6 +40,10 @@ const ownEmpty = {
 };
 const own = { ...ownEmpty, wishes: [auriculares, libro] };
 
+const GROUP_URL = 'http://api.test/api/v1/groups/g-1';
+/** The Group the Wishlist belongs to, before its Draw. */
+const group = { id: 'g-1', name: 'Navidad', drawn: false, finished: false, members: [] };
+
 describe('WishlistPage', () => {
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
@@ -60,7 +64,11 @@ describe('WishlistPage', () => {
     await harness.navigateByUrl('/groups/g-1/members/u-luis/wishlist');
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // The owner's page asks for the Group; tests about something else answer that it is not drawn.
+    http.match(GROUP_URL).forEach((request) => request.flush(group));
+    http.verify();
+  });
 
   const page = () => harness.routeNativeElement as HTMLElement;
   /** Spaces normalised: currency amounts are formatted with a no-break space before the €. */
@@ -306,6 +314,48 @@ describe('WishlistPage', () => {
     expect(text(page().querySelector('[role="alert"]'))).toContain(
       'No hemos podido borrar «Libro»',
     );
+  });
+
+  describe('who can read it', () => {
+    const note = () => text(page().querySelector('h1 + p'));
+    const openOwn = async (state: object) => {
+      await open(own);
+      http.expectOne(GROUP_URL).flush({ ...group, ...state });
+      await settle();
+    };
+
+    it('tells the owner, before the Draw, that their Giver will read it once it is made', async () => {
+      await openOwn({});
+
+      expect(note()).toBe('Solo la verá quien te regale, cuando se haga el sorteo.');
+    });
+
+    it('tells the owner, once the Draw is made, that their Giver can read it now', async () => {
+      await openOwn({ drawn: true });
+
+      expect(note()).toBe('Quien te regala ya puede verla.');
+    });
+
+    it('still says so once the Group is finished', async () => {
+      await openOwn({ drawn: true, finished: true });
+
+      expect(note()).toBe('Quien te regala ya puede verla.');
+    });
+
+    it('says nothing about it when the Group cannot be loaded, rather than something stale', async () => {
+      await open(own);
+      http.expectOne(GROUP_URL).flush(null, { status: 500, statusText: 'Server Error' });
+      await settle();
+
+      expect(note()).toBe('');
+    });
+
+    it('never asks for the Group when a Giver reads their Receiver’s Wishlist', async () => {
+      await open(seenByMarta);
+
+      http.expectNone(GROUP_URL);
+      expect(note()).toContain('Solo la ves tú');
+    });
   });
 
   it('says the Wishlist cannot be found, without telling whether the Group exists', async () => {

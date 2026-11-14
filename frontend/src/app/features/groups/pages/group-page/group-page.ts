@@ -155,7 +155,10 @@ export class GroupPage {
     }
   }
 
-  /** Once the API agrees, the Admin sees their own Receiver, like every other Member. */
+  /**
+   * Once the API agrees, the Admin sees their own Receiver, like every other Member, and the whole
+   * page shows the Group as the Draw froze it.
+   */
   protected async runDraw(): Promise<void> {
     this.runStatus.set('drawing');
     const outcome = await this.drawApi.run(this.groupId());
@@ -163,6 +166,7 @@ export class GroupPage {
       case 'drawn':
         this.drawOutcome.set(outcome);
         this.runStatus.set('idle');
+        await this.refreshGroup(true);
         return;
       case 'already-drawn':
         // Drawn meanwhile, e.g. from another tab: show that Draw.
@@ -191,16 +195,24 @@ export class GroupPage {
       this.cancelStatus.set('failed');
       return;
     }
+    await this.refreshGroup(false);
+    this.drawOutcome.set({ status: 'not-drawn' });
+    this.runStatus.set('idle');
+    this.cancelStatus.set('idle');
+  }
+
+  /**
+   * Asks for the Group again, quietly, after its Draw was made or cancelled. If that fails, the page
+   * still knows whether the Group is drawn now.
+   */
+  private async refreshGroup(drawn: boolean): Promise<void> {
     const refreshed = await this.groupsApi.group(this.groupId());
     const group = this.group();
     if (refreshed.status === 'found') {
       this.outcome.set(refreshed);
     } else if (group) {
-      this.outcome.set({ status: 'found', group: { ...group, drawn: false } });
+      this.outcome.set({ status: 'found', group: { ...group, drawn } });
     }
-    this.drawOutcome.set({ status: 'not-drawn' });
-    this.runStatus.set('idle');
-    this.cancelStatus.set('idle');
   }
 
   protected reloadDraw(): void {

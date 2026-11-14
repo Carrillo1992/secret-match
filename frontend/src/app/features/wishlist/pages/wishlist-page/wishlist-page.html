@@ -16,7 +16,11 @@
     </h1>
     <p class="mt-1.5 text-ink-muted">
       @if (wishlist.owner.you) {
-        Solo la verá quien te regale, cuando se haga el sorteo.
+        @if (drawn() === true) {
+          Quien te regala ya puede verla.
+        } @else if (drawn() === false) {
+          Solo la verá quien te regale, cuando se haga el sorteo.
+        }
       } @else {
         Solo la ves tú, porque te toca regalarle. Nadie más del grupo puede abrirla.
       }

@@ -1,8 +1,0 @@
-springdoc:
-  swagger-ui:
-    enabled: false
-
-secretmatch:
-  mail:
-    resend:
-      api-key: ${RESEND_API_KEY}

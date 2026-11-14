@@ -1,0 +1,247 @@
+<!doctype html>
+<!-- PROTOTYPE (throwaway) for #33: three layouts of Preferences + Don't List on the Wishlist page.
+     Switch with ?variant=A|B|C, or the bottom bar / ← → keys. Uses the real tokens from frontend/src/styles.css. -->
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prototipo #33: Wishlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+<style type="text/tailwindcss">
+  @theme {
+    --color-*: initial;
+    --color-canvas: var(--c-canvas); --color-surface: var(--c-surface); --color-field: var(--c-field);
+    --color-subtle: var(--c-subtle); --color-ink: var(--c-ink); --color-ink-muted: var(--c-ink-muted);
+    --color-line: var(--c-line); --color-primary: var(--c-primary); --color-primary-hover: var(--c-primary-hover);
+    --color-on-primary: var(--c-on-primary); --color-success: var(--c-success); --color-success-soft: var(--c-success-soft);
+    --color-danger: var(--c-danger); --color-danger-soft: var(--c-danger-soft);
+    --color-sage-soft: var(--c-sage-soft); --color-mustard: var(--c-mustard);
+    --font-sans: 'Nunito Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    --radius-field: 1rem; --radius-card: 1.75rem;
+    --shadow-card: var(--c-shadow);
+  }
+  :root {
+    --c-canvas:#fbf3e9; --c-surface:#ffffff; --c-field:#f6ede3; --c-subtle:#f3e4d3; --c-ink:#3b2219; --c-ink-muted:#6e5146;
+    --c-line:#9c7f6e; --c-primary:#b5502f; --c-primary-hover:#9c4227; --c-on-primary:#ffffff; --c-success:#3e6b3a;
+    --c-success-soft:#e3eee0; --c-danger:#a12c1f; --c-danger-soft:#fbe3dd; --c-sage-soft:#d6e4d2; --c-mustard:#e9b44c;
+    --c-shadow: 0 2px 4px rgb(59 34 25 / 0.06), 0 24px 48px -16px rgb(59 34 25 / 0.28);
+  }
+  :root.dark {
+    --c-canvas:#22160f; --c-surface:#301f16; --c-field:#3e2a1f; --c-subtle:#3e2a1f; --c-ink:#fbf0e4; --c-ink-muted:#d3bba8;
+    --c-line:#8c6e5c; --c-primary:#e98a63; --c-primary-hover:#f0a07f; --c-on-primary:#22160f; --c-success:#a9c3a3;
+    --c-success-soft:#2f3d2b; --c-danger:#ff9c85; --c-danger-soft:#4a2018; --c-sage-soft:#45573f; --c-mustard:#d9a23e;
+    --c-shadow: 0 2px 4px rgb(0 0 0 / 0.3), 0 24px 48px -16px rgb(0 0 0 / 0.7);
+    color-scheme: dark;
+  }
+  body { @apply bg-canvas font-sans text-ink antialiased; }
+  .card { @apply rounded-card bg-surface p-5 shadow-card; }
+  .link { @apply inline-flex min-h-11 items-center gap-1 font-semibold text-primary underline underline-offset-2 hover:text-primary-hover cursor-pointer; }
+  .btn2 { @apply inline-flex h-11 items-center rounded-full border-2 border-primary px-5 font-display font-semibold text-primary hover:bg-primary hover:text-on-primary transition-colors duration-200 cursor-pointer; }
+  .field { @apply w-full rounded-field border border-line bg-field px-4 py-3 text-ink placeholder:text-ink-muted; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full bg-subtle px-3 py-1 text-sm font-semibold; }
+  .h2 { @apply font-display text-lg font-semibold; }
+  .muted { @apply text-ink-muted; }
+  .well { @apply rounded-field bg-canvas p-4; }
+</style>
+</head>
+<body>
+<div class="mx-auto max-w-2xl">
+  <header class="flex items-center justify-between bg-surface px-6 py-3 shadow-card">
+    <span class="font-display text-xl font-bold tracking-tight text-primary">SecretMatch</span>
+    <span class="btn2 !h-9 !px-4 text-sm">Cerrar sesión</span>
+  </header>
+  <main id="page" class="px-6 pb-40 pt-6"></main>
+</div>
+
+<!-- Prototype controls: not part of the design -->
+<div class="fixed inset-x-0 bottom-3 z-50 flex justify-center px-3">
+  <div class="flex flex-wrap items-center justify-center gap-2 rounded-2xl bg-black/85 px-3 py-2 text-sm text-white shadow-2xl" style="font-family:system-ui">
+    <button id="prev" class="rounded px-2 py-1 hover:bg-white/20">◀</button>
+    <strong id="vlabel" class="min-w-44 text-center"></strong>
+    <button id="next" class="rounded px-2 py-1 hover:bg-white/20">▶</button>
+    <span class="opacity-40">|</span>
+    <button data-t="role" class="rounded bg-white/15 px-2 py-1"></button>
+    <button data-t="data" class="rounded bg-white/15 px-2 py-1"></button>
+    <button data-t="confirm" class="rounded bg-white/15 px-2 py-1"></button>
+    <button data-t="dark" class="rounded bg-white/15 px-2 py-1"></button>
+  </div>
+</div>
+
+<script>
+const VARIANTS = { A: 'Dos tarjetas arriba', B: 'Tarjeta única «Sobre ti»', C: 'Deseos primero, extra al final' };
+const KEYS = Object.keys(VARIANTS);
+const params = new URLSearchParams(location.search);
+const S = {
+  variant: KEYS.includes(params.get('variant')) ? params.get('variant') : 'A',
+  owner: params.get('role') !== 'giver',
+  filled: params.get('data') !== 'empty',
+  confirm: true,
+  dark: params.get('theme') === 'dark',
+  editingPrefs: false, addingDont: false, confirming: null, addError: '', status: '',
+  prefs: 'Talla M de camiseta, un 42 de pie. Me encanta el café de especialidad, el senderismo y los juegos de mesa cooperativos. Leo sobre todo novela negra.',
+  dont: [{ id: 1, text: 'nada de chocolate' }, { id: 2, text: 'nada de velas' }, { id: 3, text: 'ropa no, que ya tengo de sobra' }],
+};
+const SAVED = { prefs: S.prefs, dont: [...S.dont] };
+const NAME = 'Marta';
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const prefs = () => (S.filled ? S.prefs : '');
+const dont = () => (S.filled ? S.dont : []);
+const ban = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>';
+const x = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+const plus = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
+/* ---------- shared pieces ---------- */
+function title() {
+  return `<a class="link">‹ Volver al grupo</a>
+  <h1 class="mt-4 font-display text-3xl font-bold tracking-tight">${S.owner ? 'Tus deseos' : 'Deseos de ' + NAME}</h1>
+  <p class="mt-1.5 muted">${S.owner ? 'Solo la verá quien te regale, cuando se haga el sorteo.' : 'Solo la ves tú, porque te toca regalarle. Nadie más del grupo puede abrirla.'}</p>
+  <p class="mt-1.5 text-sm muted" aria-live="polite">${S.status}</p>`;
+}
+function wishes() {
+  const w = [['Auriculares inalámbricos', 'Alta', 'Unos 60,00 €'], ['Taza de cerámica artesanal', 'Media', 'Unos 18,00 €']];
+  return `${S.owner ? `<section class="card mt-6"><a class="link">${plus} Añadir deseo</a></section>` : ''}
+  <ul class="mt-6 flex flex-col gap-4">${w.map(([t, p, e]) => `<li class="card"><div class="flex items-start gap-3"><h2 class="h2 flex-1">${t}</h2><span class="chip">${p}</span></div><p class="mt-1.5">${e}</p>${S.owner ? '<div class="mt-3 flex justify-end gap-4"><a class="link">Editar</a><a class="link">Borrar</a></div>' : ''}</li>`).join('')}</ul>`;
+}
+function prefsEditor() {
+  const n = S.prefs.length;
+  return `<div class="well mt-3 flex flex-col gap-1.5">
+    <label for="prefs" class="font-bold">Tus gustos</label>
+    <textarea id="prefs" rows="5" class="field" placeholder="Tallas, colores, aficiones, lo que te gusta… Por ejemplo: talla M, pie 42, me encanta el café y el senderismo.">${esc(S.prefs)}</textarea>
+    <p class="text-sm ${n > 2000 ? 'font-semibold text-danger' : 'muted'}">${n} / 2000</p>
+    <div class="mt-2 flex items-center gap-4"><button class="btn2" data-a="savePrefs">Guardar</button><a class="link" data-a="cancelPrefs">Cancelar</a></div>
+  </div>`;
+}
+function prefsBody(compact) {
+  if (S.owner && S.editingPrefs) return prefsEditor();
+  const p = prefs();
+  if (!p) return S.owner
+    ? `<p class="mt-1.5 muted">Cuenta tus tallas, gustos y aficiones para orientar a quien te regale.</p><a class="link mt-1" data-a="editPrefs">${plus} Escribir mis gustos</a>`
+    : `<p class="mt-1.5 muted">${NAME} aún no ha contado sus gustos.</p>`;
+  return `<p class="mt-1.5 whitespace-pre-line break-words">${esc(p)}</p>${S.owner ? `<div class="${compact ? '' : 'mt-1'} flex justify-end"><a class="link" data-a="editPrefs">Editar${compact ? ' gustos' : ''}</a></div>` : ''}`;
+}
+function addDontForm(tone) {
+  return `<form class="${tone === 'danger' ? 'rounded-field bg-surface p-4' : 'well'} mt-3 flex flex-col gap-1.5" data-form="dont">
+    <label for="dont" class="font-bold">¿Qué no quieres recibir?</label>
+    <input id="dont" class="field" maxlength="120" placeholder="Por ejemplo: nada de chocolate" ${S.addError ? 'aria-invalid="true" style="border-color:var(--c-danger)"' : ''} />
+    ${S.addError ? `<p class="text-sm font-semibold text-danger">${S.addError}</p>` : '<p class="text-sm muted">Hasta 100 caracteres.</p>'}
+    <div class="mt-2 flex items-center gap-4"><button class="btn2">Añadir</button><a class="link" data-a="cancelDont">Cancelar</a></div>
+  </form>`;
+}
+function confirmPanel(e) {
+  return `<div class="well mt-2 flex flex-col gap-1.5"><p class="font-bold">¿Quitar «${esc(e.text)}»?</p><p class="text-sm muted">Dejará de aparecer en tu lista.</p>
+  <div class="mt-2 flex items-center gap-4"><button class="btn2" data-a="doDelete" data-id="${e.id}">Sí, quitar</button><a class="link" data-a="cancelDelete">Cancelar</a></div></div>`;
+}
+function addDontLink(label = 'Añadir') {
+  return S.addingDont ? '' : `<a class="link mt-1" data-a="addDont">${plus} ${label}</a>`;
+}
+
+/* ---------- A: two cards on top, Don't List as a danger-soft warning card ---------- */
+function variantA() {
+  const d = dont();
+  const showDont = S.owner || d.length;
+  const dontCard = !showDont ? '' : `<section class="mt-6 rounded-card bg-danger-soft p-5 shadow-card">
+    <h2 class="h2 flex items-center gap-2 text-danger">${ban} Nada de…</h2>
+    ${d.length ? `<ul class="mt-3 flex flex-col gap-1">${d.map(e => `<li>
+      <div class="flex min-h-11 items-center gap-2"><span class="text-danger">${ban}</span><span class="flex-1 font-semibold break-words">${esc(e.text)}</span>
+      ${S.owner && S.confirming !== e.id ? `<button class="inline-flex size-11 items-center justify-center rounded-full text-danger hover:bg-surface" aria-label="Quitar «${esc(e.text)}»" data-a="delete" data-id="${e.id}">${x}</button>` : ''}</div>
+      ${S.confirming === e.id ? confirmPanel(e) : ''}</li>`).join('')}</ul>`
+      : `<p class="mt-1.5">Apunta lo que no quieres recibir, para que nadie te lo regale.</p>`}
+    ${S.owner ? (S.addingDont ? addDontForm('danger') : `<a class="link mt-1 !text-danger" data-a="addDont">${plus} Añadir</a>`) : ''}
+  </section>`;
+  const showPrefs = S.owner || prefs();
+  const prefsCard = !showPrefs ? '' : `<section class="card mt-6"><h2 class="h2">${S.owner ? 'Tus gustos' : 'Sus gustos'}</h2>${prefsBody()}</section>`;
+  const giverEmpty = !S.owner && !showDont && !showPrefs ? `<p class="mt-6 muted">${NAME} aún no ha contado sus gustos.</p>` : '';
+  return title() + dontCard + prefsCard + giverEmpty + wishes();
+}
+
+/* ---------- B: one "Sobre ti" card, Don't List as danger chips under the text ---------- */
+function variantB() {
+  const d = dont(), p = prefs();
+  if (!S.owner && !d.length && !p) return title() + `<section class="card mt-6"><h2 class="h2">Sobre ${NAME}</h2><p class="mt-1.5 muted">${NAME} aún no ha contado sus gustos.</p></section>` + wishes();
+  const chips = d.map(e => `<li class="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-danger-soft py-1 pl-3 ${S.owner ? 'pr-1' : 'pr-3'} text-sm font-semibold text-danger">
+    ${ban}<span class="break-words">${esc(e.text)}</span>
+    ${S.owner ? `<button class="inline-flex size-8 items-center justify-center rounded-full hover:bg-surface" aria-label="Quitar «${esc(e.text)}»" data-a="delete" data-id="${e.id}">${x}</button>` : ''}</li>`).join('');
+  const conf = d.find(e => e.id === S.confirming);
+  return title() + `<section class="card mt-6">
+    <h2 class="h2">${S.owner ? 'Sobre ti' : 'Sobre ' + NAME}</h2>
+    ${S.owner || p ? prefsBody(true) : ''}
+    ${S.owner || d.length ? `<div class="mt-4 border-t border-line pt-4">
+      <h3 class="text-sm font-bold uppercase tracking-wide text-danger">Nada de</h3>
+      ${d.length ? `<ul class="mt-2 flex flex-wrap gap-2">${chips}</ul>` : `<p class="mt-1.5 text-sm muted">Apunta lo que no quieres recibir.</p>`}
+      ${conf ? confirmPanel(conf) : ''}
+      ${S.owner ? (S.addingDont ? addDontForm() : addDontLink()) : ''}
+    </div>` : ''}
+  </section>` + wishes();
+}
+
+/* ---------- C: wishes first, Don't List as a danger Alert block, then Preferences ---------- */
+function variantC() {
+  const d = dont(), p = prefs();
+  const showDont = S.owner || d.length;
+  const alert = !showDont ? '' : `<section class="mt-6 rounded-field border-l-4 border-danger bg-danger-soft p-4 text-danger">
+    <h2 class="flex items-center gap-2 font-display font-semibold">${ban} Nada de</h2>
+    ${d.length ? `<ul class="mt-2 list-disc pl-6 text-sm font-semibold">${d.map(e => `<li><span class="inline-flex min-h-9 items-center gap-2">${esc(e.text)}${S.owner && S.confirming !== e.id ? `<button class="underline" data-a="delete" data-id="${e.id}">quitar</button>` : ''}</span>${S.confirming === e.id ? confirmPanel(e) : ''}</li>`).join('')}</ul>`
+      : '<p class="mt-1 text-sm font-semibold">Aún no has apuntado nada.</p>'}
+    ${S.owner ? (S.addingDont ? addDontForm('danger') : `<a class="link mt-1 !text-danger text-sm" data-a="addDont">${plus} Añadir</a>`) : ''}
+  </section>`;
+  const showPrefs = S.owner || p;
+  const prefsCard = !showPrefs ? '' : `<section class="card mt-6"><h2 class="h2">${S.owner ? 'Tus gustos' : 'Sus gustos'}</h2>${prefsBody()}</section>`;
+  return title() + wishes() + alert + prefsCard;
+}
+
+/* ---------- wiring ---------- */
+function render() {
+  document.documentElement.classList.toggle('dark', S.dark);
+  document.getElementById('page').innerHTML = { A: variantA, B: variantB, C: variantC }[S.variant]();
+  document.getElementById('vlabel').textContent = `${S.variant} · ${VARIANTS[S.variant]}`;
+  const t = { role: S.owner ? 'Rol: dueño' : `Rol: Giver de ${NAME}`, data: S.filled ? 'Datos: con datos' : 'Datos: vacío', confirm: S.confirm ? 'Borrar: con confirmación' : 'Borrar: directo', dark: S.dark ? 'Tema: oscuro' : 'Tema: claro' };
+  document.querySelectorAll('[data-t]').forEach(b => (b.textContent = t[b.dataset.t]));
+  const u = new URL(location); u.searchParams.set('variant', S.variant); u.searchParams.set('role', S.owner ? 'owner' : 'giver');
+  u.searchParams.set('data', S.filled ? 'filled' : 'empty'); u.searchParams.set('theme', S.dark ? 'dark' : 'light'); history.replaceState(null, '', u);
+}
+function go(step) { S.variant = KEYS[(KEYS.indexOf(S.variant) + step + KEYS.length) % KEYS.length]; reset(); render(); }
+function reset() { S.editingPrefs = S.addingDont = false; S.confirming = null; S.addError = ''; S.status = ''; }
+document.getElementById('prev').onclick = () => go(-1);
+document.getElementById('next').onclick = () => go(1);
+document.querySelectorAll('[data-t]').forEach(b => (b.onclick = () => {
+  const k = b.dataset.t;
+  if (k === 'role') S.owner = !S.owner; if (k === 'data') S.filled = !S.filled; if (k === 'confirm') S.confirm = !S.confirm; if (k === 'dark') S.dark = !S.dark;
+  if (k === 'data' && S.filled && !S.dont.length) { S.dont = [...SAVED.dont]; S.prefs = SAVED.prefs; }
+  reset(); render();
+}));
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,[contenteditable]')) return;
+  if (e.key === 'ArrowLeft') go(-1); if (e.key === 'ArrowRight') go(1);
+});
+document.addEventListener('input', e => { if (e.target.id === 'prefs') { S.prefs = e.target.value; const c = e.target.nextElementSibling; c.textContent = `${S.prefs.length} / 2000`; c.className = 'text-sm ' + (S.prefs.length > 2000 ? 'font-semibold text-danger' : 'muted'); } });
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  const v = document.getElementById('dont').value.trim();
+  if (!v) S.addError = 'Escribe qué no quieres recibir.';
+  else if (v.length > 100) S.addError = 'Como mucho 100 caracteres.';
+  else { S.filled = true; S.dont = [...dont(), { id: Date.now(), text: v }]; S.addingDont = false; S.addError = ''; S.status = `Añadido «${v}».`; }
+  render(); document.getElementById('dont')?.focus();
+});
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-a]'); if (!el) return; e.preventDefault();
+  const a = el.dataset.a, id = Number(el.dataset.id);
+  S.status = '';
+  if (a === 'editPrefs') { if (!S.filled) { S.prefs = ''; S.filled = true; S.dont = []; } S.editingPrefs = true; }
+  if (a === 'cancelPrefs') S.editingPrefs = false;
+  if (a === 'savePrefs') { if (S.prefs.length > 2000) { S.status = ''; render(); return; } S.prefs = S.prefs.trim(); S.editingPrefs = false; S.status = S.prefs ? 'Gustos guardados.' : 'Gustos borrados.'; }
+  if (a === 'addDont') { S.addingDont = true; S.addError = ''; }
+  if (a === 'cancelDont') { S.addingDont = false; S.addError = ''; }
+  if (a === 'delete') { if (S.confirm) S.confirming = id; else { const e2 = S.dont.find(d => d.id === id); S.dont = S.dont.filter(d => d.id !== id); S.status = `Quitado «${e2.text}».`; } }
+  if (a === 'doDelete') { const e2 = S.dont.find(d => d.id === id); S.dont = S.dont.filter(d => d.id !== id); S.confirming = null; S.status = `Quitado «${e2.text}».`; }
+  if (a === 'cancelDelete') S.confirming = null;
+  render();
+  if (a === 'editPrefs') document.getElementById('prefs')?.focus();
+  if (a === 'addDont') document.getElementById('dont')?.focus();
+});
+render();
+</script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 
@@ -96,5 +97,15 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/groups/pages/join-page/join-page').then((m) => m.JoinPage),
   },
+  // PROTOTYPE (#30), dev only: throwaway Reveal variants. Removed before the PR.
+  ...(isDevMode()
+    ? [
+        {
+          path: 'prototype/reveal',
+          loadComponent: () =>
+            import('./features/groups/prototype/reveal-prototype').then((m) => m.RevealPrototype),
+        },
+      ]
+    : []),
   { path: '**', redirectTo: '' },
 ];

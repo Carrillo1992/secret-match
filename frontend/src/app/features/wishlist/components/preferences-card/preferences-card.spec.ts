@@ -14,6 +14,7 @@ describe('PreferencesCard', () => {
     document.body.appendChild(fixture.nativeElement);
     fixture.componentRef.setInput('preferences', inputs.preferences);
     fixture.componentRef.setInput('owner', inputs.owner);
+    fixture.componentRef.setInput('editable', true);
     card = fixture.nativeElement as HTMLElement;
     saved = [];
     fixture.componentInstance.save.subscribe((value) => saved.push(value));

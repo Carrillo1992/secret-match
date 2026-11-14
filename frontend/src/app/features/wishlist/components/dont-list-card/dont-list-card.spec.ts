@@ -19,6 +19,7 @@ describe('DontListCard', () => {
     document.body.appendChild(fixture.nativeElement);
     fixture.componentRef.setInput('entries', entries);
     fixture.componentRef.setInput('owner', owner);
+    fixture.componentRef.setInput('editable', true);
     fixture.componentRef.setInput('ownerName', 'Luis');
     added = [];
     removed = [];

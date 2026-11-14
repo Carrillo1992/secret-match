@@ -11,13 +11,20 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideChevronLeft, LucideExternalLink, LucidePlus, LucideSearchX } from '@lucide/angular';
+import {
+  LucideChevronLeft,
+  LucideCircleCheck,
+  LucideExternalLink,
+  LucidePlus,
+  LucideSearchX,
+} from '@lucide/angular';
 import { map } from 'rxjs';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel';
+import { Notice } from '../../../../shared/ui/notice/notice';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { euros } from '../../../../shared/format/euros';
@@ -46,7 +53,7 @@ import {
  * behind an inline confirmation), and once there is a Draw their Giver reads it, from the Draw card.
  * Under the Wishes come the Don't List and the Preferences (#33), each on its own card: the page saves
  * what the owner changes there and keeps it without reloading the Wishlist. The Giver reads them,
- * and an empty one is hidden from them.
+ * and an empty one is hidden from them. Once the Group is finished (#34) the owner only reads it all.
  */
 @Component({
   selector: 'app-wishlist-page',
@@ -58,12 +65,14 @@ import {
     Chip,
     ConfirmPanel,
     DontListCard,
+    Notice,
     PreferencesCard,
     RouterLink,
     StatusHeader,
     TextLink,
     WishForm,
     LucideChevronLeft,
+    LucideCircleCheck,
     LucideExternalLink,
     LucidePlus,
     LucideSearchX,
@@ -101,6 +110,11 @@ export class WishlistPage {
     const result = this.result();
     return result?.status === 'found' ? result.wishlist : undefined;
   });
+  /** Only the owner changes their Wishlist, and only until the Group is finished. */
+  protected readonly canChange = computed(() => {
+    const wishlist = this.wishlist();
+    return !!wishlist && wishlist.owner.you && !wishlist.finished;
+  });
   protected readonly notFound = computed(() => this.result()?.status === 'not-found');
   protected readonly groupLink = computed(() => `/groups/${this.params().groupId}`);
 
@@ -135,6 +149,10 @@ export class WishlistPage {
   protected async add(wish: WishInput): Promise<void> {
     this.addStatus.set('saving');
     const outcome = await this.api.add(this.params().groupId, wish);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status !== 'saved') {
       this.addStatus.set(outcome.status);
       return;
@@ -163,6 +181,10 @@ export class WishlistPage {
   protected async edit(wishId: string, wish: WishInput): Promise<void> {
     this.editStatus.set('saving');
     const outcome = await this.api.edit(this.params().groupId, wishId, wish);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status !== 'saved') {
       this.editStatus.set(outcome.status);
       return;
@@ -180,6 +202,10 @@ export class WishlistPage {
     this.deleting.set(wish.id);
     const outcome = await this.api.delete(this.params().groupId, wish.id);
     this.deleting.set(null);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'failed') {
       this.deleteFailed.set(wish);
       return;
@@ -195,6 +221,10 @@ export class WishlistPage {
   protected async savePreferences(text: string): Promise<void> {
     this.preferencesStatus.set('saving');
     const outcome = await this.api.editPreferences(this.params().groupId, text);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'saved') {
       this.changeWishlist(() => ({ preferences: outcome.preferences }));
     }
@@ -205,6 +235,10 @@ export class WishlistPage {
   protected async addDontListEntry(text: string): Promise<void> {
     this.dontListAddition.set({ status: 'adding' });
     const outcome = await this.api.addDontListEntry(this.params().groupId, text);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'added') {
       this.changeWishlist(({ dontList }) => ({ dontList: [...dontList, outcome.entry] }));
     }
@@ -215,6 +249,10 @@ export class WishlistPage {
   protected async removeDontListEntry(entry: DontListEntry): Promise<void> {
     this.dontListRemoval.set({ entry, status: 'removing' });
     const outcome = await this.api.deleteDontListEntry(this.params().groupId, entry.id);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'deleted') {
       this.changeWishlist(({ dontList }) => ({
         dontList: dontList.filter((other) => other.id !== entry.id),
@@ -224,6 +262,24 @@ export class WishlistPage {
       entry,
       status: outcome.status === 'deleted' ? 'removed' : 'failed',
     });
+  }
+
+  /**
+   * The Group finished while the page was open, so the API refused the change: rather than an
+   * error, the page closes what was open and loads the Wishlist again, which now comes read-only.
+   */
+  private finishedMeanwhile(): void {
+    this.adding.set(false);
+    this.addStatus.set('idle');
+    this.editing.set(null);
+    this.editStatus.set('idle');
+    this.confirmingDelete.set(null);
+    this.preferencesStatus.set('idle');
+    this.dontListAddition.set(null);
+    this.dontListRemoval.set(null);
+    this.statusText.set('No se ha guardado: el grupo acaba de finalizar.');
+    this.outcome.reload();
+    this.focusOnceRendered('wishlist-title');
   }
 
   /** Part of the Wishlist changed: the page keeps it without reloading the whole Wishlist. */

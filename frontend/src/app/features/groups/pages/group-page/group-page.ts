@@ -20,6 +20,7 @@ import {
 import { map } from 'rxjs';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
+import { Notice } from '../../../../shared/ui/notice/notice';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import {
@@ -59,6 +60,7 @@ import { MailboxApi } from '../../../mailbox/data-access/mailbox-api';
   selector: 'app-group-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    Notice,
     Alert,
     RouterLink,
     AppShell,

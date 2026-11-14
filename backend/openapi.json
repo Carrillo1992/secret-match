@@ -1683,6 +1683,10 @@
               "$ref" : "#/components/schemas/DontListEntryResponse"
             }
           },
+          "finished" : {
+            "type" : "boolean",
+            "description" : "Whether the Group is finished: from then on the Wishlist is read-only, also to its owner."
+          },
           "owner" : {
             "$ref" : "#/components/schemas/WishlistOwnerResponse"
           },
@@ -1698,7 +1702,7 @@
             }
           }
         },
-        "required" : [ "dontList", "owner", "wishes" ]
+        "required" : [ "dontList", "finished", "owner", "wishes" ]
       }
     }
   }

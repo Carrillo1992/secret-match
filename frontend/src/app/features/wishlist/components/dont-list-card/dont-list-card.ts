@@ -38,7 +38,8 @@ export interface DontListRemoval {
  * A Member's Don't List, "Nada de…" (#33, option A): a warning card in `danger-soft` listing what
  * they do not want to receive, oldest first. Its owner removes an entry at once with its ✕ (it is
  * short and easy to type again) and adds one through an inline form; the Giver only reads it, and
- * an empty one is not shown to them at all. The page changes the Don't List through the API and
+ * an empty one is not shown to them at all. Once the Group is finished (`editable` false) the owner
+ * only reads it too, and an empty one is hidden from them as well. The page changes the Don't List through the API and
  * reports back through `addition` and `removal`; the card then closes its form, says what happened
  * and moves focus.
  */
@@ -48,7 +49,7 @@ export interface DontListRemoval {
   imports: [Alert, Button, Field, ReactiveFormsModule, TextLink, LucideBan, LucidePlus, LucideX],
   host: { class: 'block empty:hidden' },
   template: `
-    @if (owner() || entries().length > 0) {
+    @if (canChange() || entries().length > 0) {
       <section
         aria-labelledby="dont-list-heading"
         class="rounded-card bg-danger-soft p-5 shadow-card"
@@ -62,7 +63,7 @@ export interface DontListRemoval {
           Nada de…
         </h2>
 
-        @if (owner()) {
+        @if (canChange()) {
           <p role="status" class="mt-1.5 text-sm empty:hidden">{{ announcement() }}</p>
           @if (failedRemoval(); as entry) {
             <p appAlert class="mt-3">
@@ -79,7 +80,7 @@ export interface DontListRemoval {
             <li class="flex min-h-11 items-center gap-2">
               <svg lucideBan [size]="18" class="shrink-0 text-danger"></svg>
               <span class="min-w-0 flex-1 font-semibold break-words">{{ entry.text }}</span>
-              @if (owner()) {
+              @if (canChange()) {
                 <button
                   type="button"
                   [id]="removeButtonId(entry)"
@@ -95,7 +96,7 @@ export interface DontListRemoval {
           }
         </ul>
 
-        @if (owner()) {
+        @if (canChange()) {
           @if (formOpen()) {
             <form
               class="mt-3 flex flex-col gap-1.5 rounded-field bg-surface p-4"
@@ -162,6 +163,8 @@ export class DontListCard {
   readonly entries = input.required<readonly DontListEntry[]>();
   /** The signed-in Member owns this Wishlist, so they may change it. */
   readonly owner = input.required<boolean>();
+  /** False once the Group is finished: then nobody changes it, its owner included. */
+  readonly editable = input.required<boolean>();
   readonly ownerName = input.required<string>();
   readonly addition = input<DontListAddition | null>(null);
   readonly removal = input<DontListRemoval | null>(null);
@@ -183,6 +186,7 @@ export class DontListCard {
   /** Where the entry the owner is removing stood, to give focus to its neighbour once it goes. */
   private removedAt: number | null = null;
 
+  protected readonly canChange = computed(() => this.owner() && this.editable());
   protected readonly listLabel = computed(() =>
     this.owner() ? 'Lo que no quieres recibir' : `Lo que ${this.ownerName()} no quiere recibir`,
   );

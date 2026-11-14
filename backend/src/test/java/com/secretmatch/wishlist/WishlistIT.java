@@ -29,8 +29,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Tickets #32 and #33: a Member writes their Wishes, Preferences and Don't List, which only they and, after the
- * Draw, their Giver read (ADR 0004). Every test runs on 2026-12-01.
+ * Tickets #32, #33 and #34: a Member writes their Wishes, Preferences and Don't List, which only they and, after the
+ * Draw, their Giver read (ADR 0004), until the Group is finished. Every test starts on 2026-12-01.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
@@ -576,6 +576,61 @@ class WishlistIT {
                 .isNoContent();
     }
 
+    @Test
+    @DisplayName(
+            "once the Group is finished the owner and their Giver still read the Wishlist, but every edit is refused")
+    void finishedGroupIsReadOnly() {
+        Family family = family();
+        String bufanda = addedWishId(family.luis(), family, "Bufanda");
+        put(family.luis(), preferencesOf(family), Map.of("preferences", "Talla M"))
+                .expectStatus()
+                .isOk();
+        String chocolate = addedDontListEntryId(family.luis(), family, "nada de chocolate");
+        assertThat(json(get(family.luis(), wishlistOf(family, family.luisId())))
+                        .get("finished")
+                        .asBoolean())
+                .isFalse();
+        User pablo = signedInUser("Pablo");
+        joinGroup(pablo, family.carmen(), family.groupId());
+        post(family.carmen(), "/api/v1/groups/" + family.groupId() + "/draw", Map.of())
+                .expectStatus()
+                .is2xxSuccessful();
+        User giverOfLuis = giverOf(family, family.luisId(), List.of(family.carmen(), family.marta(), pablo));
+        // After the Draw and before the Group is finished, the owner still edits all of it.
+        put(family.luis(), preferencesOf(family), Map.of("preferences", "Talla M, pie 42"))
+                .expectStatus()
+                .isOk();
+        String velas = addedDontListEntryId(family.luis(), family, "nada de velas");
+        delete(family.luis(), dontListOf(family) + "/" + velas).expectStatus().isNoContent();
+        // 00:00 in Madrid on the day after the Exchange Date (24 December).
+        clock.set(Instant.parse("2026-12-24T23:00:00Z"));
+        User luis = signedInAgain(family.luis().email());
+
+        List<RestTestClient.ResponseSpec> edits = List.of(
+                post(luis, wishesOf(family), Map.of("title", "Guantes")),
+                put(luis, wishesOf(family) + "/" + bufanda, Map.of("title", "Bufanda roja")),
+                delete(luis, wishesOf(family) + "/" + bufanda),
+                put(luis, preferencesOf(family), Map.of("preferences", "")),
+                post(luis, dontListOf(family), Map.of("text", "nada de velas")),
+                delete(luis, dontListOf(family) + "/" + chocolate));
+        for (RestTestClient.ResponseSpec refused : edits) {
+            refused.expectStatus()
+                    .isEqualTo(422)
+                    .expectBody()
+                    .jsonPath("$.type")
+                    .isEqualTo("urn:secretmatch:problem:group-finished");
+        }
+
+        JsonNode own = json(get(luis, wishlistOf(family, family.luisId())));
+        assertThat(own.get("finished").asBoolean()).isTrue();
+        assertThat(titlesIn(own)).containsExactly("Bufanda");
+        assertThat(own.get("preferences").asString()).isEqualTo("Talla M, pie 42");
+        assertThat(dontListIn(own)).containsExactly("nada de chocolate");
+        User giver = signedInAgain(giverOfLuis.email());
+        assertThat(titlesIn(json(get(giver, wishlistOf(family, family.luisId())))))
+                .containsExactly("Bufanda");
+    }
+
     // --- helpers ---
 
     /** Carmen is the Admin; Luis and Marta joined her Group "Navidad". */
@@ -612,6 +667,17 @@ class WishlistIT {
 
     private static String dontListOf(Family family) {
         return "/api/v1/groups/" + family.groupId() + "/dont-list";
+    }
+
+    /** Which of {@code candidates} gives to the Member {@code receiverId}, as the Draw tells each of them. */
+    private User giverOf(Family family, String receiverId, List<User> candidates) {
+        return candidates.stream()
+                .filter(member -> json(get(member, "/api/v1/groups/" + family.groupId() + "/draw"))
+                        .at("/myReceiver/id")
+                        .asString()
+                        .equals(receiverId))
+                .findFirst()
+                .orElseThrow();
     }
 
     /** Each entry is added a second after the one before, so "oldest first" is well defined. */

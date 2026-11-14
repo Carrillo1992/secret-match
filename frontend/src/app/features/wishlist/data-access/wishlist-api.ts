@@ -36,30 +36,42 @@ export type WishlistOutcome =
   | { readonly status: 'failed' };
 
 /**
+ * Every change can also come back `finished`: the Group finished while the page was open, so the
+ * Wishlist is read-only now (#34).
+ */
+interface Finished {
+  readonly status: 'finished';
+}
+
+/**
  * `invalid-link` is the API refusing a link that is not http or https, which the form checks too;
  * `failed` covers everything else, such as the owner having left the Group meanwhile.
  */
 export type SaveWishOutcome =
   | { readonly status: 'saved'; readonly wish: Wish }
   | { readonly status: 'invalid-link' }
+  | Finished
   | { readonly status: 'failed' };
 
-export type DeleteWishOutcome = { readonly status: 'deleted' } | { readonly status: 'failed' };
+export type DeleteWishOutcome =
+  { readonly status: 'deleted' } | Finished | { readonly status: 'failed' };
 
 /** `preferences` is `undefined` once cleared. `invalid` is the API refusing the length. */
 export type SavePreferencesOutcome =
   | { readonly status: 'saved'; readonly preferences: string | undefined }
   | { readonly status: 'invalid' }
+  | Finished
   | { readonly status: 'failed' };
 
 /** `invalid` is the API refusing an empty or too long entry. */
 export type AddDontListEntryOutcome =
   | { readonly status: 'added'; readonly entry: DontListEntry }
   | { readonly status: 'invalid' }
+  | Finished
   | { readonly status: 'failed' };
 
 export type DeleteDontListEntryOutcome =
-  { readonly status: 'deleted' } | { readonly status: 'failed' };
+  { readonly status: 'deleted' } | Finished | { readonly status: 'failed' };
 
 /** Wishlists, with the API's errors turned into outcomes. */
 @Injectable({ providedIn: 'root' })
@@ -102,8 +114,8 @@ export class WishlistApi {
     try {
       await this.api.invoke(deleteWish, { groupId, wishId });
       return { status: 'deleted' };
-    } catch {
-      return { status: 'failed' };
+    } catch (error) {
+      return { status: isGroupFinished(error) ? 'finished' : 'failed' };
     }
   }
 
@@ -119,7 +131,7 @@ export class WishlistApi {
       });
       return { status: 'saved', preferences: saved.preferences };
     } catch (error) {
-      return { status: isRefused(error, 'invalid-preferences') ? 'invalid' : 'failed' };
+      return { status: refusal(error, 'invalid-preferences') };
     }
   }
 
@@ -131,7 +143,7 @@ export class WishlistApi {
         entry: await this.api.invoke(addDontListEntry, { groupId, body: { text: text.trim() } }),
       };
     } catch (error) {
-      return { status: isRefused(error, 'invalid-dont-list-entry') ? 'invalid' : 'failed' };
+      return { status: refusal(error, 'invalid-dont-list-entry') };
     }
   }
 
@@ -139,8 +151,8 @@ export class WishlistApi {
     try {
       await this.api.invoke(deleteDontListEntry, { groupId, entryId });
       return { status: 'deleted' };
-    } catch {
-      return { status: 'failed' };
+    } catch (error) {
+      return { status: isGroupFinished(error) ? 'finished' : 'failed' };
     }
   }
 }
@@ -161,6 +173,21 @@ function isRefused(error: unknown, code: string): boolean {
   return (error instanceof HttpErrorResponse && error.status === 400) || isProblem(error, code);
 }
 
+function isGroupFinished(error: unknown): boolean {
+  return isProblem(error, 'group-finished');
+}
+
+/** Why the API refused the text of the Preferences or of a Don't List entry. */
+function refusal(error: unknown, code: string): 'invalid' | 'finished' | 'failed' {
+  if (isRefused(error, code)) {
+    return 'invalid';
+  }
+  return isGroupFinished(error) ? 'finished' : 'failed';
+}
+
 function saveFailure(error: unknown): SaveWishOutcome {
-  return { status: isProblem(error, 'invalid-wish-link') ? 'invalid-link' : 'failed' };
+  if (isProblem(error, 'invalid-wish-link')) {
+    return { status: 'invalid-link' };
+  }
+  return { status: isGroupFinished(error) ? 'finished' : 'failed' };
 }

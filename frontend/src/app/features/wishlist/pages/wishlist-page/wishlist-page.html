@@ -22,9 +22,16 @@
       }
     </p>
 
+    @if (wishlist.owner.you && wishlist.finished) {
+      <app-notice class="mt-6" heading="Finalizado" headingId="wishlist-finished">
+        <svg lucideCircleCheck noticeIcon [size]="20"></svg>
+        El grupo ha finalizado: tu lista ya solo se puede consultar.
+      </app-notice>
+    }
+
     <p role="status" class="mt-1.5 text-sm text-ink-muted empty:hidden">{{ statusText() }}</p>
 
-    @if (wishlist.owner.you) {
+    @if (canChange()) {
       <section aria-label="Añadir un deseo" class="mt-6 rounded-card bg-surface p-5 shadow-card">
         @if (adding()) {
           <app-wish-form
@@ -48,8 +55,10 @@
 
     @if (wishlist.wishes.length === 0) {
       <p class="mt-6 text-ink-muted">
-        @if (wishlist.owner.you) {
+        @if (canChange()) {
           Aún no has añadido deseos. Cuenta qué te haría ilusión recibir.
+        } @else if (wishlist.owner.you) {
+          No añadiste deseos.
         } @else {
           {{ wishlist.owner.displayName }} aún no ha añadido deseos.
         }
@@ -98,7 +107,7 @@
                 </a>
               }
 
-              @if (wishlist.owner.you) {
+              @if (canChange()) {
                 @if (confirmingDelete() === wish.id) {
                   <app-confirm-panel
                     class="mt-3"
@@ -147,6 +156,7 @@
       class="mt-6"
       [entries]="wishlist.dontList"
       [owner]="wishlist.owner.you"
+      [editable]="!wishlist.finished"
       [ownerName]="wishlist.owner.displayName"
       [addition]="dontListAddition()"
       [removal]="dontListRemoval()"
@@ -157,6 +167,7 @@
       class="mt-6"
       [preferences]="wishlist.preferences"
       [owner]="wishlist.owner.you"
+      [editable]="!wishlist.finished"
       [status]="preferencesStatus()"
       (save)="savePreferences($event)"
     />

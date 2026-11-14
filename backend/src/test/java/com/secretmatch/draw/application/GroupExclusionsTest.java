@@ -235,6 +235,14 @@ class GroupExclusionsTest {
             byGroup.put(
                     groupId, new Roster(roster.groupName(), roster.admin(), roster.members(), roster.finished(), true));
         }
+
+        @Override
+        public void markDrawCancelled(UUID groupId) {
+            Roster roster = byGroup.get(groupId);
+            byGroup.put(
+                    groupId,
+                    new Roster(roster.groupName(), roster.admin(), roster.members(), roster.finished(), false));
+        }
     }
 
     private static final class InMemoryExclusions implements Exclusions {

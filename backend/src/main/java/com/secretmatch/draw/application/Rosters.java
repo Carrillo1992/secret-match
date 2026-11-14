@@ -27,4 +27,7 @@ public interface Rosters {
 
     /** Records that the Group's Draw is made, which freezes who is in it. Call it after {@link #lockedOf}. */
     void markDrawn(UUID groupId);
+
+    /** Records that the Group's Draw is cancelled, which unfreezes who is in it. Call it after {@link #lockedOf}. */
+    void markDrawCancelled(UUID groupId);
 }

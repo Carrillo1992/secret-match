@@ -42,6 +42,22 @@
       (retry)="reloadDraw()"
     />
 
+    @if (mailboxes(); as mailboxes) {
+      @if (mailboxes.status === 'failed' || mailboxes.mailboxes.length > 0) {
+        <app-mailbox-card
+          class="mt-6"
+          [mailboxes]="mailboxes"
+          [selected]="selectedMailbox()"
+          [threads]="threads()"
+          [sends]="sends()"
+          (choose)="selectedMailbox.set($event)"
+          (retryMailboxes)="reloadMailboxes()"
+          (retryMessages)="loadMessages($event)"
+          (send)="sendMessage($event)"
+        />
+      }
+    }
+
     <section aria-labelledby="my-wishlist" class="mt-6 rounded-card bg-surface p-5 shadow-card">
       <h2 id="my-wishlist" class="font-display text-lg font-semibold">Tu lista de deseos</h2>
       <p class="mt-1.5 text-ink-muted">Solo la verá quien te regale, cuando se haga el sorteo.</p>

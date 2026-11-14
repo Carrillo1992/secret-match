@@ -149,6 +149,10 @@ export class WishlistPage {
   protected async add(wish: WishInput): Promise<void> {
     this.addStatus.set('saving');
     const outcome = await this.api.add(this.params().groupId, wish);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status !== 'saved') {
       this.addStatus.set(outcome.status);
       return;
@@ -177,6 +181,10 @@ export class WishlistPage {
   protected async edit(wishId: string, wish: WishInput): Promise<void> {
     this.editStatus.set('saving');
     const outcome = await this.api.edit(this.params().groupId, wishId, wish);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status !== 'saved') {
       this.editStatus.set(outcome.status);
       return;
@@ -194,6 +202,10 @@ export class WishlistPage {
     this.deleting.set(wish.id);
     const outcome = await this.api.delete(this.params().groupId, wish.id);
     this.deleting.set(null);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'failed') {
       this.deleteFailed.set(wish);
       return;
@@ -209,6 +221,10 @@ export class WishlistPage {
   protected async savePreferences(text: string): Promise<void> {
     this.preferencesStatus.set('saving');
     const outcome = await this.api.editPreferences(this.params().groupId, text);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'saved') {
       this.changeWishlist(() => ({ preferences: outcome.preferences }));
     }
@@ -219,6 +235,10 @@ export class WishlistPage {
   protected async addDontListEntry(text: string): Promise<void> {
     this.dontListAddition.set({ status: 'adding' });
     const outcome = await this.api.addDontListEntry(this.params().groupId, text);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'added') {
       this.changeWishlist(({ dontList }) => ({ dontList: [...dontList, outcome.entry] }));
     }
@@ -229,6 +249,10 @@ export class WishlistPage {
   protected async removeDontListEntry(entry: DontListEntry): Promise<void> {
     this.dontListRemoval.set({ entry, status: 'removing' });
     const outcome = await this.api.deleteDontListEntry(this.params().groupId, entry.id);
+    if (outcome.status === 'finished') {
+      this.finishedMeanwhile();
+      return;
+    }
     if (outcome.status === 'deleted') {
       this.changeWishlist(({ dontList }) => ({
         dontList: dontList.filter((other) => other.id !== entry.id),
@@ -238,6 +262,24 @@ export class WishlistPage {
       entry,
       status: outcome.status === 'deleted' ? 'removed' : 'failed',
     });
+  }
+
+  /**
+   * The Group finished while the page was open, so the API refused the change: rather than an
+   * error, the page closes what was open and loads the Wishlist again, which now comes read-only.
+   */
+  private finishedMeanwhile(): void {
+    this.adding.set(false);
+    this.addStatus.set('idle');
+    this.editing.set(null);
+    this.editStatus.set('idle');
+    this.confirmingDelete.set(null);
+    this.preferencesStatus.set('idle');
+    this.dontListAddition.set(null);
+    this.dontListRemoval.set(null);
+    this.statusText.set('No se ha guardado: el grupo acaba de finalizar.');
+    this.outcome.reload();
+    this.focusOnceRendered('wishlist-title');
   }
 
   /** Part of the Wishlist changed: the page keeps it without reloading the whole Wishlist. */

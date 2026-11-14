@@ -569,6 +569,53 @@ describe('WishlistPage', () => {
   });
 
   describe('in a finished Group', () => {
+    const groupFinished = [
+      { type: 'urn:secretmatch:problem:group-finished', status: 422 },
+      { status: 422, statusText: 'Unprocessable Content' },
+    ] as const;
+
+    /** The Group finished while the page was open: the page loads the Wishlist again, read-only. */
+    async function finishedMeanwhile(): Promise<void> {
+      await settle();
+      http.expectOne(LUIS_WISHLIST_URL).flush({ ...own, dontList: [noChocolate], finished: true });
+      await settle();
+    }
+
+    it('turns read-only, without an error, when the Group finished while adding a Wish', async () => {
+      await open(own);
+      button('Añadir deseo')?.click();
+      await settle();
+      type('Qué te gustaría', 'Guantes');
+      await submit();
+
+      http.expectOne((r) => r.url === WISHES_URL && r.method === 'POST').flush(...groupFinished);
+      await finishedMeanwhile();
+
+      expect(text(page())).toContain(
+        'El grupo ha finalizado: tu lista ya solo se puede consultar.',
+      );
+      expect(statusLine()).toBe('No se ha guardado: el grupo acaba de finalizar.');
+      expect(page().querySelector('[role="alert"]')).toBeNull();
+      expect(page().querySelector('form')).toBeNull();
+      expect(page().querySelectorAll('button')).toHaveLength(0);
+    });
+
+    it("turns read-only, without an error, when the Group finished while adding to the Don't List", async () => {
+      await open(own);
+      button('Añadir', page().querySelector('app-dont-list-card') ?? page())?.click();
+      await settle();
+      type('¿Qué no quieres recibir?', 'Velas');
+      page().querySelector('app-dont-list-card form')?.dispatchEvent(new Event('submit'));
+      await settle();
+
+      http.expectOne(DONT_LIST_URL).flush(...groupFinished);
+      await finishedMeanwhile();
+
+      expect(text(page().querySelector('app-dont-list-card'))).toContain('Nada de chocolate');
+      expect(page().querySelector('[role="alert"]')).toBeNull();
+      expect(page().querySelectorAll('button')).toHaveLength(0);
+    });
+
     it("shows the owner their Wishlist, Don't List and Preferences with no way to change them", async () => {
       await open({
         ...own,

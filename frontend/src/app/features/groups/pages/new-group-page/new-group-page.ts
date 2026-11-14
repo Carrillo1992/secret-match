@@ -20,6 +20,7 @@ import {
 import { notBlank } from '../../../../shared/forms/validators';
 import { earliestExchangeDate } from '../../data-access/group-format';
 import { GroupsApi } from '../../data-access/groups-api';
+import { browserTimeZone, timeZoneRegions } from '../../data-access/time-zones';
 import { Alert } from '../../../../shared/ui/alert/alert';
 
 type SubmitError = 'exchange-date-not-in-future' | 'failed';
@@ -46,11 +47,14 @@ export class NewGroupPage {
 
   protected readonly earliestDate = earliestExchangeDate();
   protected readonly nameMaxLength = NAME_MAX_LENGTH;
+  private readonly defaultTimeZone = browserTimeZone();
+  protected readonly timeZoneRegions = timeZoneRegions([this.defaultTimeZone]);
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     name: ['', [Validators.required, notBlank, Validators.maxLength(NAME_MAX_LENGTH)]],
     exchangeDate: ['', [Validators.required, notBefore(this.earliestDate)]],
     budget: ['', budgetInEuros],
+    timeZone: [this.defaultTimeZone, Validators.required],
   });
 
   protected readonly submitted = signal(false);

@@ -22,4 +22,13 @@ record CreateGroupRequest(
         @Schema(description = "In euros, to the cent. Leave it out for a Group without a budget.")
         @PositiveOrZero
         @Digits(integer = 6, fraction = 2)
-        BigDecimal budget) {}
+        BigDecimal budget,
+
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                description =
+                        "IANA time zone id, e.g. Europe/Madrid: the day each Mailbox Message shows is cut in" + " it.",
+                example = "Europe/Madrid")
+        @NotBlank
+        @Size(max = 64)
+        String timeZone) {}

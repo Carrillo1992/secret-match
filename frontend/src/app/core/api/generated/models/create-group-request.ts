@@ -9,4 +9,9 @@ export interface CreateGroupRequest {
   budget?: number;
   exchangeDate: string;
   name: string;
+
+  /**
+   * IANA time zone id, e.g. Europe/Madrid: the day each Mailbox Message shows is cut in it.
+   */
+  timeZone: string;
 }

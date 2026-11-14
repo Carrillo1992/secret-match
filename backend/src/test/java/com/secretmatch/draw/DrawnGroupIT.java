@@ -212,13 +212,37 @@ class DrawnGroupIT {
                 .uri(groupOf(family))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + family.carmen().accessToken())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("name", "Nochebuena", "exchangeDate", "2026-12-24"))
+                .body(Map.of("name", "Nochebuena", "exchangeDate", "2026-12-24", "timeZone", "UTC"))
                 .exchange()
                 .expectStatus()
                 .isOk()
                 .expectBody()
                 .jsonPath("$.drawn")
                 .isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("after the Draw the Time Zone is frozen: changing it is refused, so nobody can probe Message dates")
+    void timeZoneIsFrozen() {
+        Family family = family();
+        runDraw(family.carmen(), family).expectStatus().isCreated();
+
+        http.put()
+                .uri(groupOf(family))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + family.carmen().accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("name", "Navidad", "exchangeDate", "2026-12-24", "timeZone", "Asia/Tokyo"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody()
+                .jsonPath("$.type")
+                .isEqualTo(GROUP_DRAWN);
+
+        get(family.carmen(), groupOf(family))
+                .expectBody()
+                .jsonPath("$.timeZone")
+                .isEqualTo("UTC");
     }
 
     // --- helpers ---
@@ -295,7 +319,7 @@ class DrawnGroupIT {
 
     private String createGroup(User admin, String name) {
         RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24"));
+                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", "UTC"));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

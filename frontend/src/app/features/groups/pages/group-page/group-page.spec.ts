@@ -19,6 +19,7 @@ const navidad = {
   name: 'Navidad en casa',
   exchangeDate: '2026-12-24',
   budget: 30,
+  timeZone: 'Europe/Madrid',
   members: [
     { id: 'u-carmen', displayName: 'Abuela Carmen', admin: true, you: false },
     { id: 'u-luis', displayName: 'Luis', admin: false, you: true },
@@ -105,6 +106,7 @@ describe('GroupPage', () => {
     expect(text(page().querySelector('h1'))).toBe('Navidad en casa');
     expect(text(page())).toContain('jueves, 24 de diciembre de 2026');
     expect(text(page())).toContain('30 € por regalo');
+    expect(text(page())).toContain('Fechas en hora de Madrid');
     expect(text(page())).toContain('Miembros (2)');
     const [carmen, luis] = members().map(text);
     expect(members()).toHaveLength(2);
@@ -513,7 +515,11 @@ describe('GroupPage', () => {
 
       const edit = http.expectOne(GROUP_URL);
       expect(edit.request.method).toBe('PUT');
-      expect(edit.request.body).toEqual({ name: 'Reyes en el pueblo', exchangeDate: '2027-01-06' });
+      expect(edit.request.body).toEqual({
+        name: 'Reyes en el pueblo',
+        exchangeDate: '2027-01-06',
+        timeZone: 'Europe/Madrid',
+      });
       edit.flush({
         ...asAdmin,
         name: 'Reyes en el pueblo',
@@ -527,6 +533,58 @@ describe('GroupPage', () => {
       expect(text(details())).toContain('Sin presupuesto');
       expect(field('Nombre')).toBeNull();
       expect(document.activeElement).toBe(button('Editar'));
+    });
+
+    it('lets the Admin change the Time Zone before the Draw', async () => {
+      http.expectOne(GROUP_URL).flush(asAdmin);
+      await settle();
+
+      button('Editar')?.click();
+      await settle();
+      const timeZone = field('Zona horaria') as unknown as HTMLSelectElement;
+      expect(timeZone.value).toBe('Europe/Madrid');
+      expect(timeZone.disabled).toBe(false);
+      timeZone.value = 'America/New_York';
+      timeZone.dispatchEvent(new Event('change'));
+      button('Guardar cambios')?.click();
+      await settle();
+
+      const edit = http.expectOne(GROUP_URL);
+      expect(edit.request.body).toEqual({
+        name: 'Navidad en casa',
+        exchangeDate: '2026-12-24',
+        budget: 30,
+        timeZone: 'America/New_York',
+      });
+      edit.flush({ ...asAdmin, timeZone: 'America/New_York' });
+      await settle();
+
+      expect(text(details())).toContain('Fechas en hora de New York');
+    });
+
+    it('keeps the Time Zone as it is once the Draw is made, and says why', async () => {
+      http.expectOne(GROUP_URL).flush({ ...asAdmin, drawn: true });
+      await settle();
+      http
+        .match((r) => r.url === DRAW_URL && r.method === 'GET')
+        .forEach((r) => r.flush({ myReceiver: { id: 'u-marta', displayName: 'Marta' } }));
+      await settle();
+
+      button('Editar')?.click();
+      await settle();
+      const timeZone = field('Zona horaria') as unknown as HTMLSelectElement;
+      expect(timeZone.disabled).toBe(true);
+      expect(timeZone.value).toBe('Europe/Madrid');
+      expect(text(details())).toContain('El sorteo ya está hecho');
+      button('Guardar cambios')?.click();
+      await settle();
+
+      expect(http.expectOne(GROUP_URL).request.body).toEqual({
+        name: 'Navidad en casa',
+        exchangeDate: '2026-12-24',
+        budget: 30,
+        timeZone: 'Europe/Madrid',
+      });
     });
 
     it('keeps the Group as it was when the Admin cancels', async () => {

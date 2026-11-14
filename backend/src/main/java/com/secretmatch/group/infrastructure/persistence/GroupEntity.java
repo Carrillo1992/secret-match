@@ -6,6 +6,7 @@ import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.GroupName;
 import com.secretmatch.group.domain.InviteCode;
 import com.secretmatch.group.domain.MemberId;
+import com.secretmatch.group.domain.TimeZone;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -39,6 +40,9 @@ class GroupEntity {
     @Column(precision = 8, scale = 2)
     private BigDecimal budget;
 
+    @Column(name = "time_zone", nullable = false)
+    private String timeZone;
+
     @Column(name = "admin_id", nullable = false)
     private UUID adminId;
 
@@ -65,6 +69,7 @@ class GroupEntity {
         entity.name = group.name().value();
         entity.exchangeDate = group.exchangeDate();
         entity.budget = group.budget().map(Budget::euros).orElse(null);
+        entity.timeZone = group.timeZone().id();
         entity.adminId = group.admin().value();
         entity.inviteCode = group.inviteCode().value();
         entity.createdAt = group.createdAt();
@@ -79,6 +84,7 @@ class GroupEntity {
                 new GroupName(name),
                 exchangeDate,
                 budget == null ? null : new Budget(budget),
+                new TimeZone(timeZone),
                 new MemberId(adminId),
                 members.stream().map(member -> new MemberId(member.userId)).toList(),
                 new InviteCode(inviteCode),

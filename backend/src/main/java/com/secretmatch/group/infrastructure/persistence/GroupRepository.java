@@ -66,10 +66,11 @@ interface GroupRepository extends JpaRepository<GroupEntity, UUID> {
 
     @Modifying
     @Query("""
-            UPDATE GroupEntity g SET g.name = :name, g.exchangeDate = :exchangeDate, g.budget = :budget
+            UPDATE GroupEntity g
+            SET g.name = :name, g.exchangeDate = :exchangeDate, g.budget = :budget, g.timeZone = :timeZone
             WHERE g.id = :groupId
             """)
-    int updateDetails(UUID groupId, String name, LocalDate exchangeDate, BigDecimal budget);
+    int updateDetails(UUID groupId, String name, LocalDate exchangeDate, BigDecimal budget, String timeZone);
 
     @Modifying
     @Query("UPDATE GroupEntity g SET g.inviteCode = :inviteCode WHERE g.id = :groupId")

@@ -51,6 +51,7 @@ public class MyGroups {
                 command.name(),
                 command.exchangeDate(),
                 command.budget(),
+                command.timeZone(),
                 creator,
                 InviteCode.generate(random),
                 clock.instant());
@@ -141,19 +142,26 @@ public class MyGroups {
     }
 
     /**
-     * Replaces the Group's name, budget and Exchange Date. Nobody is emailed: the Members see the change on the
+     * Replaces the Group's name, budget, Exchange Date and Time Zone. Nobody is emailed: the Members see the change on the
      * Group page.
      *
      * @return the Group with its new details
      * @throws GroupNotFoundException if there is no such Group or the User is not one of its Members
      * @throws com.secretmatch.group.domain.AdminOnlyException if the User is not its Admin
      * @throws com.secretmatch.group.domain.GroupFinishedException if the Group is finished
+     * @throws com.secretmatch.group.domain.GroupDrawnException if the Time Zone changes once the Draw is made
      * @throws com.secretmatch.group.domain.InvalidGroupDetailsException if a detail breaks its rules
      */
     @Transactional
     public GroupDetails edit(GroupId id, MemberId by, EditGroupCommand command) {
-        Group group =
-                memberView(id, by).edit(by, command.name(), command.exchangeDate(), command.budget(), clock.instant());
+        Group group = memberView(id, by)
+                .edit(
+                        by,
+                        command.name(),
+                        command.exchangeDate(),
+                        command.budget(),
+                        command.timeZone(),
+                        clock.instant());
         groups.saveDetails(group);
         return detailsOf(group, by);
     }
@@ -293,6 +301,7 @@ public class MyGroups {
                 group.name().value(),
                 group.exchangeDate(),
                 group.budget().map(Budget::euros).orElse(null),
+                group.timeZone().id(),
                 group.members().stream()
                         // Stable: the Admin first, the rest keep the order they joined in.
                         .sorted(Comparator.comparing(member -> !member.equals(group.admin())))

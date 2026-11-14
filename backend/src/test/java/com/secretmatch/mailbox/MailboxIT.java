@@ -165,6 +165,31 @@ class MailboxIT {
     }
 
     @Test
+    @DisplayName("a Message's date is the day it was sent in the Group's Time Zone, the same to both sides")
+    void dateInTheGroupsTimeZone() {
+        // Each Message goes a second after the clock: this one at 02:00 UTC, still the 12th in New York.
+        clock.set(Instant.parse("2026-12-13T01:59:59Z"));
+        Drawn drawn = drawnFamily("America/New_York");
+        Member giver = drawn.family().luis();
+        Member receiver = drawn.receiverOf(giver);
+        String mailbox = mailboxIdOf(giver, drawn, "GIVER");
+
+        JsonNode sent = json(send(giver, mailbox, "¿Te gusta el chocolate?"));
+
+        assertThat(sent.get("sentOn").asString()).isEqualTo("2026-12-12");
+        assertThat(json(get(giver.user(), messagesOf(mailbox)))
+                        .get(0)
+                        .get("sentOn")
+                        .asString())
+                .isEqualTo("2026-12-12");
+        assertThat(json(get(receiver.user(), messagesOf(mailbox)))
+                        .get(0)
+                        .get("sentOn")
+                        .asString())
+                .isEqualTo("2026-12-12");
+    }
+
+    @Test
     @DisplayName("what the Receiver gets names nothing about their Giver, and Messages carry only their date")
     void receiverSideNamesNothingAboutTheGiver() {
         Drawn drawn = drawnFamily();
@@ -545,13 +570,18 @@ class MailboxIT {
 
     // --- helpers ---
 
-    /** Carmen is the Admin; Luis, Marta and Pablo joined her Group "Navidad". */
+    /** Carmen is the Admin; Luis, Marta and Pablo joined her Group "Navidad", on UTC. */
     private Family family() {
+        return family("UTC");
+    }
+
+    /** Carmen is the Admin; Luis, Marta and Pablo joined her Group "Navidad", on this Time Zone. */
+    private Family family(String timeZone) {
         User carmen = signedInUser("Abuela Carmen");
         User luis = signedInUser("Luis");
         User marta = signedInUser("Marta");
         User pablo = signedInUser("Pablo");
-        String groupId = createGroup(carmen, "Navidad");
+        String groupId = createGroup(carmen, "Navidad", timeZone);
         joinGroup(luis, carmen, groupId);
         joinGroup(marta, carmen, groupId);
         joinGroup(pablo, carmen, groupId);
@@ -565,7 +595,12 @@ class MailboxIT {
 
     /** The family's Group, drawn, with who gives to whom as each Member sees their own Receiver. */
     private Drawn drawnFamily() {
-        Family family = family();
+        return drawnFamily("UTC");
+    }
+
+    /** Like {@link #drawnFamily()}, with the Group on this Time Zone. */
+    private Drawn drawnFamily(String timeZone) {
+        Family family = family(timeZone);
         post(family.carmen().user(), "/api/v1/groups/" + family.groupId() + "/draw", Map.of())
                 .expectStatus()
                 .isCreated();
@@ -659,9 +694,9 @@ class MailboxIT {
                 .isOk();
     }
 
-    private String createGroup(User admin, String name) {
+    private String createGroup(User admin, String name, String timeZone) {
         RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24"));
+                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", timeZone));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

@@ -246,7 +246,7 @@ class InviteLinksIT {
                 .uri("/api/v1/groups")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + admin.accessToken())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("name", name, "exchangeDate", "2026-12-24"))
+                .body(Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", "UTC"))
                 .exchange();
         created.expectStatus().isCreated();
         return json(created).get("id").asString();

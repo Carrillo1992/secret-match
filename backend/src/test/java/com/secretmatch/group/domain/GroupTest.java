@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -32,10 +33,12 @@ class GroupTest {
 
     private static final InviteCode FIRST_CODE = new InviteCode("first-code");
 
+    private static final String MADRID = "Europe/Madrid";
+
     @Test
     @DisplayName("the User who creates a Group is its Admin and its only Member")
     void creatorIsAdminAndMember() {
-        Group group = Group.create("Navidad en casa", CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW);
+        Group group = Group.create("Navidad en casa", CHRISTMAS_EVE, null, MADRID, CREATOR, FIRST_CODE, NOW);
 
         assertThat(group.admin()).isEqualTo(CREATOR);
         assertThat(group.members()).containsExactly(CREATOR);
@@ -50,7 +53,7 @@ class GroupTest {
     @ValueSource(strings = {"", "   "})
     @DisplayName("a Group needs a name")
     void nameIsRequired(String name) {
-        assertThatThrownBy(() -> Group.create(name, CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW))
+        assertThatThrownBy(() -> Group.create(name, CHRISTMAS_EVE, null, MADRID, CREATOR, FIRST_CODE, NOW))
                 .isInstanceOf(InvalidGroupDetailsException.class)
                 .extracting(e -> ((InvalidGroupDetailsException) e).code())
                 .isEqualTo("invalid-group-name");
@@ -59,24 +62,24 @@ class GroupTest {
     @Test
     @DisplayName("the name is trimmed and may have up to 80 characters")
     void nameLength() {
-        assertThat(Group.create("  Amigos  ", CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW)
+        assertThat(Group.create("  Amigos  ", CHRISTMAS_EVE, null, MADRID, CREATOR, FIRST_CODE, NOW)
                         .name()
                         .value())
                 .isEqualTo("Amigos");
-        assertThat(Group.create("a".repeat(80), CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW))
+        assertThat(Group.create("a".repeat(80), CHRISTMAS_EVE, null, MADRID, CREATOR, FIRST_CODE, NOW))
                 .isNotNull();
-        assertThatThrownBy(() -> Group.create("a".repeat(81), CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW))
+        assertThatThrownBy(() -> Group.create("a".repeat(81), CHRISTMAS_EVE, null, MADRID, CREATOR, FIRST_CODE, NOW))
                 .isInstanceOf(InvalidGroupDetailsException.class);
     }
 
     @Test
     @DisplayName("the Exchange Date must be after today in Madrid")
     void exchangeDateMustBeInTheFuture() {
-        assertThat(Group.create("Amigos", LocalDate.of(2026, 12, 3), null, CREATOR, FIRST_CODE, NOW))
+        assertThat(Group.create("Amigos", LocalDate.of(2026, 12, 3), null, MADRID, CREATOR, FIRST_CODE, NOW))
                 .isNotNull();
         for (LocalDate notInTheFuture :
                 new LocalDate[] {LocalDate.of(2026, 12, 2), LocalDate.of(2026, 12, 1), LocalDate.of(2025, 12, 24)}) {
-            assertThatThrownBy(() -> Group.create("Amigos", notInTheFuture, null, CREATOR, FIRST_CODE, NOW))
+            assertThatThrownBy(() -> Group.create("Amigos", notInTheFuture, null, MADRID, CREATOR, FIRST_CODE, NOW))
                     .as(notInTheFuture.toString())
                     .isInstanceOf(InvalidGroupDetailsException.class)
                     .extracting(e -> ((InvalidGroupDetailsException) e).code())
@@ -87,7 +90,7 @@ class GroupTest {
     @Test
     @DisplayName("a Group needs an Exchange Date")
     void exchangeDateIsRequired() {
-        assertThatThrownBy(() -> Group.create("Amigos", null, null, CREATOR, FIRST_CODE, NOW))
+        assertThatThrownBy(() -> Group.create("Amigos", null, null, MADRID, CREATOR, FIRST_CODE, NOW))
                 .isInstanceOf(InvalidGroupDetailsException.class)
                 .extracting(e -> ((InvalidGroupDetailsException) e).code())
                 .isEqualTo("exchange-date-not-in-future");
@@ -96,10 +99,10 @@ class GroupTest {
     @Test
     @DisplayName("the budget is kept in euros, and may be zero")
     void budgetIsKept() {
-        assertThat(Group.create("Amigos", CHRISTMAS_EVE, new BigDecimal("25.50"), CREATOR, FIRST_CODE, NOW)
+        assertThat(Group.create("Amigos", CHRISTMAS_EVE, new BigDecimal("25.50"), MADRID, CREATOR, FIRST_CODE, NOW)
                         .budget())
                 .contains(new Budget(new BigDecimal("25.50")));
-        assertThat(Group.create("Amigos", CHRISTMAS_EVE, BigDecimal.ZERO, CREATOR, FIRST_CODE, NOW)
+        assertThat(Group.create("Amigos", CHRISTMAS_EVE, BigDecimal.ZERO, MADRID, CREATOR, FIRST_CODE, NOW)
                         .budget())
                 .isPresent();
     }
@@ -108,7 +111,8 @@ class GroupTest {
     @ValueSource(strings = {"-0.01", "-20", "10.001", "1000000"})
     @DisplayName("a negative budget, one with fractions of a cent, or one of a million euros or more is refused")
     void invalidBudget(String euros) {
-        assertThatThrownBy(() -> Group.create("Amigos", CHRISTMAS_EVE, new BigDecimal(euros), CREATOR, FIRST_CODE, NOW))
+        assertThatThrownBy(() ->
+                        Group.create("Amigos", CHRISTMAS_EVE, new BigDecimal(euros), MADRID, CREATOR, FIRST_CODE, NOW))
                 .isInstanceOf(InvalidGroupDetailsException.class)
                 .extracting(e -> ((InvalidGroupDetailsException) e).code())
                 .isEqualTo("invalid-budget");
@@ -117,7 +121,7 @@ class GroupTest {
     @Test
     @DisplayName("a new Group starts with the Invite Link it was given")
     void newGroupHasItsInviteLink() {
-        Group group = Group.create("Amigos", CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW);
+        Group group = Group.create("Amigos", CHRISTMAS_EVE, null, MADRID, CREATOR, FIRST_CODE, NOW);
 
         assertThat(group.inviteCode()).isEqualTo(FIRST_CODE);
     }
@@ -125,7 +129,7 @@ class GroupTest {
     @Test
     @DisplayName("the Admin can regenerate the Invite Link, which replaces the previous one")
     void adminRegeneratesInviteLink() {
-        Group group = Group.create("Amigos", CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW);
+        Group group = Group.create("Amigos", CHRISTMAS_EVE, null, MADRID, CREATOR, FIRST_CODE, NOW);
 
         Group regenerated = group.regenerateInviteLink(CREATOR, new InviteCode("second-code"), NOW);
 
@@ -142,6 +146,7 @@ class GroupTest {
                 new GroupName("Amigos"),
                 CHRISTMAS_EVE,
                 null,
+                new TimeZone(MADRID),
                 CREATOR,
                 List.of(CREATOR, GUEST),
                 FIRST_CODE,
@@ -176,12 +181,13 @@ class GroupTest {
     private static final MemberId OTHER_GUEST = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000003"));
 
     private static Group withGuests() {
-        Group created = Group.create("Amigos", CHRISTMAS_EVE, null, CREATOR, FIRST_CODE, NOW);
+        Group created = Group.create("Amigos", CHRISTMAS_EVE, null, MADRID, CREATOR, FIRST_CODE, NOW);
         return new Group(
                 created.id(),
                 created.name(),
                 created.exchangeDate(),
                 null,
+                created.timeZone(),
                 CREATOR,
                 List.of(CREATOR, GUEST, OTHER_GUEST),
                 FIRST_CODE,
@@ -237,7 +243,7 @@ class GroupTest {
     void adminEditsTheDetails() {
         Group group = withGuests();
 
-        Group edited = group.edit(CREATOR, "  Reyes  ", LocalDate.of(2027, 1, 6), new BigDecimal("30"), NOW);
+        Group edited = group.edit(CREATOR, "  Reyes  ", LocalDate.of(2027, 1, 6), new BigDecimal("30"), MADRID, NOW);
 
         assertThat(edited.name().value()).isEqualTo("Reyes");
         assertThat(edited.exchangeDate()).isEqualTo(LocalDate.of(2027, 1, 6));
@@ -250,7 +256,7 @@ class GroupTest {
     @Test
     @DisplayName("a Member who is not the Admin cannot edit the Group")
     void onlyTheAdminEdits() {
-        assertThatThrownBy(() -> withGuests().edit(GUEST, "Reyes", CHRISTMAS_EVE, null, NOW))
+        assertThatThrownBy(() -> withGuests().edit(GUEST, "Reyes", CHRISTMAS_EVE, null, MADRID, NOW))
                 .isInstanceOf(AdminOnlyException.class);
     }
 
@@ -258,17 +264,17 @@ class GroupTest {
     @DisplayName("a new Exchange Date must be after today in Madrid")
     void newExchangeDateMustBeInTheFuture() {
         assertThat(withGuests()
-                        .edit(CREATOR, "Amigos", LocalDate.of(2026, 12, 3), null, NOW)
+                        .edit(CREATOR, "Amigos", LocalDate.of(2026, 12, 3), null, MADRID, NOW)
                         .exchangeDate())
                 .isEqualTo(LocalDate.of(2026, 12, 3));
         for (LocalDate notInTheFuture : new LocalDate[] {LocalDate.of(2026, 12, 2), LocalDate.of(2026, 11, 30)}) {
-            assertThatThrownBy(() -> withGuests().edit(CREATOR, "Amigos", notInTheFuture, null, NOW))
+            assertThatThrownBy(() -> withGuests().edit(CREATOR, "Amigos", notInTheFuture, null, MADRID, NOW))
                     .as(notInTheFuture.toString())
                     .isInstanceOf(InvalidGroupDetailsException.class)
                     .extracting(e -> ((InvalidGroupDetailsException) e).code())
                     .isEqualTo("exchange-date-not-in-future");
         }
-        assertThatThrownBy(() -> withGuests().edit(CREATOR, "Amigos", null, null, NOW))
+        assertThatThrownBy(() -> withGuests().edit(CREATOR, "Amigos", null, null, MADRID, NOW))
                 .isInstanceOf(InvalidGroupDetailsException.class);
     }
 
@@ -277,7 +283,7 @@ class GroupTest {
     void keepingTodaysExchangeDate() {
         Instant onTheDay = Instant.parse("2026-12-24T18:00:00Z");
 
-        Group edited = withGuests().edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, onTheDay);
+        Group edited = withGuests().edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, MADRID, onTheDay);
 
         assertThat(edited.name().value()).isEqualTo("Nochebuena");
         assertThat(edited.exchangeDate()).isEqualTo(CHRISTMAS_EVE);
@@ -286,13 +292,15 @@ class GroupTest {
     @Test
     @DisplayName("the Admin can take the budget away, and an invalid name or budget is refused")
     void budgetAndNameOnEdit() {
-        Group withBudget = withGuests().edit(CREATOR, "Amigos", CHRISTMAS_EVE, new BigDecimal("20"), NOW);
+        Group withBudget = withGuests().edit(CREATOR, "Amigos", CHRISTMAS_EVE, new BigDecimal("20"), MADRID, NOW);
 
-        assertThat(withBudget.edit(CREATOR, "Amigos", CHRISTMAS_EVE, null, NOW).budget())
+        assertThat(withBudget
+                        .edit(CREATOR, "Amigos", CHRISTMAS_EVE, null, MADRID, NOW)
+                        .budget())
                 .isEmpty();
-        assertThatThrownBy(() -> withBudget.edit(CREATOR, " ", CHRISTMAS_EVE, null, NOW))
+        assertThatThrownBy(() -> withBudget.edit(CREATOR, " ", CHRISTMAS_EVE, null, MADRID, NOW))
                 .isInstanceOf(InvalidGroupDetailsException.class);
-        assertThatThrownBy(() -> withBudget.edit(CREATOR, "Amigos", CHRISTMAS_EVE, new BigDecimal("-1"), NOW))
+        assertThatThrownBy(() -> withBudget.edit(CREATOR, "Amigos", CHRISTMAS_EVE, new BigDecimal("-1"), MADRID, NOW))
                 .isInstanceOf(InvalidGroupDetailsException.class);
     }
 
@@ -316,6 +324,7 @@ class GroupTest {
                 new GroupName("Amigos"),
                 exchangeDate,
                 null,
+                new TimeZone(MADRID),
                 CREATOR,
                 List.of(CREATOR, GUEST, OTHER_GUEST),
                 FIRST_CODE,
@@ -359,7 +368,7 @@ class GroupTest {
     void finishedGroupIsReadOnly() {
         Group group = exchangingOn(CHRISTMAS_EVE);
 
-        assertThatThrownBy(() -> group.edit(CREATOR, "Reyes", CHRISTMAS_EVE, null, AFTER_CHRISTMAS_EVE))
+        assertThatThrownBy(() -> group.edit(CREATOR, "Reyes", CHRISTMAS_EVE, null, MADRID, AFTER_CHRISTMAS_EVE))
                 .isInstanceOf(GroupFinishedException.class)
                 .extracting(e -> ((GroupFinishedException) e).code())
                 .isEqualTo("group-finished");
@@ -379,7 +388,7 @@ class GroupTest {
         Group group = exchangingOn(CHRISTMAS_EVE);
         Instant lastMoment = Instant.parse("2026-12-24T22:59:59Z");
 
-        assertThat(group.edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, lastMoment)
+        assertThat(group.edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, MADRID, lastMoment)
                         .name()
                         .value())
                 .isEqualTo("Nochebuena");
@@ -431,7 +440,7 @@ class GroupTest {
     void drawnGroupCanBeEditedAndDeleted() {
         Group drawn = withGuests().markDrawn();
 
-        Group edited = drawn.edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, NOW);
+        Group edited = drawn.edit(CREATOR, "Nochebuena", CHRISTMAS_EVE, null, MADRID, NOW);
 
         assertThat(edited.name().value()).isEqualTo("Nochebuena");
         assertThat(edited.isDrawn()).isTrue();
@@ -454,5 +463,69 @@ class GroupTest {
         assertThat(reopened.regenerateInviteLink(CREATOR, new InviteCode("second-code"), NOW)
                         .inviteCode())
                 .isEqualTo(new InviteCode("second-code"));
+    }
+
+    // ---------- its Time Zone ----------
+
+    @Test
+    @DisplayName("a new Group keeps the Time Zone its Admin picked")
+    void newGroupKeepsItsTimeZone() {
+        Group group = Group.create("Amigos", CHRISTMAS_EVE, null, "America/New_York", CREATOR, FIRST_CODE, NOW);
+
+        assertThat(group.timeZone().zone()).isEqualTo(ZoneId.of("America/New_York"));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "Mars/Olympus", "europe/madrid", "+05:00", "EST", "GMT+2"})
+    @DisplayName("a Time Zone that is not an IANA id is refused")
+    void invalidTimeZone(String timeZone) {
+        assertThatThrownBy(() -> Group.create("Amigos", CHRISTMAS_EVE, null, timeZone, CREATOR, FIRST_CODE, NOW))
+                .isInstanceOf(InvalidGroupDetailsException.class)
+                .extracting(e -> ((InvalidGroupDetailsException) e).code())
+                .isEqualTo("invalid-time-zone");
+    }
+
+    @Test
+    @DisplayName("UTC is a Time Zone too: the one Groups made before Time Zones have")
+    void utcIsATimeZone() {
+        assertThat(Group.create("Amigos", CHRISTMAS_EVE, null, "UTC", CREATOR, FIRST_CODE, NOW)
+                        .timeZone()
+                        .zone())
+                .isEqualTo(ZoneId.of("UTC"));
+    }
+
+    @Test
+    @DisplayName("before the Draw the Admin can change the Time Zone")
+    void timeZoneChangesBeforeTheDraw() {
+        Group edited = withGuests().edit(CREATOR, "Amigos", CHRISTMAS_EVE, null, "Asia/Tokyo", NOW);
+
+        assertThat(edited.timeZone().zone()).isEqualTo(ZoneId.of("Asia/Tokyo"));
+        assertThatThrownBy(() -> withGuests().edit(CREATOR, "Amigos", CHRISTMAS_EVE, null, "Nowhere", NOW))
+                .isInstanceOf(InvalidGroupDetailsException.class);
+    }
+
+    @Test
+    @DisplayName("after the Draw the Time Zone is frozen, so nobody can change it to probe when a Message was sent")
+    void timeZoneIsFrozenAfterTheDraw() {
+        Group drawn = withGuests().markDrawn();
+
+        assertThatThrownBy(() -> drawn.edit(CREATOR, "Amigos", CHRISTMAS_EVE, null, "Asia/Tokyo", NOW))
+                .isInstanceOf(GroupDrawnException.class);
+        assertThat(drawn.edit(CREATOR, "Reyes", CHRISTMAS_EVE, null, MADRID, NOW)
+                        .timeZone()
+                        .zone())
+                .isEqualTo(ZoneId.of(MADRID));
+    }
+
+    @Test
+    @DisplayName("the day a moment falls on in the Group's Time Zone")
+    void dayInItsTimeZone() {
+        Group group = Group.create("Amigos", CHRISTMAS_EVE, null, "America/New_York", CREATOR, FIRST_CODE, NOW);
+
+        assertThat(group.timeZone().dayOf(Instant.parse("2026-12-13T02:00:00Z")))
+                .isEqualTo(LocalDate.of(2026, 12, 12));
+        assertThat(group.timeZone().dayOf(Instant.parse("2026-12-13T05:00:00Z")))
+                .isEqualTo(LocalDate.of(2026, 12, 13));
     }
 }

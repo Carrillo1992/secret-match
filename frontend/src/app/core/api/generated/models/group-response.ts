@@ -36,4 +36,9 @@ export interface GroupResponse {
    */
   members: Array<MemberResponse>;
   name: string;
+
+  /**
+   * IANA time zone id the day of each Mailbox Message is cut in; frozen by the Draw.
+   */
+  timeZone: string;
 }

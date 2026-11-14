@@ -44,7 +44,7 @@ class GroupController {
             @AuthenticationPrincipal Jwt accessToken, @Valid @RequestBody CreateGroupRequest request) {
         GroupDetails group = myGroups.create(
                 signedIn(accessToken),
-                new CreateGroupCommand(request.name(), request.exchangeDate(), request.budget()));
+                new CreateGroupCommand(request.name(), request.exchangeDate(), request.budget(), request.timeZone()));
         return ResponseEntity.created(URI.create("/api/v1/groups/" + group.id()))
                 .body(GroupResponse.of(group));
     }
@@ -65,9 +65,10 @@ class GroupController {
 
     @PutMapping(value = "/{groupId}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
-            summary = "Edit the Group's name, budget and Exchange Date",
-            description = "Only the Admin can, also after the Draw. The details replace the current ones; a changed"
-                    + " Exchange Date must be after today. Nobody is emailed.")
+            summary = "Edit the Group's name, budget, Exchange Date and Time Zone",
+            description = "Only the Admin can, also after the Draw, except changing the Time Zone, which the Draw"
+                    + " freezes. The details replace the current ones; a changed Exchange Date must be after today."
+                    + " Nobody is emailed.")
     GroupResponse edit(
             @AuthenticationPrincipal Jwt accessToken,
             @PathVariable UUID groupId,
@@ -75,7 +76,7 @@ class GroupController {
         return GroupResponse.of(myGroups.edit(
                 new GroupId(groupId),
                 signedIn(accessToken),
-                new EditGroupCommand(request.name(), request.exchangeDate(), request.budget())));
+                new EditGroupCommand(request.name(), request.exchangeDate(), request.budget(), request.timeZone())));
     }
 
     @PostMapping(value = "/{groupId}/invite-link", produces = MediaType.APPLICATION_JSON_VALUE)

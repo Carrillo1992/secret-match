@@ -11,13 +11,17 @@ import java.util.Optional;
 /** A single gift exchange: its details, its Admin and its Members. */
 public final class Group {
 
-    /** Where a calendar day starts and ends for every Group: the app runs on one fixed time zone. */
+    /**
+     * Where an Exchange Date starts and ends, for every Group alike. Not the Group's own {@link TimeZone}, which only
+     * cuts its Mailbox Message dates.
+     */
     public static final ZoneId TIME_ZONE = ZoneId.of("Europe/Madrid");
 
     private final GroupId id;
     private final GroupName name;
     private final LocalDate exchangeDate;
     private final Budget budget;
+    private final TimeZone timeZone;
     private final MemberId admin;
     private final List<MemberId> members;
     private final InviteCode inviteCode;
@@ -33,6 +37,7 @@ public final class Group {
             GroupName name,
             LocalDate exchangeDate,
             Budget budget,
+            TimeZone timeZone,
             MemberId admin,
             List<MemberId> members,
             InviteCode inviteCode,
@@ -42,6 +47,7 @@ public final class Group {
         this.name = Objects.requireNonNull(name, "name");
         this.exchangeDate = Objects.requireNonNull(exchangeDate, "exchangeDate");
         this.budget = budget;
+        this.timeZone = Objects.requireNonNull(timeZone, "timeZone");
         this.admin = Objects.requireNonNull(admin, "admin");
         this.members = List.copyOf(members);
         this.inviteCode = Objects.requireNonNull(inviteCode, "inviteCode");
@@ -53,6 +59,7 @@ public final class Group {
      * A new Group whose creator is its Admin and its first Member.
      *
      * @param budget in euros; {@code null} for a Group without a budget
+     * @param timeZone the IANA id of its {@link TimeZone}
      * @param inviteCode the code of its first Invite Link
      * @throws InvalidGroupDetailsException if a detail breaks its rules, e.g. the Exchange Date is not after
      *     today in {@link #TIME_ZONE}
@@ -61,6 +68,7 @@ public final class Group {
             String name,
             LocalDate exchangeDate,
             BigDecimal budget,
+            String timeZone,
             MemberId creator,
             InviteCode inviteCode,
             Instant now) {
@@ -72,6 +80,7 @@ public final class Group {
                 new GroupName(name),
                 exchangeDate,
                 budget == null ? null : new Budget(budget),
+                new TimeZone(timeZone),
                 creator,
                 List.of(creator),
                 inviteCode,
@@ -112,20 +121,29 @@ public final class Group {
         }
         requireNotFinished(now);
         requireNotDrawn();
-        return new Group(id, name, exchangeDate, budget, admin, members, newCode, createdAt, drawn);
+        return new Group(id, name, exchangeDate, budget, timeZone, admin, members, newCode, createdAt, drawn);
     }
 
     /**
      * The same Group with new details, which replace all the current ones.
      *
      * @param newBudget in euros; {@code null} to leave the Group without a budget
+     * @param newTimeZone the IANA id of its {@link TimeZone}
      * @throws AdminOnlyException if {@code by} is not the Admin
      * @throws GroupFinishedException if the Group is finished
+     * @throws GroupDrawnException if the Time Zone changes once the Draw is made: it is frozen then, like who is in
+     *     the Group, so nobody can change it to probe when a Message was sent (ADR 0001)
      * @throws InvalidGroupDetailsException if a detail breaks its rules, e.g. a changed Exchange Date is not
      *     after today in {@link #TIME_ZONE}. An unchanged one is kept as it is, so on the Exchange Date itself
      *     the Admin can still rename the Group.
      */
-    public Group edit(MemberId by, String newName, LocalDate newExchangeDate, BigDecimal newBudget, Instant now) {
+    public Group edit(
+            MemberId by,
+            String newName,
+            LocalDate newExchangeDate,
+            BigDecimal newBudget,
+            String newTimeZone,
+            Instant now) {
         if (!admin.equals(by)) {
             throw new AdminOnlyException();
         }
@@ -133,11 +151,16 @@ public final class Group {
         if (!exchangeDate.equals(newExchangeDate) && !isInTheFuture(newExchangeDate, now)) {
             throw InvalidGroupDetailsException.exchangeDate();
         }
+        TimeZone changedTimeZone = new TimeZone(newTimeZone);
+        if (drawn && !changedTimeZone.equals(timeZone)) {
+            throw GroupDrawnException.timeZone();
+        }
         return new Group(
                 id,
                 new GroupName(newName),
                 newExchangeDate,
                 newBudget == null ? null : new Budget(newBudget),
+                changedTimeZone,
                 admin,
                 members,
                 inviteCode,
@@ -169,7 +192,7 @@ public final class Group {
         requireNotDrawn();
         List<MemberId> remaining =
                 members.stream().filter(other -> !other.equals(member)).toList();
-        return new Group(id, name, exchangeDate, budget, admin, remaining, inviteCode, createdAt, drawn);
+        return new Group(id, name, exchangeDate, budget, timeZone, admin, remaining, inviteCode, createdAt, drawn);
     }
 
     /**
@@ -177,7 +200,7 @@ public final class Group {
      * no Assignment is ever left without its Giver or its Receiver (ADR 0001).
      */
     public Group markDrawn() {
-        return new Group(id, name, exchangeDate, budget, admin, members, inviteCode, createdAt, true);
+        return new Group(id, name, exchangeDate, budget, timeZone, admin, members, inviteCode, createdAt, true);
     }
 
     /**
@@ -185,7 +208,7 @@ public final class Group {
      * are removed again, its Invite Link works again, and it can be drawn again.
      */
     public Group cancelDraw() {
-        return new Group(id, name, exchangeDate, budget, admin, members, inviteCode, createdAt, false);
+        return new Group(id, name, exchangeDate, budget, timeZone, admin, members, inviteCode, createdAt, false);
     }
 
     /**
@@ -215,6 +238,10 @@ public final class Group {
 
     public Optional<Budget> budget() {
         return Optional.ofNullable(budget);
+    }
+
+    public TimeZone timeZone() {
+        return timeZone;
     }
 
     public MemberId admin() {

@@ -62,6 +62,10 @@ _Avoid_: Closed, archived, expired, past
 How much each gift in a Group should cost, in euros. Optional and informational only: nothing is ever checked against it.
 _Avoid_: Price limit, spending cap, max price
 
+**Time Zone**:
+The IANA time zone a Group picks (e.g. `Europe/Madrid`), in which the day of each of its Mailbox Messages is cut. The Admin chooses it, by default their browser's; it is frozen once the Draw is made.
+_Avoid_: Timezone, locale, user time zone
+
 **Invite Link**:
 The single shareable link through which Users join a Group. Regenerating it invalidates the previous one, and it stops working once the Draw is made. Its random, unguessable part is the Invite Link's code (`InviteCode` in code); joining through it makes the User a Member (a membership).
 _Avoid_: Invitation code, join code, invitation

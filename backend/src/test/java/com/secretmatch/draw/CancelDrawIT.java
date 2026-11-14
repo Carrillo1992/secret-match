@@ -426,7 +426,7 @@ class CancelDrawIT {
 
     private String createGroup(User admin, String name) {
         RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24"));
+                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", "UTC"));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

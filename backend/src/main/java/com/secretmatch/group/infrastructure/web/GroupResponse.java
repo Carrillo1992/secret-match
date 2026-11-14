@@ -17,6 +17,11 @@ record GroupResponse(
         @JsonInclude(JsonInclude.Include.NON_NULL)
         BigDecimal budget,
 
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "IANA time zone id the day of each Mailbox Message is cut in; frozen by the Draw.")
+        String timeZone,
+
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The Admin first.")
         List<MemberResponse> members,
 
@@ -46,6 +51,7 @@ record GroupResponse(
                 group.name(),
                 group.exchangeDate(),
                 group.budget(),
+                group.timeZone(),
                 group.members().stream()
                         .map(member ->
                                 new MemberResponse(member.id(), member.displayName(), member.admin(), member.you()))

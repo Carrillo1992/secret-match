@@ -17,7 +17,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { LucideCalendar, LucideCheck, LucideWallet } from '@lucide/angular';
+import { LucideCalendar, LucideCheck, LucideGlobe, LucideWallet } from '@lucide/angular';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
@@ -33,6 +33,7 @@ import { notBlank } from '../../../../shared/forms/validators';
 import { euros } from '../../../../shared/format/euros';
 import { earliestExchangeDate, longExchangeDate } from '../../data-access/group-format';
 import { Group, GroupEdit } from '../../data-access/groups-api';
+import { TimeZoneRegion, timeZoneNote, timeZoneRegions } from '../../data-access/time-zones';
 
 /** Where the Admin's last edit stands, as the page tells it. */
 export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-future' | 'failed';
@@ -42,7 +43,8 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
  * form for the name, the Exchange Date and the budget; it closes once the page reports `saved`.
  * Chosen on #23 (option A). An alert about the last save shows only once this opening of the form
  * has been sent, so reopening it starts clean. A finished Group is read-only, so nobody gets
- * "Editar" there (#25).
+ * "Editar" there (#25). The Time Zone the Mailbox dates are cut in can change only until the Draw
+ * (#74).
  */
 @Component({
   selector: 'app-group-details-card',
@@ -55,6 +57,7 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
     TextLink,
     LucideCalendar,
     LucideCheck,
+    LucideGlobe,
     LucideWallet,
   ],
   host: { class: 'block' },
@@ -150,6 +153,32 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
             }
           </div>
 
+          <div class="flex flex-col gap-1.5">
+            <label for="edit-group-time-zone" class="font-bold">Zona horaria</label>
+            <select
+              id="edit-group-time-zone"
+              formControlName="timeZone"
+              appField
+              aria-describedby="edit-group-time-zone-hint"
+            >
+              @for (region of timeZoneRegions(); track region.name) {
+                <optgroup [label]="region.name">
+                  @for (zone of region.zones; track zone.id) {
+                    <option [value]="zone.id">{{ zone.label }}</option>
+                  }
+                </optgroup>
+              }
+            </select>
+            <p id="edit-group-time-zone-hint" class="text-sm text-ink-muted">
+              @if (group().drawn) {
+                El sorteo ya está hecho, así que la zona horaria ya no se puede cambiar.
+              } @else {
+                Los mensajes del buzón muestran el día en esta zona. Podrás cambiarla hasta el
+                sorteo.
+              }
+            </p>
+          </div>
+
           <p class="text-sm text-ink-muted">
             Los miembros verán el cambio en esta página; no les avisamos por email.
           </p>
@@ -201,6 +230,13 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
               </dd>
             </div>
           </div>
+          <div class="flex gap-3">
+            <svg lucideGlobe [size]="20" class="mt-0.5 shrink-0 text-ink-muted"></svg>
+            <div>
+              <dt class="font-bold">Zona horaria</dt>
+              <dd class="text-ink-muted">{{ timeZoneNote(group().timeZone) }}</dd>
+            </div>
+          </div>
         </dl>
       }
     </section>
@@ -218,6 +254,9 @@ export class GroupDetailsCard {
   protected readonly nameMaxLength = NAME_MAX_LENGTH;
   protected readonly date = longExchangeDate;
   protected readonly euros = euros;
+  protected readonly timeZoneNote = timeZoneNote;
+  /** Built when the form opens: the browser's list, plus the Group's own zone in case it lacks it. */
+  protected readonly timeZoneRegions = signal<TimeZoneRegion[]>([]);
 
   protected readonly editing = signal(false);
   protected readonly submitted = signal(false);
@@ -228,6 +267,7 @@ export class GroupDetailsCard {
     name: ['', [Validators.required, notBlank, Validators.maxLength(NAME_MAX_LENGTH)]],
     exchangeDate: [''],
     budget: ['', budgetInEuros],
+    timeZone: [''],
   });
 
   constructor() {
@@ -250,11 +290,18 @@ export class GroupDetailsCard {
       Validators.required,
       notBefore(tomorrow, group.exchangeDate),
     ]);
+    this.timeZoneRegions.set(timeZoneRegions([group.timeZone]));
     this.form.reset({
       name: group.name,
       exchangeDate: group.exchangeDate,
       budget: budgetText(group.budget),
+      timeZone: group.timeZone,
     });
+    if (group.drawn) {
+      this.form.controls.timeZone.disable();
+    } else {
+      this.form.controls.timeZone.enable();
+    }
     this.submitted.set(false);
     this.editing.set(true);
     this.focusOnceRendered('edit-group-name');

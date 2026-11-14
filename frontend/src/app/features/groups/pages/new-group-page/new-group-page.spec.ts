@@ -28,6 +28,13 @@ describe('NewGroupPage', () => {
     // Still the 1st of December in UTC, but already the 2nd in Madrid.
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-12-01T23:30:00Z'));
+    // The browser of whoever creates the Group is in New York.
+    const resolvedOptions = Intl.DateTimeFormat.prototype.resolvedOptions;
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(function (
+      this: Intl.DateTimeFormat,
+    ) {
+      return { ...resolvedOptions.call(this), timeZone: 'America/New_York' };
+    });
     TestBed.configureTestingModule({
       providers: [
         provideRouter([
@@ -48,6 +55,7 @@ describe('NewGroupPage', () => {
   afterEach(() => {
     http.verify();
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   const page = () => harness.routeNativeElement as HTMLElement;
@@ -132,6 +140,7 @@ describe('NewGroupPage', () => {
       name: 'Navidad',
       exchangeDate: '2026-12-24',
       budget: 25.5,
+      timeZone: 'America/New_York',
     });
     expect(submitButton()?.disabled).toBe(true);
     request.flush(created, { status: 201, statusText: 'Created' });
@@ -147,6 +156,31 @@ describe('NewGroupPage', () => {
     expect(http.expectOne(GROUPS_URL).request.body).toEqual({
       name: 'Navidad',
       exchangeDate: '2026-12-24',
+      timeZone: 'America/New_York',
+    });
+  });
+
+  it("starts the Time Zone on the browser's and says the Draw freezes it", () => {
+    const timeZone = field('Zona horaria') as unknown as HTMLSelectElement;
+
+    expect(timeZone.tagName).toBe('SELECT');
+    expect(timeZone.value).toBe('America/New_York');
+    expect(timeZone.selectedOptions[0].textContent).toContain('New York');
+    expect([...timeZone.options].map((option) => option.value)).toContain('UTC');
+    expect(errorFor('Zona horaria')).toContain('sorteo');
+  });
+
+  it('sends the Time Zone the Admin picks', async () => {
+    fill('Navidad', '2026-12-24');
+    const timeZone = field('Zona horaria') as unknown as HTMLSelectElement;
+    timeZone.value = 'Asia/Tokyo';
+    timeZone.dispatchEvent(new Event('change'));
+    await submit();
+
+    expect(http.expectOne(GROUPS_URL).request.body).toEqual({
+      name: 'Navidad',
+      exchangeDate: '2026-12-24',
+      timeZone: 'Asia/Tokyo',
     });
   });
 

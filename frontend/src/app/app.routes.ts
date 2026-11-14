@@ -1,3 +1,4 @@
+import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 
@@ -96,5 +97,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/groups/pages/join-page/join-page').then((m) => m.JoinPage),
   },
+  // PROTOTYPE (#36), dev only: throwaway Mailbox variants. Removed before the PR.
+  ...(isDevMode()
+    ? [
+        {
+          path: 'prototype/mailbox',
+          loadComponent: () =>
+            import('./features/mailbox/prototype/mailbox-prototype').then(
+              (m) => m.MailboxPrototype,
+            ),
+        },
+      ]
+    : []),
   { path: '**', redirectTo: '' },
 ];

@@ -29,7 +29,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Tickets #32, #33 and #34: a Member writes their Wishes, Preferences and Don't List, which only they and, after the
+ * Tickets #32 to #35: a Member writes their Wishes, Preferences and Don't List, which only they and, after the
  * Draw, their Giver read (ADR 0004), until the Group is finished. Every test starts on 2026-12-01.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -298,6 +298,56 @@ class WishlistIT {
                         .isEqualTo("urn:secretmatch:problem:wishlist-not-found");
             }
         }
+    }
+
+    @Test
+    @DisplayName(
+            "no link opens a Wishlist to anyone but its owner and their Giver: not the Receiver's to their Giver's,"
+                    + " not another Group's, and not after the Draw is cancelled")
+    void noLinkOpensSomeoneElsesWishlist() {
+        Family family = family();
+        addedWishId(family.luis(), family, "Bufanda");
+        User pablo = signedInUser("Pablo");
+        joinGroup(pablo, family.carmen(), family.groupId());
+        String pabloId = memberIdOf(family.carmen(), family.groupId(), "Pablo");
+        String reyes = createGroup(family.carmen(), "Reyes");
+        for (User member : List.of(family.luis(), family.marta(), pablo)) {
+            joinGroup(member, family.carmen(), reyes);
+        }
+        String luisInReyes = memberIdOf(family.carmen(), reyes, "Luis");
+        for (String group : List.of(family.groupId(), reyes)) {
+            post(family.carmen(), "/api/v1/groups/" + group + "/draw", Map.of())
+                    .expectStatus()
+                    .is2xxSuccessful();
+        }
+        List<User> others = List.of(family.carmen(), family.marta(), pablo);
+        User giver = giverOf(family, family.luisId(), others);
+        get(giver, wishlistOf(family, family.luisId())).expectStatus().isOk();
+
+        // Luis, as a Giver, opens only his own Receiver's Wishlist: never his Giver's, unless he gives to them too.
+        String luisReceiver = receiverOf(family.luis(), family.groupId());
+        for (String otherId : List.of(family.carmenId(), family.martaId(), pabloId)) {
+            get(family.luis(), wishlistOf(family.groupId(), otherId))
+                    .expectStatus()
+                    .isEqualTo(otherId.equals(luisReceiver) ? 200 : 404);
+        }
+        // Each Group has its own Draw: in Reyes only Luis's Giver there opens his Reyes Wishlist, whoever gives to
+        // him at Christmas.
+        for (User other : others) {
+            get(other, wishlistOf(reyes, luisInReyes))
+                    .expectStatus()
+                    .isEqualTo(luisInReyes.equals(receiverOf(other, reyes)) ? 200 : 404);
+        }
+
+        delete(family.carmen(), "/api/v1/groups/" + family.groupId() + "/draw")
+                .expectStatus()
+                .is2xxSuccessful();
+        get(giver, wishlistOf(family, family.luisId()))
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.type")
+                .isEqualTo("urn:secretmatch:problem:wishlist-not-found");
     }
 
     @Test
@@ -654,7 +704,18 @@ class WishlistIT {
     record Family(User carmen, User luis, User marta, String groupId, String carmenId, String luisId, String martaId) {}
 
     private static String wishlistOf(Family family, String memberId) {
-        return "/api/v1/groups/" + family.groupId() + "/members/" + memberId + "/wishlist";
+        return wishlistOf(family.groupId(), memberId);
+    }
+
+    private static String wishlistOf(String groupId, String memberId) {
+        return "/api/v1/groups/" + groupId + "/members/" + memberId + "/wishlist";
+    }
+
+    /** The Member {@code member} gives to in that Group's Draw, as the Draw tells them. */
+    private String receiverOf(User member, String groupId) {
+        return json(get(member, "/api/v1/groups/" + groupId + "/draw"))
+                .at("/myReceiver/id")
+                .asString();
     }
 
     private static String wishesOf(Family family) {
@@ -672,10 +733,7 @@ class WishlistIT {
     /** Which of {@code candidates} gives to the Member {@code receiverId}, as the Draw tells each of them. */
     private User giverOf(Family family, String receiverId, List<User> candidates) {
         return candidates.stream()
-                .filter(member -> json(get(member, "/api/v1/groups/" + family.groupId() + "/draw"))
-                        .at("/myReceiver/id")
-                        .asString()
-                        .equals(receiverId))
+                .filter(member -> receiverOf(member, family.groupId()).equals(receiverId))
                 .findFirst()
                 .orElseThrow();
     }

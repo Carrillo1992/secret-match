@@ -22,6 +22,16 @@
       }
     </p>
 
+    @if (!wishlist.owner.you) {
+      <app-dont-list-card
+        class="mt-6"
+        [entries]="wishlist.dontList"
+        [owner]="false"
+        [editable]="false"
+        [ownerName]="wishlist.owner.displayName"
+      />
+    }
+
     @if (wishlist.owner.you && wishlist.finished) {
       <app-notice class="mt-6" heading="Finalizado" headingId="wishlist-finished">
         <svg lucideCircleCheck noticeIcon [size]="20"></svg>
@@ -152,17 +162,19 @@
       </ul>
     }
 
-    <app-dont-list-card
-      class="mt-6"
-      [entries]="wishlist.dontList"
-      [owner]="wishlist.owner.you"
-      [editable]="!wishlist.finished"
-      [ownerName]="wishlist.owner.displayName"
-      [addition]="dontListAddition()"
-      [removal]="dontListRemoval()"
-      (add)="addDontListEntry($event)"
-      (remove)="removeDontListEntry($event)"
-    />
+    @if (wishlist.owner.you) {
+      <app-dont-list-card
+        class="mt-6"
+        [entries]="wishlist.dontList"
+        [owner]="wishlist.owner.you"
+        [editable]="!wishlist.finished"
+        [ownerName]="wishlist.owner.displayName"
+        [addition]="dontListAddition()"
+        [removal]="dontListRemoval()"
+        (add)="addDontListEntry($event)"
+        (remove)="removeDontListEntry($event)"
+      />
+    }
     <app-preferences-card
       class="mt-6"
       [preferences]="wishlist.preferences"

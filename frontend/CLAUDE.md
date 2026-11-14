@@ -4,7 +4,7 @@ Angular SPA. Structure and conventions: `docs/architecture.md` §3 and `CODING_S
 
 ## New screens go through `/design`
 
-Before creating a page or any user-visible component, run the `design` skill: it offers the human layout options and records the choice on the ticket. Build only the chosen option. Purely structural code that renders nothing visible of its own (directives, services, data-access, a wrapper that only passes content through) skips it; a layout or wrapper that draws anything goes through `/design`.
+Before creating a page or any user-visible component, run the `design` skill: it writes a briefing, has a subagent build the layout options as a throwaway visual prototype (`/prototype/<feature>?variant=`), and records the choice on the ticket. Build only the chosen option. Purely structural code that renders nothing visible of its own (directives, services, data-access, a wrapper that only passes content through) skips it; a layout or wrapper that draws anything goes through `/design`.
 
 A `PreToolUse` hook (`.claude/hooks/require-design.sh`) enforces this: creating a new file under `features/*/pages/`, `features/*/components/` or `shared/ui/` (specs excepted) is denied until the `design` skill has run in the session. Editing existing files is not affected. The hook needs `jq`.
 

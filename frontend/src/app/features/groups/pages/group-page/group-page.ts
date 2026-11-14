@@ -3,9 +3,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   resource,
   signal,
+  untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -41,12 +43,16 @@ import {
   ExclusionsListing,
   NewExclusion,
 } from '../../components/exclusions-card/exclusions-card';
-import { DrawCard, DrawState, RunStatus } from '../../components/draw-card/draw-card';
+import { CancelStatus, DrawCard, DrawState, RunStatus } from '../../components/draw-card/draw-card';
 import { DrawApi } from '../../data-access/draw-api';
 import { Exclusion, ExclusionsApi } from '../../data-access/exclusions-api';
 import { longExchangeDate } from '../../data-access/group-format';
 import { GroupEdit, GroupsApi } from '../../data-access/groups-api';
 import { Alert } from '../../../../shared/ui/alert/alert';
+import { MailboxCard, MessageToSend } from '../../../mailbox/components/mailbox-card/mailbox-card';
+import { SendStatus } from '../../../mailbox/components/mailbox-composer/mailbox-composer';
+import { ThreadState } from '../../../mailbox/components/mailbox-thread/mailbox-thread';
+import { MailboxApi } from '../../../mailbox/data-access/mailbox-api';
 
 /** A Group as its Members see it: its details and who is in it. */
 @Component({
@@ -60,6 +66,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
     StatusHeader,
     TextLink,
     DrawCard,
+    MailboxCard,
     InviteLinkCard,
     MembersCard,
     ExclusionsCard,
@@ -76,6 +83,7 @@ export class GroupPage {
   private readonly groupsApi = inject(GroupsApi);
   private readonly exclusionsApi = inject(ExclusionsApi);
   private readonly drawApi = inject(DrawApi);
+  private readonly mailboxApi = inject(MailboxApi);
   private readonly router = inject(Router);
   private readonly origin = inject(DOCUMENT).location.origin;
   private readonly groupId = toSignal(
@@ -149,8 +157,108 @@ export class GroupPage {
     }
   }
 
+  protected readonly cancelStatus = signal<CancelStatus>('idle');
+
+  /**
+   * Once there is no Draw any more (cancelled now, or already from another tab), the whole page goes
+   * back to the Group before its Draw: the Group is asked for again, quietly, so it is no longer
+   * drawn and shows whoever is in it now.
+   */
+  protected async cancelDraw(): Promise<void> {
+    this.cancelStatus.set('cancelling');
+    const outcome = await this.drawApi.cancel(this.groupId());
+    if (outcome.status === 'failed') {
+      this.cancelStatus.set('failed');
+      return;
+    }
+    const refreshed = await this.groupsApi.group(this.groupId());
+    const group = this.group();
+    if (refreshed.status === 'found') {
+      this.outcome.set(refreshed);
+    } else if (group) {
+      this.outcome.set({ status: 'found', group: { ...group, drawn: false } });
+    }
+    this.drawOutcome.set({ status: 'not-drawn' });
+    this.runStatus.set('idle');
+    this.cancelStatus.set('idle');
+  }
+
   protected reloadDraw(): void {
     this.drawOutcome.reload();
+  }
+
+  /** Asked for once the Draw is made, also by the Admin from this page: before it, there are none. */
+  private readonly mailboxesOutcome = resource({
+    params: () => (this.drawState().status === 'drawn' ? this.groupId() : undefined),
+    loader: ({ params }) => this.mailboxApi.mailboxes(params),
+  });
+  /** Nothing is shown while they load: the card appears only once there is something in it. */
+  protected readonly mailboxes = computed(() =>
+    this.mailboxesOutcome.hasValue() && !this.mailboxesOutcome.isLoading()
+      ? this.mailboxesOutcome.value()
+      : undefined,
+  );
+  protected readonly selectedMailbox = signal<string | null>(null);
+  /** The open Mailbox: the one chosen, or the first (the one with the Receiver). */
+  private readonly openMailbox = computed(() => {
+    const mailboxes = this.mailboxes();
+    if (mailboxes?.status !== 'loaded') {
+      return undefined;
+    }
+    const selected = this.selectedMailbox();
+    return (
+      mailboxes.mailboxes.find((mailbox) => mailbox.id === selected) ?? mailboxes.mailboxes[0]
+    )?.id;
+  });
+  /** Each Mailbox's conversation, loaded the first time its tab is opened and kept after that. */
+  protected readonly threads = signal<Readonly<Record<string, ThreadState>>>({});
+  protected readonly sends = signal<Readonly<Record<string, SendStatus>>>({});
+
+  constructor() {
+    effect(() => {
+      const mailboxId = this.openMailbox();
+      if (mailboxId && !untracked(this.threads)[mailboxId]) {
+        void this.loadMessages(mailboxId);
+      }
+    });
+  }
+
+  protected async loadMessages(mailboxId: string): Promise<void> {
+    this.setThread(mailboxId, { status: 'loading' });
+    const outcome = await this.mailboxApi.messages(mailboxId);
+    this.setThread(
+      mailboxId,
+      outcome.status === 'loaded' ? { ...outcome, fresh: 0 } : { status: outcome.status },
+    );
+  }
+
+  protected reloadMailboxes(): void {
+    this.mailboxesOutcome.reload();
+  }
+
+  /** Once the API agrees, the Message joins the end of its conversation and pops in. */
+  protected async sendMessage({ mailboxId, text }: MessageToSend): Promise<void> {
+    this.setSend(mailboxId, 'sending');
+    const outcome = await this.mailboxApi.send(mailboxId, text);
+    if (outcome.status === 'sent') {
+      const thread = this.threads()[mailboxId];
+      if (thread?.status === 'loaded') {
+        this.setThread(mailboxId, {
+          status: 'loaded',
+          messages: [...thread.messages, outcome.message],
+          fresh: thread.fresh + 1,
+        });
+      }
+    }
+    this.setSend(mailboxId, outcome.status);
+  }
+
+  private setThread(mailboxId: string, thread: ThreadState): void {
+    this.threads.update((threads) => ({ ...threads, [mailboxId]: thread }));
+  }
+
+  private setSend(mailboxId: string, status: SendStatus): void {
+    this.sends.update((sends) => ({ ...sends, [mailboxId]: status }));
   }
 
   /** Only the Admin's page asks for the Exclusions: nobody else may know anything about them. */

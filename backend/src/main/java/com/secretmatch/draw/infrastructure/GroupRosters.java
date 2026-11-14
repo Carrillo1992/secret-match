@@ -44,6 +44,11 @@ class GroupRosters implements Rosters {
         groups.markDrawn(groupId);
     }
 
+    @Override
+    public void markDrawCancelled(UUID groupId) {
+        groups.markDrawCancelled(groupId);
+    }
+
     private static Roster rosterOf(GroupDetails group) {
         MemberId admin = group.members().stream()
                 .filter(GroupDetails.Member::admin)

@@ -14,18 +14,18 @@ References: Airbnb for warmth and clarity in everyday screens; Spotify Wrapped f
 
 Every colour is a semantic role. The default Tailwind palette is switched off (`--color-*: initial`), so `bg-slate-50` or `text-red-700` simply do not exist: pick the role.
 
-| Role | Use |
-|---|---|
-| `canvas` | Page background; also the inset well for a quiet section inside a sheet |
-| `surface` | Sheets and cards that sit on the canvas |
-| `field` | Input backgrounds |
-| `subtle` | Quiet fills: icon badges, neutral chips |
-| `ink` / `ink-muted` | Body text / secondary text, hints, captions |
-| `line` | Input borders and dividers (meets 3:1 against `surface` and `canvas`) |
-| `primary` / `primary-hover` / `on-primary` | The one main action per screen, links, focus rings |
-| `success`, `success-soft` / `danger`, `danger-soft` | Feedback text / its tinted background |
-| `mustard`, `sage`, `sage-soft`, `clay` | **Decoration only**: illustration, confetti, celebratory badges |
-| `scrim` | Dims the page behind a modal dialog (`backdrop:bg-scrim`); never a fill for content |
+| Role                                                | Use                                                                                 |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `canvas`                                            | Page background; also the inset well for a quiet section inside a sheet             |
+| `surface`                                           | Sheets and cards that sit on the canvas                                             |
+| `field`                                             | Input backgrounds                                                                   |
+| `subtle`                                            | Quiet fills: icon badges, neutral chips                                             |
+| `ink` / `ink-muted`                                 | Body text / secondary text, hints, captions                                         |
+| `line`                                              | Input borders and dividers (meets 3:1 against `surface` and `canvas`)               |
+| `primary` / `primary-hover` / `on-primary`          | The one main action per screen, links, focus rings                                  |
+| `success`, `success-soft` / `danger`, `danger-soft` | Feedback text / its tinted background                                               |
+| `mustard`, `sage`, `sage-soft`, `clay`              | **Decoration only**: illustration, confetti, celebratory badges                     |
+| `scrim`                                             | Dims the page behind a modal dialog (`backdrop:bg-scrim`); never a fill for content |
 
 Dark mode follows `prefers-color-scheme` automatically: the same role names switch values in `styles.css`, so markup never carries `dark:` colour variants.
 
@@ -36,14 +36,14 @@ Contrast pitfall: `primary` text on `subtle` is 4.06:1 in light mode, below AA. 
 - **Display**: Outfit (`font-display`), bold, `tracking-tight`. Headings, button labels, the wordmark.
 - **Body**: Nunito Sans (`font-sans`, the default). Everything else. Base size 16 px; hints and captions `text-sm`, never smaller.
 
-| Level | Classes |
-|---|---|
-| Hero (landing, reveal name) | `font-display text-4xl font-bold tracking-tight` |
-| Page title (`h1`) | `font-display text-3xl font-bold tracking-tight` |
-| Section title (`h2`) | `font-display text-lg font-semibold` |
-| Lead / intro paragraph | `text-base text-ink-muted` (`text-lg` on the landing) |
-| Label | `font-bold` |
-| Hint, caption, inline feedback | `text-sm` |
+| Level                          | Classes                                               |
+| ------------------------------ | ----------------------------------------------------- |
+| Hero (landing, reveal name)    | `font-display text-4xl font-bold tracking-tight`      |
+| Page title (`h1`)              | `font-display text-3xl font-bold tracking-tight`      |
+| Section title (`h2`)           | `font-display text-lg font-semibold`                  |
+| Lead / intro paragraph         | `text-base text-ink-muted` (`text-lg` on the landing) |
+| Label                          | `font-bold`                                           |
+| Hint, caption, inline feedback | `text-sm`                                             |
 
 ## Spacing
 
@@ -67,10 +67,10 @@ The controls below are attribute directives in `shared/ui` that put the recipe o
 
 - **Primary button / link-as-button**: `<button appButton>` or `<a appButton>` (`Button`, `shared/ui/button`): tall, filled terracotta, Outfit label, room for a leading icon, dimmed when disabled. Add `w-full` in a sheet.
 - **Secondary button**: `appButton="secondary"`: shorter, outlined in `primary`, fills on hover, dimmed when disabled.
-- **Text input**: `<input appField>`, `<select appField>` for a choice among a few known options, or `<textarea appField rows="…">` for free text longer than a line, which takes its height from `rows` (`Field`, `shared/ui/field`): `rounded-field` on `bg-field` with a `line` border that turns `danger` when `aria-invalid` is set. The screen keeps the label (`font-bold`) above, the hint (`text-sm text-ink-muted`) or error (`text-sm font-semibold text-danger`) below, and the `aria-invalid` / `aria-describedby` wiring.
+- **Text input**: `<input appField>`, or `<select appField>` for a choice among a few known options, or `<textarea appField>` for free text longer than a line (`Field`, `shared/ui/field`; a textarea drops the fixed height, takes it from its `rows` and does not resize): `rounded-field` on `bg-field` with a `line` border that turns `danger` when `aria-invalid` is set. The screen keeps the label (`font-bold`) above, the hint (`text-sm text-ink-muted`) or error (`text-sm font-semibold text-danger`) below, and the `aria-invalid` / `aria-describedby` wiring.
 - **Inline link**: `<a appLink>` (`TextLink`, `shared/ui/text-link`): semibold, `primary`, underlined. A link standing on its own line (not inside a sentence) is `<a appLink standalone>`, which adds a 44 px touch target. The same look goes on a `<button appLink>` for a quiet action that sits next to a real button and must not compete with it (e.g. "Generar uno nuevo" under "Copiar enlace", "Cancelar" next to a confirmation). Chosen in #21. On a `danger-soft` surface (the warning card) it takes `tone="danger"`, since `primary` falls below AA there.
 - **Chip**: `<span appChip>` or `<li appChip>` (`Chip`, `shared/ui/chip`): a short fact as a pill (a role, a count, an amount): `rounded-full bg-subtle`, `text-sm font-semibold` in `ink`. A label, not a control: it is never clickable. Chosen in #20.
-- **Inline confirmation**: `<app-confirm-panel>` (`ConfirmPanel`, `shared/ui/confirm-panel`): asks before an action that cannot be taken back, in a `bg-canvas` well right where the action was: the question in bold, the consequence as content (`text-sm text-ink-muted`), then a secondary "Sí, …" button and a "Cancelar" link. The host shows it with `@if` in place of the button that opened it and hides it on `confirmed`/`cancelled`. It moves keyboard focus into itself and, once closed, to the element whose id is `returnFocusTo` (or `focusAfterConfirm`), so the opening button needs an `id`. Used for regenerating the Invite Link, leaving a Group and removing a Member. Chosen in #21, made shared in #22.
+- **Inline confirmation**: `<app-confirm-panel>` (`ConfirmPanel`, `shared/ui/confirm-panel`): asks before an action that cannot be taken back, in a `bg-canvas` well right where the action was: the question in bold, the consequence as content (`text-sm text-ink-muted`), then a secondary "Sí, …" button and a "Cancelar" link. The host shows it with `@if` in place of the button that opened it and hides it on `confirmed`/`cancelled`. It moves keyboard focus into itself and, once closed, to the element whose id is `returnFocusTo` (or `focusAfterConfirm`), so the opening button needs an `id`. Used for regenerating the Invite Link, leaving a Group, removing a Member, deleting a Group and cancelling the Draw ("Anular el sorteo": "Anular", not "Cancelar", so the confirm button never reads like the "Cancelar" link next to it). Chosen in #21, made shared in #22.
 - **Confirmation dialog**: `<app-confirm-dialog>` (`ConfirmDialog`, `shared/ui/confirm-dialog`): only for the gravest, account-wide action (deleting the account); everything else confirms inline. A native modal `<dialog>` centred over the page dimmed with `scrim`: `bg-surface rounded-card shadow-card p-6`, the question as a `font-display text-xl` heading that names the dialog, the consequence and any danger Alert as content (the dialog stays open on an error), then a primary "Sí, …" button and a "Cancelar" link, stacked on phones and in a row from `sm`. Focus starts on "Cancelar"; Escape or "Cancelar" closes it, and focus returns to the opening button. While the action runs, the button reads e.g. "Borrando…" and nothing closes it. The host owns `open` and closes it on `cancelled`. Chosen in #19.
 - **Inline form**: a short form that adds one item to a list inside a card, opened in place by a quiet `<button appLink standalone>` with a leading `+` icon ("+ Añadir exclusión"). It has the same shape as the inline confirmation: a `rounded-field bg-canvas p-4` well holding the fields, then a secondary submit button and a "Cancelar" link. Focus moves to its first field when it opens, and back to the opening link when it closes, after it is cancelled or the item is added. The result is announced in the card's status line. Used for Exclusions. Chosen in #27; inline in `exclusions-card` until a second screen needs it.
 - **Alert**: `<p appAlert>` or `<div appAlert>` (`Alert`, `shared/ui/alert`): `rounded-field`, `text-sm font-semibold`, in one of two tones. (The landing's API status pill is a different thing and stays as it is.)
@@ -79,6 +79,12 @@ The controls below are attribute directives in `shared/ui` that put the recipe o
 
 - **Divider with text**: a `line` rule on each side of a short `text-sm text-ink-muted` label (`flex items-center gap-3`, rules `h-px flex-1 bg-line`), marked `aria-hidden` because it only separates two ways of doing the same thing. Used for "o con tu correo" between "Continuar con Google" and the email form. Chosen in #16.
 - **Continuar con Google**: `<app-google-sign-in>` (`features/auth/components`) at the top of the sign-in and sign-up sheets: Google's own button (drawn by Google Identity Services, outline pill, as Google's brand rules require), a danger Alert under it when the sign-in fails, then the divider with text. It renders nothing when Google sign-in is not set up. Chosen in #16.
+
+- **Tabs**: a `role="tablist"` row (with an `aria-label`) of equal-width `role="tab"` buttons in Outfit semibold over a `line` rule; the selected one is underlined in `primary` (`border-b-3`) and reads `primary`, the others `ink-muted`. Each tab has `aria-controls` to its `role="tabpanel"`, which has `aria-labelledby` back; inactive panels stay in the page but `hidden`, so what is typed in one survives a switch. Only the selected tab is in the tab order; the arrow keys move between tabs (wrapping round), Home and End go to the ends. For two or three views of the same card, never for navigation. Chosen in #36; inline in `mailbox-card` until a second screen needs it.
+- **Message bubble**: one Message of a conversation (`features/mailbox/components/mailbox-thread`): `rounded-card px-4 py-2.5`, at most five sixths of the width, keeping the writer's line breaks. Mine sit on the right in `primary` / `on-primary` with the bottom-right corner tightened (`rounded-br-md`); theirs on the left in `subtle` / `ink` with the bottom-left one tightened. Each starts with a screen-reader-only author ("Tú:", "Con Lucía:", or "Tu Giver:", never a Giver's name). A Message just sent enters with `motion-safe:animate-pop`. The conversation scrolls inside its card (`max-h-96`) and opens scrolled to the newest. Chosen in #36.
+- **Date separator**: the divider-with-text look between the Messages of different days, labelled with the day only ("12 de diciembre", es-ES, UTC): Messages carry no time. It stays readable to screen readers, since it dates the Messages under it. Chosen in #36.
+- **Composer**: writing a Message under its conversation (`features/mailbox/components/mailbox-composer`): a `<textarea appField>` of three rows with a screen-reader-only label, then a row with the hint on the left and a secondary "Enviar" button with a send icon on the right. The hint counts characters ("0/1000", as the API counts them: an emoji is one) and turns into the error text ("Escribe algo antes de enviar.", "Te sobran 2 caracteres (máximo 1000).") with `aria-invalid`; no `maxlength`, which counts differently. While sending the button reads "Enviando…" and is disabled. A failed send shows a danger Alert above the textarea and keeps the text; a sent Message clears it and is announced politely. Chosen in #36.
+- **Mailbox empty state**: a conversation with no Messages yet: a small flat envelope (`primary`, with a `mustard` sun and a `sage` hill, the envelope bobbing with `motion-safe:animate-bob`), "Aún no hay mensajes" in Outfit, and one `ink-muted` line inviting to write that restates the anonymity ("no sabrá que eres tú" to the Giver, "lo leerá sin que sepas quién es" to the Receiver). The one illustration inside the app shell, because a first anonymous message is an emotional moment. Chosen in #36.
 
 ## Layout patterns
 
@@ -99,13 +105,13 @@ The controls below are attribute directives in `shared/ui` that put the recipe o
 Two levels:
 
 - **Everyday**: micro-interactions of 150–250 ms (`transition-colors duration-200`) on hover, focus and state changes.
-- **Key moments** (draw done, reveal, new mailbox message): expressive animation defined as `--animate-*` tokens in `@theme` (today `animate-bob` on the gift; each key-moment screen adds its own when it is built), applied with `motion-safe:` so `prefers-reduced-motion` gets the still version. Every gesture-driven animation also has a plain button alternative.
+- **Key moments** (draw done, reveal, new mailbox message): expressive animation defined as `--animate-*` tokens in `@theme` (today `animate-bob` on the gift and `animate-pop`, 260 ms, on a Message just sent in the Mailbox, added in #36; each key-moment screen adds its own when it is built), applied with `motion-safe:` so `prefers-reduced-motion` gets the still version. Every gesture-driven animation also has a plain button alternative.
 
 No sound, anywhere.
 
 ## Voice and tone (written copy)
 
-Spanish, *tuteo*, warm. Winks are welcome in key moments ("¡Ya tienes a tu persona secreta! 🤫") and absent from forms and errors, where copy is plain and says how to fix the problem. Never reveal or hint at who someone's giver is (see the anonymity invariant in `CLAUDE.md`).
+Spanish, _tuteo_, warm. Winks are welcome in key moments ("¡Ya tienes a tu persona secreta! 🤫") and absent from forms and errors, where copy is plain and says how to fix the problem. Never reveal or hint at who someone's giver is (see the anonymity invariant in `CLAUDE.md`).
 
 ## Accessibility
 

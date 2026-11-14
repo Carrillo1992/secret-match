@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
-import { draw, runDraw } from '../../../core/api/generated/functions';
+import { cancelDraw, draw, runDraw } from '../../../core/api/generated/functions';
 import { ReceiverResponse } from '../../../core/api/generated/models';
 import { problemCode } from '../../../core/api/problem';
 
@@ -23,6 +23,15 @@ export type RunDrawOutcome =
   | { readonly status: 'drawn'; readonly receiver: Receiver }
   | { readonly status: 'no-valid-draw' }
   | { readonly status: 'already-drawn' }
+  | { readonly status: 'failed' };
+
+/**
+ * `not-drawn`: there is no Draw any more, e.g. it was cancelled from another tab. `failed` covers
+ * the other refusals: the page offers cancelling only to the Admin of a drawn, unfinished Group.
+ */
+export type CancelDrawOutcome =
+  | { readonly status: 'cancelled' }
+  | { readonly status: 'not-drawn' }
   | { readonly status: 'failed' };
 
 /** A Group's Draw as the signed-in Member sees it, with the API's errors turned into outcomes. */
@@ -55,6 +64,18 @@ export class DrawApi {
         default:
           return { status: 'failed' };
       }
+    }
+  }
+
+  /** The Admin cancels the Group's Draw: every Assignment is gone and every Member is emailed. */
+  async cancel(groupId: string): Promise<CancelDrawOutcome> {
+    try {
+      await this.api.invoke(cancelDraw, { groupId });
+      return { status: 'cancelled' };
+    } catch (error) {
+      return problemCode(error) === 'draw-not-found'
+        ? { status: 'not-drawn' }
+        : { status: 'failed' };
     }
   }
 }

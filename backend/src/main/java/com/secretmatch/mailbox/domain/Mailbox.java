@@ -32,4 +32,15 @@ public record Mailbox(MailboxId id, GroupId groupId, MemberId giver, MemberId re
         }
         return Optional.empty();
     }
+
+    /**
+     * Who is on the other side from {@code member}; empty if that is a Giver who deleted their account, or
+     * {@code member} is not in this Mailbox.
+     */
+    public Optional<MemberId> otherSideOf(MemberId member) {
+        return sideOf(member).flatMap(side -> switch (side) {
+            case GIVER -> Optional.of(receiver);
+            case RECEIVER -> Optional.ofNullable(giver);
+        });
+    }
 }

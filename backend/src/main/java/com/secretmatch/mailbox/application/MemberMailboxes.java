@@ -9,7 +9,6 @@ import com.secretmatch.mailbox.domain.MailboxId;
 import com.secretmatch.mailbox.domain.MailboxNotFoundException;
 import com.secretmatch.mailbox.domain.MemberId;
 import com.secretmatch.mailbox.domain.MessageText;
-import com.secretmatch.mailbox.domain.Side;
 import com.secretmatch.mailbox.domain.UserId;
 import com.secretmatch.notification.application.EmailRequested;
 import java.time.Clock;
@@ -114,7 +113,7 @@ public class MemberMailboxes {
         Mailbox mailbox = openTo(mailboxId, author);
         MemberId me = new MemberId(author);
         StoredMessage sent = mailboxes.addMessage(mailbox.id(), me, new MessageText(text), clock.instant());
-        otherSideOf(mailbox, me).ifPresent(recipient -> emailNewMessage(mailbox, me, recipient));
+        mailbox.otherSideOf(me).ifPresent(recipient -> emailNewMessage(mailbox, me, recipient));
         return seenBy(me, sent);
     }
 
@@ -171,12 +170,6 @@ public class MemberMailboxes {
                 .isPresent();
     }
 
-    /** The Member on the other side of the Mailbox from {@code me}; empty if that is a Giver who is gone. */
-    private static Optional<MemberId> otherSideOf(Mailbox mailbox, MemberId me) {
-        return mailbox.sideOf(me)
-                .flatMap(side -> Optional.ofNullable(side == Side.GIVER ? mailbox.receiver() : mailbox.giver()));
-    }
-
     /**
      * Catalogue email 5: "you have a new Message", to the other side of the Mailbox. One template whichever side
      * wrote it, with neither the Message nor anything about its author, so it never tells a Receiver who their
@@ -184,7 +177,9 @@ public class MemberMailboxes {
      */
     private void emailNewMessage(Mailbox mailbox, MemberId author, MemberId recipient) {
         UUID groupId = mailbox.groupId().value();
-        String groupName = groupMembers.nameOf(groupId, author.value()).orElseThrow(GroupNotFoundException::new);
+        String groupName = groupMembers
+                .nameOf(groupId, author.value())
+                .orElseThrow(() -> new IllegalStateException("a Mailbox author outside its Group"));
         String to = memberEmails
                 .emailOf(recipient)
                 .orElseThrow(() -> new IllegalStateException("a Mailbox side has no User"));

@@ -32,7 +32,7 @@ export function longExchangeDate(isoDate: string): string {
 
 /** `1` → "1 miembro", `3` → "3 miembros". */
 export function memberCount(count: number): string {
-  return count === 1 ? '1 miembro' : `${count} miembros`;
+  return count === 1 ? $localize`1 miembro` : $localize`${count}:count: miembros`;
 }
 
 /** Today's calendar day in Madrid, the app's one time zone, as `YYYY-MM-DD` (en-CA writes it so). */

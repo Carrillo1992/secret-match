@@ -1,17 +1,17 @@
 <app-shell>
   <a routerLink="/home" appLink standalone class="gap-1">
     <svg lucideChevronLeft [size]="18"></svg>
-    Volver a mis grupos
+    <ng-container i18n>Volver a mis grupos</ng-container>
   </a>
 
-  <h1 class="mt-4 font-display text-3xl font-bold tracking-tight">Nuevo grupo</h1>
-  <p class="mt-1.5 text-ink-muted">
+  <h1 class="mt-4 font-display text-3xl font-bold tracking-tight" i18n>Nuevo grupo</h1>
+  <p class="mt-1.5 text-ink-muted" i18n>
     Un grupo es un intercambio de regalos: las personas, la fecha y el presupuesto.
   </p>
 
   <form class="mt-6 flex flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <div class="flex flex-col gap-1.5">
-      <label for="new-group-name" class="font-bold">Nombre</label>
+      <label for="new-group-name" class="font-bold" i18n>Nombre</label>
       <input
         id="new-group-name"
         type="text"
@@ -25,16 +25,18 @@
       @if (showsError(form.controls.name)) {
         <p id="new-group-name-error" class="text-sm font-semibold text-danger">
           @if (form.controls.name.hasError('maxlength')) {
-            El nombre puede tener como mucho {{ nameMaxLength }} caracteres.
+            <ng-container i18n
+              >El nombre puede tener como mucho {{ nameMaxLength }} caracteres.</ng-container
+            >
           } @else {
-            Escribe un nombre para el grupo.
+            <ng-container i18n>Escribe un nombre para el grupo.</ng-container>
           }
         </p>
       }
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <label for="new-group-date" class="font-bold">Fecha del intercambio</label>
+      <label for="new-group-date" class="font-bold" i18n>Fecha del intercambio</label>
       <input
         id="new-group-date"
         type="date"
@@ -49,20 +51,20 @@
       @if (showsError(form.controls.exchangeDate)) {
         <p id="new-group-date-error" class="text-sm font-semibold text-danger">
           @if (form.controls.exchangeDate.hasError('notInFuture')) {
-            Elige una fecha a partir de mañana.
+            <ng-container i18n>Elige una fecha a partir de mañana.</ng-container>
           } @else {
-            Elige la fecha del intercambio.
+            <ng-container i18n>Elige la fecha del intercambio.</ng-container>
           }
         </p>
       } @else {
-        <p id="new-group-date-hint" class="text-sm text-ink-muted">
+        <p id="new-group-date-hint" class="text-sm text-ink-muted" i18n>
           El día que os dais los regalos.
         </p>
       }
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <label for="new-group-budget" class="font-bold">
+      <label for="new-group-budget" class="font-bold" i18n>
         Presupuesto <span class="font-normal text-ink-muted">(opcional)</span>
       </label>
       <div class="relative">
@@ -86,18 +88,18 @@
         >
       </div>
       @if (showsError(form.controls.budget)) {
-        <p id="new-group-budget-error" class="text-sm font-semibold text-danger">
+        <p id="new-group-budget-error" class="text-sm font-semibold text-danger" i18n>
           Escribe una cantidad en euros, por ejemplo 25 o 25,50.
         </p>
       } @else {
-        <p id="new-group-budget-hint" class="text-sm text-ink-muted">
+        <p id="new-group-budget-hint" class="text-sm text-ink-muted" i18n>
           Orientativo, en euros por regalo.
         </p>
       }
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <label for="new-group-time-zone" class="font-bold">Zona horaria</label>
+      <label for="new-group-time-zone" class="font-bold" i18n>Zona horaria</label>
       <select
         id="new-group-time-zone"
         formControlName="timeZone"
@@ -112,7 +114,7 @@
           </optgroup>
         }
       </select>
-      <p id="new-group-time-zone-hint" class="text-sm text-ink-muted">
+      <p id="new-group-time-zone-hint" class="text-sm text-ink-muted" i18n>
         Los mensajes del buzón muestran el día en esta zona. Podrás cambiarla hasta el sorteo.
       </p>
     </div>
@@ -120,16 +122,24 @@
     @if (submitError(); as error) {
       <p appAlert>
         @if (error === 'exchange-date-not-in-future') {
-          La fecha del intercambio tiene que ser a partir de mañana.
+          <ng-container i18n
+            >La fecha del intercambio tiene que ser a partir de mañana.</ng-container
+          >
         } @else {
-          No hemos podido crear el grupo. Inténtalo de nuevo en un momento.
+          <ng-container i18n
+            >No hemos podido crear el grupo. Inténtalo de nuevo en un momento.</ng-container
+          >
         }
       </p>
     }
 
     <button type="submit" appButton class="mt-2 w-full" [disabled]="sending()">
       <svg lucidePlus [size]="20"></svg>
-      {{ sending() ? 'Creando…' : 'Crear grupo' }}
+      @if (sending()) {
+        <ng-container i18n>Creando…</ng-container>
+      } @else {
+        <ng-container i18n>Crear grupo</ng-container>
+      }
     </button>
   </form>
 </app-shell>

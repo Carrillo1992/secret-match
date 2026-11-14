@@ -1,3 +1,5 @@
+import { intlLocale } from '../../../core/language';
+
 /**
  * A Group's Time Zone (an IANA id such as `Europe/Madrid`) as the forms offer it and the Group page
  * names it. The day each Mailbox Message shows is cut in it, server-side.
@@ -6,17 +8,20 @@
 const UTC = 'UTC';
 
 const REGIONS: Readonly<Record<string, string>> = {
-  Africa: 'África',
-  America: 'América',
-  Antarctica: 'Antártida',
-  Arctic: 'Ártico',
-  Asia: 'Asia',
-  Atlantic: 'Atlántico',
-  Australia: 'Australia',
-  Europe: 'Europa',
-  Indian: 'Índico',
-  Pacific: 'Pacífico',
+  Africa: $localize`África`,
+  America: $localize`América`,
+  Antarctica: $localize`Antártida`,
+  Arctic: $localize`Ártico`,
+  Asia: $localize`Asia`,
+  Atlantic: $localize`Atlántico`,
+  Australia: $localize`Australia`,
+  Europe: $localize`Europa`,
+  Indian: $localize`Índico`,
+  Pacific: $localize`Pacífico`,
 };
+
+/** The region of the ids without a known one, UTC among them; it goes last. */
+const OTHERS = $localize`Otras`;
 
 export interface TimeZoneOption {
   readonly id: string;
@@ -43,7 +48,9 @@ export function timeZoneCity(id: string): string {
 
 /** "Fechas en hora de New York", or "Fechas en hora UTC" for UTC. */
 export function timeZoneNote(id: string): string {
-  return id === UTC ? 'Fechas en hora UTC' : `Fechas en hora de ${timeZoneCity(id)}`;
+  return id === UTC
+    ? $localize`Fechas en hora UTC`
+    : $localize`Fechas en hora de ${timeZoneCity(id)}:city:`;
 }
 
 /**
@@ -55,16 +62,16 @@ export function timeZoneRegions(alsoOffer: readonly string[] = []): TimeZoneRegi
   const regions = new Map<string, TimeZoneOption[]>();
   for (const id of ids) {
     const [region, ...rest] = id.split('/');
-    const name = rest.length > 0 && REGIONS[region] ? REGIONS[region] : 'Otras';
+    const name = rest.length > 0 && REGIONS[region] ? REGIONS[region] : OTHERS;
     const zones = regions.get(name) ?? [];
     zones.push({ id, label: label(id, rest) });
     regions.set(name, zones);
   }
   return [...regions.entries()]
-    .sort(([a], [b]) => (a === 'Otras' ? 1 : b === 'Otras' ? -1 : a.localeCompare(b, 'es')))
+    .sort(([a], [b]) => (a === OTHERS ? 1 : b === OTHERS ? -1 : a.localeCompare(b, intlLocale())))
     .map(([name, zones]) => ({
       name,
-      zones: zones.sort((a, b) => a.label.localeCompare(b.label, 'es')),
+      zones: zones.sort((a, b) => a.label.localeCompare(b.label, intlLocale())),
     }));
 }
 

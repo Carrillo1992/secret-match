@@ -40,7 +40,11 @@ export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'faile
     @if (canChange() || preferences()) {
       <section aria-labelledby="preferences-title" class="rounded-card bg-surface p-5 shadow-card">
         <h2 id="preferences-title" class="font-display text-lg font-semibold">
-          {{ owner() ? 'Tus gustos' : 'Sus gustos' }}
+          @if (owner()) {
+            <ng-container i18n>Tus gustos</ng-container>
+          } @else {
+            <ng-container i18n>Sus gustos</ng-container>
+          }
         </h2>
 
         @if (canChange()) {
@@ -54,12 +58,13 @@ export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'faile
             (ngSubmit)="submit()"
             novalidate
           >
-            <label for="preferences-text" class="font-bold">Tus gustos</label>
+            <label for="preferences-text" class="font-bold" i18n>Tus gustos</label>
             <textarea
               id="preferences-text"
               rows="5"
               appField
               formControlName="text"
+              i18n-placeholder
               placeholder="Tallas, colores, aficiones, lo que te gusta… Por ejemplo: talla M, pie 42, me encanta el café y el senderismo."
               [attr.aria-invalid]="showsError() || null"
               [attr.aria-describedby]="
@@ -77,18 +82,22 @@ export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'faile
               {{ length() }} / {{ maxLength }}
             </p>
             @if (showsError()) {
-              <p id="preferences-error" class="text-sm font-semibold text-danger">
+              <p id="preferences-error" class="text-sm font-semibold text-danger" i18n>
                 Como mucho {{ maxLength }} caracteres.
               </p>
             }
             @if (submitted() && status() === 'failed') {
-              <p appAlert>No hemos podido guardar tus gustos. Inténtalo de nuevo.</p>
+              <p appAlert i18n>No hemos podido guardar tus gustos. Inténtalo de nuevo.</p>
             }
             <div class="mt-2 flex flex-wrap items-center gap-4">
               <button type="submit" appButton="secondary" [disabled]="status() === 'saving'">
-                {{ status() === 'saving' ? 'Guardando…' : 'Guardar' }}
+                @if (status() === 'saving') {
+                  <ng-container i18n>Guardando…</ng-container>
+                } @else {
+                  <ng-container i18n>Guardar</ng-container>
+                }
               </button>
-              <button type="button" appLink standalone (click)="close()">Cancelar</button>
+              <button type="button" appLink standalone (click)="close()" i18n>Cancelar</button>
             </div>
           </form>
         } @else if (preferences(); as preferences) {
@@ -101,14 +110,16 @@ export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'faile
                 appLink
                 standalone
                 aria-label="Editar tus gustos"
+                i18n-aria-label
                 (click)="open()"
+                i18n
               >
                 Editar
               </button>
             </div>
           }
         } @else {
-          <p class="mt-1.5 text-ink-muted">
+          <p class="mt-1.5 text-ink-muted" i18n>
             Cuenta tus tallas, gustos y aficiones para orientar a quien te regale.
           </p>
           <button
@@ -120,7 +131,7 @@ export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'faile
             (click)="open()"
           >
             <svg lucidePlus [size]="18"></svg>
-            Escribir mis gustos
+            <ng-container i18n>Escribir mis gustos</ng-container>
           </button>
         }
       </section>
@@ -158,7 +169,9 @@ export class PreferencesCard {
     effect(() => {
       if (this.status() === 'saved' && untracked(this.editing)) {
         untracked(() => {
-          this.statusText.set(this.preferences() ? 'Gustos guardados.' : 'Gustos borrados.');
+          this.statusText.set(
+            this.preferences() ? $localize`Gustos guardados.` : $localize`Gustos borrados.`,
+          );
           this.close();
         });
       }

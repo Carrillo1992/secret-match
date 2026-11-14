@@ -1,4 +1,5 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
+import { currentLanguage } from '../../../core/language';
 import { Wish, WishInput, WishPriority } from './wishlist-api';
 
 /**
@@ -16,9 +17,9 @@ const PRICE = /^\d{1,6}([.,]\d{1,2})?$/;
 const HTTP_LINK = /^https?:\/\/[^\s/?#]+\S*$/i;
 
 export const PRIORITY_LABELS: Readonly<Record<WishPriority, string>> = {
-  HIGH: 'Alta',
-  MEDIUM: 'Media',
-  LOW: 'Baja',
+  HIGH: $localize`Alta`,
+  MEDIUM: $localize`Media`,
+  LOW: $localize`Baja`,
 };
 
 /** Only http and https addresses: a `javascript:` link must never reach an `href`. */
@@ -74,6 +75,9 @@ export function wishFormValue(wish?: Wish): WishFormValue {
   };
 }
 
+/** With the decimal separator of the Language: `25.5` → "25,50" ("25.50" in English). */
 function priceText(price: number): string {
-  return Number.isInteger(price) ? String(price) : price.toFixed(2).replace('.', ',');
+  return Number.isInteger(price)
+    ? String(price)
+    : price.toFixed(2).replace('.', currentLanguage() === 'es' ? ',' : '.');
 }

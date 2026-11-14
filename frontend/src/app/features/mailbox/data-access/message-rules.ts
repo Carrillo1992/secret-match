@@ -18,5 +18,5 @@ export function messageProblem(text: string): string | null {
       ? `Te sobra 1 carácter (máximo ${MESSAGE_MAX_LENGTH}).`
       : `Te sobran ${extra} caracteres (máximo ${MESSAGE_MAX_LENGTH}).`;
   }
-  return text.replace(NOTHING_VISIBLE, '') === '' ? 'Escribe algo antes de enviar.' : null;
+  return text.replace(NOTHING_VISIBLE, '') === '' ? $localize`Escribe algo antes de enviar.` : null;
 }

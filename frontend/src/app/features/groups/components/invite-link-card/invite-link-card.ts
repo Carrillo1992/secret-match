@@ -22,11 +22,11 @@ type Notice = 'copied' | 'copy-failed' | null;
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-invite" class="rounded-card bg-surface p-5 shadow-card">
-      <h2 id="group-invite" class="font-display text-lg font-semibold">Invita a tu gente</h2>
-      <p class="mt-1.5 text-ink-muted">Comparte este enlace para que se unan al grupo.</p>
+      <h2 id="group-invite" class="font-display text-lg font-semibold" i18n>Invita a tu gente</h2>
+      <p class="mt-1.5 text-ink-muted" i18n>Comparte este enlace para que se unan al grupo.</p>
 
       <div class="mt-4 flex flex-col gap-1.5">
-        <label for="group-invite-link" class="font-bold">Enlace de invitación</label>
+        <label for="group-invite-link" class="font-bold" i18n>Enlace de invitación</label>
         <input
           #linkField
           id="group-invite-link"
@@ -40,13 +40,13 @@ type Notice = 'copied' | 'copy-failed' | null;
 
       <button type="button" appButton="secondary" class="mt-4 w-full" (click)="copy(linkField)">
         <svg lucideCopy [size]="18"></svg>
-        Copiar enlace
+        <ng-container i18n>Copiar enlace</ng-container>
       </button>
 
       <p role="status" class="mt-2 text-sm text-ink-muted">{{ statusText() }}</p>
 
       @if (regenerateStatus() === 'failed') {
-        <p appAlert class="mt-2">
+        <p appAlert class="mt-2" i18n>
           No hemos podido generar un enlace nuevo. El actual sigue funcionando.
         </p>
       }
@@ -56,12 +56,17 @@ type Notice = 'copied' | 'copy-failed' | null;
           <app-confirm-panel
             class="mt-4"
             question="¿Generar un enlace nuevo?"
+            i18n-question
             confirmLabel="Sí, generar uno nuevo"
+            i18n-confirmLabel
             returnFocusTo="regenerate-invite-link"
             (confirmed)="confirm()"
             (cancelled)="confirming.set(false)"
           >
-            El enlace actual dejará de funcionar. Quien ya está en el grupo sigue dentro.
+            <ng-container i18n
+              >El enlace actual dejará de funcionar. Quien ya está en el grupo sigue
+              dentro.</ng-container
+            >
           </app-confirm-panel>
         } @else {
           <button
@@ -74,7 +79,11 @@ type Notice = 'copied' | 'copy-failed' | null;
             (click)="startConfirming()"
           >
             <svg lucideRefreshCw [size]="16"></svg>
-            {{ busy() ? 'Generando…' : 'Generar uno nuevo' }}
+            @if (busy()) {
+              <ng-container i18n>Generando…</ng-container>
+            } @else {
+              <ng-container i18n>Generar uno nuevo</ng-container>
+            }
           </button>
         }
       }
@@ -100,12 +109,12 @@ export class InviteLinkCard {
   protected statusText(): string {
     switch (this.notice()) {
       case 'copied':
-        return '¡Enlace copiado!';
+        return $localize`¡Enlace copiado!`;
       case 'copy-failed':
-        return 'No hemos podido copiarlo: selecciona el enlace y cópialo a mano.';
+        return $localize`No hemos podido copiarlo: selecciona el enlace y cópialo a mano.`;
       default:
         return this.regenerateStatus() === 'regenerated'
-          ? 'Enlace nuevo listo. El anterior ya no funciona.'
+          ? $localize`Enlace nuevo listo. El anterior ya no funciona.`
           : '';
     }
   }

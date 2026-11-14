@@ -31,15 +31,19 @@ type GoogleError = Exclude<GoogleSignInOutcome, 'signed-in'>;
       @if (error(); as error) {
         <p appAlert class="mt-3">
           @if (error === 'rejected') {
-            Google no ha podido confirmar quién eres. Vuelve a intentarlo.
+            <ng-container i18n
+              >Google no ha podido confirmar quién eres. Vuelve a intentarlo.</ng-container
+            >
           } @else {
-            No hemos podido entrar con Google. Inténtalo de nuevo en un momento.
+            <ng-container i18n
+              >No hemos podido entrar con Google. Inténtalo de nuevo en un momento.</ng-container
+            >
           }
         </p>
       }
       <div class="mt-6 flex items-center gap-3 text-sm text-ink-muted" aria-hidden="true">
         <span class="h-px flex-1 bg-line"></span>
-        o con tu correo
+        <ng-container i18n>o con tu correo</ng-container>
         <span class="h-px flex-1 bg-line"></span>
       </div>
     </div>

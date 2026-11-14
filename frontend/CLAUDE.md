@@ -21,7 +21,9 @@ The Spanish copy in the templates is the source; English is `src/locale/messages
 
 - Mark it: `i18n` on the element, `i18n-<attr>` for an attribute or input (`i18n-aria-label`, `i18n-label`), `` $localize`…` `` in TypeScript.
 - Run `npm run extract-i18n` (rewrites `src/locale/messages.json`), then add the English entry under the same id in `messages.en.json`, using the `GLOSSARY.md` terms. Changing a Spanish message changes its id, so its English entry has to move too. `src/locale/translations.spec.ts` fails while any message has no English, and CI fails when `messages.json` is stale.
-- Dates and numbers go through `intlLocale()` (`core/language.ts`), never a hard-coded locale. Specs run in Spanish (`test-setup.ts`); set `secretmatch.language` in `localStorage` to test English.
+- Plurals and values go in ICU messages (`{count, plural, =1 {…} other {…}}`) and `$localize` placeholders (`${name}:name:`), never by concatenating strings. A `cond ? 'a' : 'b'` of copy becomes `@if` with an `<ng-container i18n>` per branch; an `aria-label` built from data comes from a component method that returns `$localize`.
+- Dates and numbers go through `intlLocale()` (`core/language.ts`), never a hard-coded locale.
+- Specs run in Spanish (`test-setup.ts`). An English spec (`*.en.spec.ts`, one per feature at least) imports `src/testing/english.ts` first, imports the component dynamically in a `beforeAll` (module-level `$localize` is translated as its module loads), and asserts `spanishLeftIn(page)` is empty. Spec files run isolated (`"isolate": true` in `angular.json`) so the English copy stays in its file.
 
 ## Gotchas
 

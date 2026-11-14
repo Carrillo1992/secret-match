@@ -22,29 +22,35 @@ export type DeleteStatus = 'idle' | 'deleting' | 'failed';
   host: { class: 'block' },
   template: `
     <section aria-labelledby="group-membership" class="rounded-card bg-surface p-5 shadow-card">
-      <h2 id="group-membership" class="font-display text-lg font-semibold">Tu participación</h2>
+      <h2 id="group-membership" class="font-display text-lg font-semibold" i18n>
+        Tu participación
+      </h2>
 
       @if (admin()) {
-        <p class="mt-1.5 text-ink-muted">
+        <p class="mt-1.5 text-ink-muted" i18n>
           Como administrador no puedes salir del grupo. Si ya no quieres seguir con él, puedes
           borrarlo.
         </p>
 
         @if (deleteStatus() === 'failed') {
-          <p appAlert class="mt-4">No hemos podido borrar el grupo. Inténtalo de nuevo.</p>
+          <p appAlert class="mt-4" i18n>No hemos podido borrar el grupo. Inténtalo de nuevo.</p>
         }
 
         @if (confirming()) {
           <app-confirm-panel
             class="mt-4"
             question="¿Borrar el grupo?"
+            i18n-question
             confirmLabel="Sí, borrar"
+            i18n-confirmLabel
             returnFocusTo="delete-group"
             (confirmed)="confirmDelete()"
             (cancelled)="confirming.set(false)"
           >
-            Se borrará para todos, con todo lo que hay en él, y no se puede deshacer. A los demás
-            miembros les avisaremos por email.
+            <ng-container i18n
+              >Se borrará para todos, con todo lo que hay en él, y no se puede deshacer. A los demás
+              miembros les avisaremos por email.</ng-container
+            >
           </app-confirm-panel>
         } @else {
           <button
@@ -56,34 +62,40 @@ export type DeleteStatus = 'idle' | 'deleting' | 'failed';
             (click)="confirming.set(true)"
           >
             <svg lucideTrash2 [size]="18"></svg>
-            {{ deleteStatus() === 'deleting' ? 'Borrando…' : 'Borrar el grupo' }}
+            @if (deleteStatus() === 'deleting') {
+              <ng-container i18n>Borrando…</ng-container>
+            } @else {
+              <ng-container i18n>Borrar el grupo</ng-container>
+            }
           </button>
         }
       } @else if (finished()) {
-        <p class="mt-1.5 text-ink-muted">
+        <p class="mt-1.5 text-ink-muted" i18n>
           El grupo ha finalizado, así que ya no puedes salir de él.
         </p>
       } @else if (drawn()) {
-        <p class="mt-1.5 text-ink-muted">
+        <p class="mt-1.5 text-ink-muted" i18n>
           El sorteo ya está hecho, así que ya no puedes salir del grupo.
         </p>
       } @else {
-        <p class="mt-1.5 text-ink-muted">Si sales, dejarás de ver este grupo.</p>
+        <p class="mt-1.5 text-ink-muted" i18n>Si sales, dejarás de ver este grupo.</p>
 
         @if (status() === 'failed') {
-          <p appAlert class="mt-4">No hemos podido sacarte del grupo. Inténtalo de nuevo.</p>
+          <p appAlert class="mt-4" i18n>No hemos podido sacarte del grupo. Inténtalo de nuevo.</p>
         }
 
         @if (confirming()) {
           <app-confirm-panel
             class="mt-4"
             question="¿Salir del grupo?"
+            i18n-question
             confirmLabel="Sí, salir"
+            i18n-confirmLabel
             returnFocusTo="leave-group"
             (confirmed)="confirm()"
             (cancelled)="confirming.set(false)"
           >
-            Dejarás de ver el grupo y a sus miembros.
+            <ng-container i18n>Dejarás de ver el grupo y a sus miembros.</ng-container>
           </app-confirm-panel>
         } @else {
           <button
@@ -95,7 +107,11 @@ export type DeleteStatus = 'idle' | 'deleting' | 'failed';
             (click)="confirming.set(true)"
           >
             <svg lucideLogOut [size]="18"></svg>
-            {{ status() === 'leaving' ? 'Saliendo…' : 'Salir del grupo' }}
+            @if (status() === 'leaving') {
+              <ng-container i18n>Saliendo…</ng-container>
+            } @else {
+              <ng-container i18n>Salir del grupo</ng-container>
+            }
           </button>
         }
       }

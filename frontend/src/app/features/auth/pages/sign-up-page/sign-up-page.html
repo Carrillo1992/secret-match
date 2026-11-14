@@ -1,12 +1,12 @@
 <app-sheet-layout>
-  <h1 class="font-display text-3xl font-bold tracking-tight">Crea tu cuenta</h1>
-  <p class="mt-1.5 text-ink-muted">Te enviaremos un correo para confirmar que es tuyo.</p>
+  <h1 class="font-display text-3xl font-bold tracking-tight" i18n>Crea tu cuenta</h1>
+  <p class="mt-1.5 text-ink-muted" i18n>Te enviaremos un correo para confirmar que es tuyo.</p>
 
   <app-google-sign-in (signedIn)="enter()" />
 
   <form class="mt-6 flex flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <div class="flex flex-col gap-1.5">
-      <label for="sign-up-email" class="font-bold">Correo electrónico</label>
+      <label for="sign-up-email" class="font-bold" i18n>Correo electrónico</label>
       <input
         id="sign-up-email"
         type="email"
@@ -19,18 +19,21 @@
       @if (showsError(form.controls.email)) {
         <p id="sign-up-email-error" class="text-sm font-semibold text-danger">
           @if (form.controls.email.hasError('required')) {
-            Escribe tu correo electrónico.
+            <ng-container i18n>Escribe tu correo electrónico.</ng-container>
           } @else if (form.controls.email.hasError('maxlength')) {
-            El correo puede tener como máximo {{ rules.emailMaxLength }} caracteres.
+            <ng-container i18n
+              >El correo puede tener como máximo
+              {{ rules.emailMaxLength }} caracteres.</ng-container
+            >
           } @else {
-            Esto no parece un correo electrónico.
+            <ng-container i18n>Esto no parece un correo electrónico.</ng-container>
           }
         </p>
       }
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <label for="sign-up-display-name" class="font-bold">Nombre</label>
+      <label for="sign-up-display-name" class="font-bold" i18n>Nombre</label>
       <input
         id="sign-up-display-name"
         type="text"
@@ -48,20 +51,23 @@
       @if (showsError(form.controls.displayName)) {
         <p id="sign-up-display-name-error" class="text-sm font-semibold text-danger">
           @if (form.controls.displayName.hasError('required')) {
-            Escribe tu nombre.
+            <ng-container i18n>Escribe tu nombre.</ng-container>
           } @else {
-            El nombre puede tener como máximo {{ rules.displayNameMaxLength }} caracteres.
+            <ng-container i18n
+              >El nombre puede tener como máximo
+              {{ rules.displayNameMaxLength }} caracteres.</ng-container
+            >
           }
         </p>
       } @else {
-        <p id="sign-up-display-name-hint" class="text-sm text-ink-muted">
+        <p id="sign-up-display-name-hint" class="text-sm text-ink-muted" i18n>
           Así te verán en tus grupos.
         </p>
       }
     </div>
 
     <div class="flex flex-col gap-1.5">
-      <label for="sign-up-password" class="font-bold">Contraseña</label>
+      <label for="sign-up-password" class="font-bold" i18n>Contraseña</label>
       <input
         id="sign-up-password"
         type="password"
@@ -76,15 +82,18 @@
       @if (showsError(form.controls.password)) {
         <p id="sign-up-password-error" class="text-sm font-semibold text-danger">
           @if (form.controls.password.hasError('required')) {
-            Escribe una contraseña.
+            <ng-container i18n>Escribe una contraseña.</ng-container>
           } @else if (form.controls.password.hasError('minlength')) {
-            La contraseña debe tener al menos {{ rules.passwordMinLength }} caracteres.
+            <ng-container i18n
+              >La contraseña debe tener al menos
+              {{ rules.passwordMinLength }} caracteres.</ng-container
+            >
           } @else {
-            La contraseña es demasiado larga.
+            <ng-container i18n>La contraseña es demasiado larga.</ng-container>
           }
         </p>
       } @else {
-        <p id="sign-up-password-hint" class="text-sm text-ink-muted">
+        <p id="sign-up-password-hint" class="text-sm text-ink-muted" i18n>
           Al menos {{ rules.passwordMinLength }} caracteres.
         </p>
       }
@@ -93,25 +102,31 @@
     @if (submitError(); as error) {
       <p appAlert>
         @if (error === 'invalid') {
-          Revisa los datos: alguno no es válido.
+          <ng-container i18n>Revisa los datos: alguno no es válido.</ng-container>
         } @else {
-          No hemos podido crear la cuenta. Inténtalo de nuevo en un momento.
+          <ng-container i18n
+            >No hemos podido crear la cuenta. Inténtalo de nuevo en un momento.</ng-container
+          >
         }
       </p>
     }
 
     <button type="submit" appButton class="mt-2" [disabled]="sending()">
       <svg lucideGift [size]="20"></svg>
-      {{ sending() ? 'Creando cuenta…' : 'Crear cuenta' }}
+      @if (sending()) {
+        <ng-container i18n>Creando cuenta…</ng-container>
+      } @else {
+        <ng-container i18n>Crear cuenta</ng-container>
+      }
     </button>
   </form>
 
-  <p class="mt-6 text-center">
+  <p class="mt-6 text-center" i18n>
     ¿Ya tienes cuenta?
     <a routerLink="/sign-in" [queryParams]="next ? { next } : {}" appLink>Inicia sesión</a>
   </p>
 
   <p class="mt-2 text-center">
-    <a routerLink="/" appLink standalone>Volver al inicio</a>
+    <a routerLink="/" appLink standalone i18n>Volver al inicio</a>
   </p>
 </app-sheet-layout>

@@ -191,6 +191,26 @@
       }
     },
     "/api/v1/groups/{groupId}/draw" : {
+      "delete" : {
+        "description" : "Only the Admin can, until the Group is finished. Every Assignment is deleted and the Group can be joined, left and drawn again. Every Member is emailed.",
+        "operationId" : "cancelDraw",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "groupId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Cancel the Group's Draw",
+        "tags" : [ "draw" ]
+      },
       "get" : {
         "description" : "Only their own Receiver. A 404 until the Draw is made.",
         "operationId" : "draw",

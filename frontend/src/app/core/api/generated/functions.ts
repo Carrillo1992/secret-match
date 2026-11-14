@@ -29,6 +29,8 @@ export type { Draw$Params as Draw$Params } from './fn/draw/draw';
 export { draw as draw } from './fn/draw/draw';
 export type { RunDraw$Params as RunDraw$Params } from './fn/draw/run-draw';
 export { runDraw as runDraw } from './fn/draw/run-draw';
+export type { CancelDraw$Params as CancelDraw$Params } from './fn/draw/cancel-draw';
+export { cancelDraw as cancelDraw } from './fn/draw/cancel-draw';
 export type { GroupExclusions$Params as GroupExclusions$Params } from './fn/exclusions/group-exclusions';
 export { groupExclusions as groupExclusions } from './fn/exclusions/group-exclusions';
 export type { CreateExclusion$Params as CreateExclusion$Params } from './fn/exclusions/create-exclusion';

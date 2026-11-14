@@ -85,8 +85,8 @@ class JpaGroups implements Groups {
 
     @Override
     public void saveDrawn(Group group) {
-        if (!group.isDrawn() || repository.markDrawn(group.id().value()) != 1) {
-            throw new IllegalStateException("no stored Group to mark drawn");
+        if (repository.updateDrawn(group.id().value(), group.isDrawn()) != 1) {
+            throw new IllegalStateException("no stored Group to mark drawn or not drawn");
         }
     }
 }

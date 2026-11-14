@@ -284,7 +284,40 @@ class MailboxIT {
     }
 
     @Test
-    @DisplayName("a Giver who deletes their account leaves their Receiver the Mailbox, anonymous, with its Messages")
+    @DisplayName("once the Group is finished both sides still read their Mailbox, but nobody can write in it")
+    void finishedGroupMailboxIsReadOnly() {
+        Drawn drawn = drawnFamily();
+        Member giver = drawn.family().luis();
+        Member receiver = drawn.receiverOf(giver);
+        String mailbox = mailboxIdOf(giver, drawn, "GIVER");
+        send(giver, mailbox, "¿Qué talla usas?").expectStatus().isCreated();
+        // 00:00 in Madrid on the day after the Exchange Date (24 December).
+        clock.set(Instant.parse("2026-12-24T23:00:00Z"));
+        User giverNow = signedInAgain(giver.user().email());
+        User receiverNow = signedInAgain(receiver.user().email());
+        mail.clear();
+
+        for (User author : List.of(giverNow, receiverNow)) {
+            send(author, mailbox, "¿Llegó bien?")
+                    .expectStatus()
+                    .isEqualTo(422)
+                    .expectBody()
+                    .jsonPath("$.type")
+                    .isEqualTo("urn:secretmatch:problem:group-finished");
+        }
+
+        assertThat(mail.sent()).isEmpty();
+        for (User reader : List.of(giverNow, receiverNow)) {
+            JsonNode messages = json(get(reader, messagesOf(mailbox)));
+            assertThat(messages.valueStream().map(message -> message.get("text").asString()))
+                    .containsExactly("¿Qué talla usas?");
+        }
+        assertThat(json(get(receiverNow, mailboxesOf(drawn.family())))).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("a Giver who deletes their account leaves their Receiver the Mailbox, anonymous, read-only, with its"
+            + " Messages")
     void aDeletedGiverLeavesTheMailboxToTheReceiver() {
         Drawn drawn = drawnFamily();
         Member luis = drawn.family().luis();
@@ -309,7 +342,12 @@ class MailboxIT {
         assertThat(messages.valueStream().map(message -> message.get("mine").asBoolean()))
                 .containsExactly(false, true);
         assertThat(messages.get(0).get("text").asString()).isEqualTo("¿Qué talla usas?");
-        send(receiverNow, mailbox, "¿Sigues ahí?").expectStatus().isCreated();
+        send(receiverNow, mailbox, "¿Sigues ahí?")
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody()
+                .jsonPath("$.type")
+                .isEqualTo("urn:secretmatch:problem:group-finished");
         for (String luisDetail : List.of(luis.id(), luis.name(), luis.user().email())) {
             assertThat(after).doesNotContain(luisDetail);
             assertThat(body(get(receiverNow, messagesOf(mailbox)))).doesNotContain(luisDetail);
@@ -482,8 +520,8 @@ class MailboxIT {
     }
 
     @Test
-    @DisplayName("a Message that is not stored emails nobody, and a Receiver whose Giver is gone emails nobody")
-    void noEmailWithoutAStoredMessageOrAnOtherSide() {
+    @DisplayName("a Message that is not stored emails nobody")
+    void noEmailWithoutAStoredMessage() {
         Drawn drawn = drawnFamily();
         Member luis = drawn.family().luis();
         Member receiver = drawn.receiverOf(luis);
@@ -496,15 +534,6 @@ class MailboxIT {
 
         send(luis, mailbox, "").expectStatus().isEqualTo(422);
         send(outsider, mailbox, "Intruso").expectStatus().isNotFound();
-        assertThat(mail.sent()).isEmpty();
-
-        clock.set(Instant.parse("2026-12-26T10:00:00Z"));
-        User luisNow = signedInAgain(luis.user().email());
-        User receiverNow = signedInAgain(receiver.user().email());
-        delete(luisNow, "/api/v1/users/me").expectStatus().isNoContent();
-        mail.clear();
-
-        send(receiverNow, mailbox, "¿Sigues ahí?").expectStatus().isCreated();
         assertThat(mail.sent()).isEmpty();
     }
 

@@ -3,6 +3,7 @@ package com.secretmatch.mailbox.application;
 import com.secretmatch.draw.application.DrawCancelled;
 import com.secretmatch.group.application.GroupDeleted;
 import com.secretmatch.identity.application.UserDeleted;
+import com.secretmatch.mailbox.domain.GroupFinishedException;
 import com.secretmatch.mailbox.domain.GroupNotFoundException;
 import com.secretmatch.mailbox.domain.Mailbox;
 import com.secretmatch.mailbox.domain.MailboxId;
@@ -30,7 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Once a Group is drawn, each Member has two Mailboxes: one with their Receiver and one with their Giver. Only the
  * two Members of the Assignment read or write a Mailbox; to anyone else, the Admin included, it does not exist. The
- * Giver is never named to the Receiver, and nothing here logs (ADR 0001).
+ * Giver is never named to the Receiver, and nothing here logs (ADR 0001). Once the Group is finished its Mailboxes
+ * are read-only: their Messages stay, and no new one can be written.
  */
 @Service
 public class MemberMailboxes {
@@ -101,16 +103,21 @@ public class MemberMailboxes {
     }
 
     /**
-     * Sends a Message to the other side of the Mailbox, who is emailed about it once it is stored. If the Giver
-     * deleted their account there is nobody on the other side, and nobody is emailed.
+     * Sends a Message to the other side of the Mailbox, who is emailed about it once it is stored. A Giver can only
+     * delete their account once the Group is finished, when nobody writes any more; should there be nobody on the
+     * other side anyway, nobody is emailed.
      *
      * @throws MailboxNotFoundException if there is no such Mailbox, or {@code author} is not its Giver or Receiver;
      *     checked before the text, so someone outside learns nothing from an invalid Message either
+     * @throws GroupFinishedException if the Group is finished
      * @throws com.secretmatch.mailbox.domain.InvalidMessageException if the text is empty, blank or too long
      */
     @Transactional
     public MailboxMessage send(UUID mailboxId, UUID author, String text) {
         Mailbox mailbox = openTo(mailboxId, author);
+        if (groupMembers.isFinished(mailbox.groupId().value(), author).orElse(false)) {
+            throw new GroupFinishedException();
+        }
         MemberId me = new MemberId(author);
         StoredMessage sent = mailboxes.addMessage(mailbox.id(), me, new MessageText(text), clock.instant());
         mailbox.otherSideOf(me).ifPresent(recipient -> emailNewMessage(mailbox, me, recipient));

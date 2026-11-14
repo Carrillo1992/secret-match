@@ -30,6 +30,11 @@ class GroupMembersOfGroups implements GroupMembers {
         return groups.findGroup(groupId, viewer).map(GroupDetails::name);
     }
 
+    @Override
+    public Optional<Boolean> isFinished(UUID groupId, UUID viewer) {
+        return groups.findGroup(groupId, viewer).map(GroupDetails::finished);
+    }
+
     private static List<GroupMember> membersOf(GroupDetails group) {
         return group.members().stream()
                 .map(member -> new GroupMember(new MemberId(member.id()), member.displayName()))

@@ -17,7 +17,8 @@ const LOADING: ThreadState = { status: 'loading' };
 
 /**
  * The Group's anonymous Mailbox, right after the Draw card (#36, option B): one tab per Mailbox,
- * "Con <Receiver>" and "Tu Giver" (never a name, initials or avatar), each with a hint of who is on
+ * "Con <Receiver>" (or "Tu Receiver" until the envelope is opened) and "Tu Giver" (never a name,
+ * initials or avatar), each with a hint of who is on
  * the other side, the conversation and the composer. It renders nothing while there are no
  * Mailboxes, as before the Draw. Once the Group is finished (#38) the conversations stay and the
  * composer gives way to one sentence saying they are only read now.
@@ -129,6 +130,8 @@ export class MailboxCard {
   readonly threads = input<Readonly<Record<string, ThreadState>>>({});
   /** Whether the Group is finished, which makes every Mailbox read-only. */
   readonly finished = input(false);
+  /** Whether the Giver opened their envelope: until then their Receiver is not named here. */
+  readonly receiverRevealed = input(false);
   /** Where each Mailbox's last send stands, by id. */
   readonly sends = input<Readonly<Record<string, SendStatus>>>({});
   /** A tab was chosen: the page opens that Mailbox, loading its Messages if needed. */
@@ -149,11 +152,17 @@ export class MailboxCard {
     return list.some((mailbox) => mailbox.id === selected) ? selected : (list[0]?.id ?? null);
   });
 
-  /** The Giver is never named: their tab is only "Tu Giver". */
+  /**
+   * The Giver is never named: their tab is only "Tu Giver". The Receiver is named only once the
+   * envelope is opened, so the Mailbox does not spoil the Reveal.
+   */
   protected title(mailbox: Mailbox): string {
-    return mailbox.side === 'GIVER'
-      ? `Con ${mailbox.receiverDisplayName ?? ''}`.trim()
-      : 'Tu Giver';
+    if (mailbox.side === 'RECEIVER') {
+      return 'Tu Giver';
+    }
+    return this.receiverRevealed() && mailbox.receiverDisplayName
+      ? `Con ${mailbox.receiverDisplayName}`
+      : 'Tu Receiver';
   }
 
   protected thread(mailbox: Mailbox): ThreadState {

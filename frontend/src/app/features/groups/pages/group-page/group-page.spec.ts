@@ -1258,7 +1258,11 @@ describe('GroupPage', () => {
       );
     const panel = (id: string) => page().querySelector(`#mailbox-panel-${id}`);
 
-    const openDrawn = async () => {
+    /** A drawn Group whose envelope this device opened before, unless told otherwise. */
+    const openDrawn = async ({ envelopeOpened = true } = {}) => {
+      if (envelopeOpened) {
+        rememberOpenedEnvelope('g-1', 'u-marta');
+      }
       http.expectOne(GROUP_URL).flush({ ...navidad, drawn: true });
       await settle();
       http.expectOne((r) => r.url === DRAW_URL && r.method === 'GET').flush(MARTA);
@@ -1301,6 +1305,30 @@ describe('GroupPage', () => {
       ]);
       expect(text(card()?.querySelector('h2'))).toBe('Buzón');
       expect(text(panel('m-1'))).toContain('Con Marta: Para leer, sin duda.');
+    });
+
+    it('keeps the Receiver unnamed in the Mailbox until the envelope is opened', async () => {
+      await openDrawn({ envelopeOpened: false });
+      http.expectOne(MAILBOXES_URL).flush([toMarta, fromGiver]);
+      await settle();
+      http.expectOne(messagesUrl('m-1')).flush([]);
+      await settle();
+
+      expect(text(card())).not.toContain('Marta');
+      expect(tab('Tu Receiver')).toBeDefined();
+
+      const drawButton = (label: string) =>
+        [
+          ...page().querySelectorAll<HTMLButtonElement>(
+            'section[aria-labelledby="group-draw"] button',
+          ),
+        ].find((b) => b.textContent?.includes(label));
+      drawButton('Abrir el sobre')?.click();
+      await settle();
+      drawButton('Saltar animación')?.click();
+      await settle();
+
+      expect(tab('Con Marta')).toBeDefined();
     });
 
     it('loads the other Mailbox’s Messages when its tab is chosen', async () => {
@@ -1403,6 +1431,7 @@ describe('GroupPage', () => {
     });
 
     it('shows a finished Group’s Messages with nothing to write', async () => {
+      rememberOpenedEnvelope('g-1', 'u-marta');
       http.expectOne(GROUP_URL).flush({ ...navidad, drawn: true, finished: true });
       await settle();
       http.expectOne((r) => r.url === DRAW_URL && r.method === 'GET').flush(MARTA);
@@ -1480,7 +1509,8 @@ describe('GroupPage', () => {
       await settle();
       http.expectOne(messagesUrl('m-1')).flush([]);
       await settle();
-      expect(tab('Con Marta')).toBeDefined();
+      expect(tab('Tu Receiver')).toBeDefined();
+      expect(text(card())).not.toContain('Marta');
     });
   });
 });

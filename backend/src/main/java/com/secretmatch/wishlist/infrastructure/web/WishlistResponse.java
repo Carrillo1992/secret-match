@@ -27,7 +27,13 @@ record WishlistResponse(
                         @Schema(
                                 requiredMode = Schema.RequiredMode.REQUIRED,
                                 description = "What the Member does not want to receive, oldest first."))
-        List<DontListEntryResponse> dontList) {
+        List<DontListEntryResponse> dontList,
+
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                description = "Whether the Group is finished: from then on the Wishlist is read-only, also to"
+                        + " its owner.")
+        boolean finished) {
 
     static WishlistResponse of(WishlistDetails wishlist) {
         WishlistDetails.Owner owner = wishlist.owner();
@@ -35,7 +41,8 @@ record WishlistResponse(
                 new WishlistOwnerResponse(owner.id(), owner.displayName(), owner.you()),
                 wishlist.wishes().stream().map(WishResponse::of).toList(),
                 wishlist.preferences().text(),
-                wishlist.dontList().stream().map(DontListEntryResponse::of).toList());
+                wishlist.dontList().stream().map(DontListEntryResponse::of).toList(),
+                wishlist.finished());
     }
 
     record WishlistOwnerResponse(

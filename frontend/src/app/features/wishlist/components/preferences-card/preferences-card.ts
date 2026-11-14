@@ -29,6 +29,7 @@ export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'faile
  * Giver and hidden from them when there is none. The owner edits it in place, in a `bg-canvas`
  * well with a counter out of 2000; saving it blank clears it. The page saves what the card
  * sends and reports back through `status`; once `saved`, the card closes the editor and says so.
+ * Once the Group is finished (`editable` false) the owner only reads them, and none are hidden.
  */
 @Component({
   selector: 'app-preferences-card',
@@ -36,13 +37,13 @@ export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'faile
   imports: [Alert, Button, Field, ReactiveFormsModule, TextLink, LucidePlus],
   host: { class: 'block empty:hidden' },
   template: `
-    @if (owner() || preferences()) {
+    @if (canChange() || preferences()) {
       <section aria-labelledby="preferences-title" class="rounded-card bg-surface p-5 shadow-card">
         <h2 id="preferences-title" class="font-display text-lg font-semibold">
           {{ owner() ? 'Tus gustos' : 'Sus gustos' }}
         </h2>
 
-        @if (owner()) {
+        @if (canChange()) {
           <p role="status" class="mt-1.5 text-sm text-ink-muted empty:hidden">{{ statusText() }}</p>
         }
 
@@ -92,7 +93,7 @@ export type PreferencesStatus = 'idle' | 'saving' | 'saved' | 'invalid' | 'faile
           </form>
         } @else if (preferences(); as preferences) {
           <p class="mt-1.5 whitespace-pre-line break-words">{{ preferences }}</p>
-          @if (owner()) {
+          @if (canChange()) {
             <div class="mt-1 flex justify-end">
               <button
                 id="edit-preferences"
@@ -131,6 +132,8 @@ export class PreferencesCard {
   readonly preferences = input.required<string | undefined>();
   /** Only the owner changes them (ADR 0004); their Giver reads them. */
   readonly owner = input.required<boolean>();
+  /** False once the Group is finished: then nobody changes them, their owner included. */
+  readonly editable = input(true);
   readonly status = input<PreferencesStatus>('idle');
   /** The owner sent the text, trimmed: the page asks the API to replace the Preferences. */
   readonly save = output<string>();
@@ -146,6 +149,7 @@ export class PreferencesCard {
   protected readonly length = computed(() => this.value().trim().length);
   protected readonly tooLong = computed(() => this.length() > PREFERENCES_MAX_LENGTH);
 
+  protected readonly canChange = computed(() => this.owner() && this.editable());
   protected readonly editing = signal(false);
   protected readonly submitted = signal(false);
   protected readonly statusText = signal('');

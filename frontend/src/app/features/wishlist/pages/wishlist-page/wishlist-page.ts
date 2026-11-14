@@ -46,7 +46,7 @@ import {
  * behind an inline confirmation), and once there is a Draw their Giver reads it, from the Draw card.
  * Under the Wishes come the Don't List and the Preferences (#33), each on its own card: the page saves
  * what the owner changes there and keeps it without reloading the Wishlist. The Giver reads them,
- * and an empty one is hidden from them.
+ * and an empty one is hidden from them. Once the Group is finished (#34) the owner only reads it all.
  */
 @Component({
   selector: 'app-wishlist-page',
@@ -100,6 +100,11 @@ export class WishlistPage {
   protected readonly wishlist = computed(() => {
     const result = this.result();
     return result?.status === 'found' ? result.wishlist : undefined;
+  });
+  /** Only the owner changes their Wishlist, and only until the Group is finished. */
+  protected readonly canChange = computed(() => {
+    const wishlist = this.wishlist();
+    return !!wishlist && wishlist.owner.you && !wishlist.finished;
   });
   protected readonly notFound = computed(() => this.result()?.status === 'not-found');
   protected readonly groupLink = computed(() => `/groups/${this.params().groupId}`);

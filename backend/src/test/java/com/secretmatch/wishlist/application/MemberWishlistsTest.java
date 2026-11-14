@@ -7,6 +7,7 @@ import com.secretmatch.group.application.GroupDeleted;
 import com.secretmatch.group.application.MembershipEnded;
 import com.secretmatch.wishlist.domain.DontListEntry;
 import com.secretmatch.wishlist.domain.DontListEntryNotFoundException;
+import com.secretmatch.wishlist.domain.GroupFinishedException;
 import com.secretmatch.wishlist.domain.GroupNotFoundException;
 import com.secretmatch.wishlist.domain.MemberId;
 import com.secretmatch.wishlist.domain.NotYourWishException;
@@ -20,9 +21,11 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +42,7 @@ class MemberWishlistsTest {
     private final InMemoryWishes stored = new InMemoryWishes();
     private final InMemoryPreferences storedPreferences = new InMemoryPreferences();
     private final InMemoryDontListEntries storedDontList = new InMemoryDontListEntries();
-    private final FakeGroupMembers members = new FakeGroupMembers();
+    private final FakeRosters members = new FakeRosters();
     private final FakeReceivers receivers = new FakeReceivers();
     private final MemberWishlists wishlists = new MemberWishlists(
             stored,
@@ -364,23 +367,88 @@ class MemberWishlistsTest {
         return new Wish(title, null, null, null, priority);
     }
 
+    @Test
+    @DisplayName(
+            "once the Group is finished the Wishlist is still read, by its owner and their Giver, but no longer changed")
+    void finishedGroupIsReadOnly() {
+        StoredWish bufanda = wishlists.addWish(GROUP, LUIS, wish("Bufanda", Priority.MEDIUM));
+        wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla M"));
+        StoredDontListEntry chocolate = wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de chocolate"));
+        receivers.draw(GROUP, Map.of(MARTA, LUIS, LUIS, CARMEN, CARMEN, MARTA));
+        members.finish(GROUP);
+
+        List<Runnable> edits = List.of(
+                () -> wishlists.addWish(GROUP, LUIS, wish("Guantes", Priority.LOW)),
+                () -> wishlists.editWish(GROUP, LUIS, bufanda.id(), wish("Bufanda roja", Priority.HIGH)),
+                () -> wishlists.deleteWish(GROUP, LUIS, bufanda.id()),
+                () -> wishlists.editPreferences(GROUP, LUIS, Preferences.NONE),
+                () -> wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de velas")),
+                () -> wishlists.deleteDontListEntry(GROUP, LUIS, chocolate.id()));
+        for (Runnable edit : edits) {
+            assertThatThrownBy(edit::run).isInstanceOf(GroupFinishedException.class);
+        }
+
+        WishlistDetails own = wishlists.wishlistOf(GROUP, LUIS, LUIS);
+        assertThat(own.finished()).isTrue();
+        assertThat(own.wishes()).containsExactly(bufanda);
+        assertThat(own.preferences()).isEqualTo(new Preferences("Talla M"));
+        assertThat(own.dontList()).containsExactly(chocolate);
+        assertThat(wishlists.wishlistOf(GROUP, MARTA, LUIS).wishes()).containsExactly(bufanda);
+        assertThat(wishlists.addWish(OTHER_GROUP, LUIS, wish("Libro", Priority.LOW)))
+                .as("other Groups are not finished")
+                .isNotNull();
+    }
+
+    @Test
+    @DisplayName("a finished Group stays hidden from non-Members: they get no Group, not a finished one")
+    void finishedGroupHiddenFromStrangers() {
+        members.finish(GROUP);
+
+        assertThatThrownBy(() -> wishlists.addWish(GROUP, STRANGER, wish("Bufanda", Priority.MEDIUM)))
+                .isInstanceOf(GroupNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("after the Draw and before the Group is finished, the owner still changes their Wishlist")
+    void editableAfterTheDraw() {
+        receivers.draw(GROUP, Map.of(MARTA, LUIS, LUIS, CARMEN, CARMEN, MARTA));
+
+        StoredWish bufanda = wishlists.addWish(GROUP, LUIS, wish("Bufanda", Priority.MEDIUM));
+        wishlists.editWish(GROUP, LUIS, bufanda.id(), wish("Bufanda roja", Priority.HIGH));
+        wishlists.editPreferences(GROUP, LUIS, new Preferences("Talla M"));
+        wishlists.addDontListEntry(GROUP, LUIS, new DontListEntry("nada de chocolate"));
+
+        WishlistDetails own = wishlists.wishlistOf(GROUP, LUIS, LUIS);
+        assertThat(own.finished()).isFalse();
+        assertThat(own.wishes()).extracting(stored -> stored.wish().title()).containsExactly("Bufanda roja");
+        assertThat(own.preferences()).isEqualTo(new Preferences("Talla M"));
+        assertThat(own.dontList()).hasSize(1);
+    }
+
     private static GroupMember member(UUID id, String displayName) {
         return new GroupMember(new MemberId(id), displayName);
     }
 
-    private static final class FakeGroupMembers implements GroupMembers {
+    /** No Group is finished until {@link #finish} finishes it. */
+    private static final class FakeRosters implements Rosters {
 
         private final Map<UUID, List<GroupMember>> groups = new HashMap<>();
+        private final Set<UUID> finished = new HashSet<>();
 
         void put(UUID groupId, List<GroupMember> members) {
             groups.put(groupId, members);
         }
 
+        void finish(UUID groupId) {
+            finished.add(groupId);
+        }
+
         @Override
-        public Optional<List<GroupMember>> of(UUID groupId, UUID viewer) {
+        public Optional<Roster> of(UUID groupId, UUID viewer) {
             return Optional.ofNullable(groups.get(groupId))
                     .filter(members ->
-                            members.stream().anyMatch(m -> m.id().value().equals(viewer)));
+                            members.stream().anyMatch(m -> m.id().value().equals(viewer)))
+                    .map(members -> new Roster(members, finished.contains(groupId)));
         }
     }
 

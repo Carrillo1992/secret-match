@@ -29,12 +29,14 @@ const seenByMarta = {
   owner: { id: 'u-luis', displayName: 'Luis', you: false },
   wishes: [auriculares, libro],
   dontList: [],
+  finished: false,
 };
 /** Luis's own Wishlist, still empty. */
 const ownEmpty = {
   owner: { id: 'u-luis', displayName: 'Luis', you: true },
   wishes: [],
   dontList: [],
+  finished: false,
 };
 const own = { ...ownEmpty, wishes: [auriculares, libro] };
 
@@ -563,6 +565,37 @@ describe('WishlistPage', () => {
         'Velas',
       ]);
       expect(cardAlert(dontListCard())).toBe('No hemos podido quitar «Velas». Inténtalo de nuevo.');
+    });
+  });
+
+  describe('in a finished Group', () => {
+    it("shows the owner their Wishlist, Don't List and Preferences with no way to change them", async () => {
+      await open({
+        ...own,
+        preferences: 'Talla M',
+        dontList: [noChocolate],
+        finished: true,
+      });
+
+      expect(text(page().querySelector('h1'))).toBe('Tus deseos');
+      expect(text(page())).toContain(
+        'El grupo ha finalizado: tu lista ya solo se puede consultar.',
+      );
+      expect(rows().map(text).join(' ')).toContain('Auriculares');
+      expect(text(page().querySelector('app-dont-list-card'))).toContain('Nada de chocolate');
+      expect(text(page().querySelector('app-preferences-card'))).toContain('Tus gustos');
+      expect(text(page().querySelector('app-preferences-card'))).toContain('Talla M');
+      expect(page().querySelectorAll('button')).toHaveLength(0);
+    });
+
+    it('tells the owner what they left empty instead of inviting them to write it', async () => {
+      await open({ ...ownEmpty, finished: true });
+
+      expect(text(page())).toContain('No añadiste deseos.');
+      expect(text(page())).not.toContain('Aún no has añadido deseos.');
+      expect(page().querySelector('app-dont-list-card')?.children).toHaveLength(0);
+      expect(page().querySelector('app-preferences-card')?.children).toHaveLength(0);
+      expect(button('Añadir deseo')).toBeUndefined();
     });
   });
 });

@@ -4,6 +4,7 @@ import com.secretmatch.group.application.GroupDeleted;
 import com.secretmatch.group.application.MembershipEnded;
 import com.secretmatch.wishlist.domain.DontListEntry;
 import com.secretmatch.wishlist.domain.DontListEntryNotFoundException;
+import com.secretmatch.wishlist.domain.GroupFinishedException;
 import com.secretmatch.wishlist.domain.GroupNotFoundException;
 import com.secretmatch.wishlist.domain.MemberId;
 import com.secretmatch.wishlist.domain.NotYourWishException;
@@ -22,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Each Member keeps their own Wishlist in a Group. It is private: only its owner reads it, and once the Group has a
  * Draw, so does the owner's Giver (ADR 0004). To anyone else it does not exist, and to someone outside the Group
- * neither does the Group. Nothing here records who read which Wishlist.
+ * neither does the Group. Nothing here records who read which Wishlist. A Wishlist can be changed until the Group
+ * is finished, also after the Draw; from then on it is only read.
  */
 @Service
 public class MemberWishlists {
@@ -33,7 +35,7 @@ public class MemberWishlists {
     private final Wishes wishes;
     private final AllPreferences preferences;
     private final DontListEntries dontLists;
-    private final GroupMembers groupMembers;
+    private final Rosters rosters;
     private final Receivers receivers;
     private final Clock clock;
 
@@ -41,13 +43,13 @@ public class MemberWishlists {
             Wishes wishes,
             AllPreferences preferences,
             DontListEntries dontLists,
-            GroupMembers groupMembers,
+            Rosters rosters,
             Receivers receivers,
             Clock clock) {
         this.wishes = wishes;
         this.preferences = preferences;
         this.dontLists = dontLists;
-        this.groupMembers = groupMembers;
+        this.rosters = rosters;
         this.receivers = receivers;
         this.clock = clock;
     }
@@ -62,11 +64,11 @@ public class MemberWishlists {
      */
     @Transactional(readOnly = true)
     public WishlistDetails wishlistOf(UUID groupId, UUID viewer, UUID owner) {
-        List<GroupMember> members = membersSeenBy(groupId, viewer);
+        Roster roster = rosterSeenBy(groupId, viewer);
         if (!viewer.equals(owner) && !isGiverOf(groupId, viewer, owner)) {
             throw new WishlistNotFoundException();
         }
-        GroupMember member = members.stream()
+        GroupMember member = roster.members().stream()
                 .filter(candidate -> candidate.id().value().equals(owner))
                 .findFirst()
                 .orElseThrow(WishlistNotFoundException::new);
@@ -77,17 +79,19 @@ public class MemberWishlists {
                 new WishlistDetails.Owner(owner, member.displayName(), owner.equals(viewer)),
                 ordered,
                 preferences.of(groupId, member.id()),
-                dontLists.of(groupId, member.id()));
+                dontLists.of(groupId, member.id()),
+                roster.finished());
     }
 
     /**
      * Adds a Wish to {@code owner}'s own Wishlist in the Group.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws GroupFinishedException if the Group is finished
      */
     @Transactional
     public StoredWish addWish(UUID groupId, UUID owner, Wish wish) {
-        membersSeenBy(groupId, owner);
+        requireEditable(groupId, owner);
         return wishes.add(groupId, new MemberId(owner), wish, clock.instant());
     }
 
@@ -95,6 +99,7 @@ public class MemberWishlists {
      * Replaces what one of {@code owner}'s Wishes says.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws GroupFinishedException if the Group is finished
      * @throws WishNotFoundException if the Group has no such Wish
      * @throws NotYourWishException if the Wish is on someone else's Wishlist
      */
@@ -108,6 +113,7 @@ public class MemberWishlists {
      * Deletes one of {@code owner}'s Wishes.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws GroupFinishedException if the Group is finished
      * @throws WishNotFoundException if the Group has no such Wish
      * @throws NotYourWishException if the Wish is on someone else's Wishlist
      */
@@ -122,10 +128,11 @@ public class MemberWishlists {
      * clears them.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws GroupFinishedException if the Group is finished
      */
     @Transactional
     public Preferences editPreferences(UUID groupId, UUID owner, Preferences written) {
-        membersSeenBy(groupId, owner);
+        requireEditable(groupId, owner);
         preferences.save(groupId, new MemberId(owner), written);
         return written;
     }
@@ -134,10 +141,11 @@ public class MemberWishlists {
      * Adds an entry to {@code owner}'s own Don't List in the Group.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws GroupFinishedException if the Group is finished
      */
     @Transactional
     public StoredDontListEntry addDontListEntry(UUID groupId, UUID owner, DontListEntry entry) {
-        membersSeenBy(groupId, owner);
+        requireEditable(groupId, owner);
         return dontLists.add(groupId, new MemberId(owner), entry, clock.instant());
     }
 
@@ -145,12 +153,13 @@ public class MemberWishlists {
      * Removes an entry from {@code owner}'s own Don't List.
      *
      * @throws GroupNotFoundException if there is no such Group or {@code owner} is not one of its Members
+     * @throws GroupFinishedException if the Group is finished
      * @throws DontListEntryNotFoundException if the Group has no such entry, or it is on someone else's Don't
      *     List: the two look the same, so nobody but its owner can tell it exists
      */
     @Transactional
     public void deleteDontListEntry(UUID groupId, UUID owner, UUID entryId) {
-        membersSeenBy(groupId, owner);
+        requireEditable(groupId, owner);
         dontLists
                 .find(groupId, entryId)
                 .filter(entry -> entry.owner().equals(new MemberId(owner)))
@@ -182,12 +191,19 @@ public class MemberWishlists {
                 .isPresent();
     }
 
-    private List<GroupMember> membersSeenBy(UUID groupId, UUID viewer) {
-        return groupMembers.of(groupId, viewer).orElseThrow(GroupNotFoundException::new);
+    private Roster rosterSeenBy(UUID groupId, UUID viewer) {
+        return rosters.of(groupId, viewer).orElseThrow(GroupNotFoundException::new);
+    }
+
+    /** Membership comes first, so someone outside the Group never learns it is finished. */
+    private void requireEditable(UUID groupId, UUID owner) {
+        if (rosterSeenBy(groupId, owner).finished()) {
+            throw new GroupFinishedException();
+        }
     }
 
     private StoredWish ownWish(UUID groupId, UUID owner, UUID wishId) {
-        membersSeenBy(groupId, owner);
+        requireEditable(groupId, owner);
         StoredWish stored = wishes.find(groupId, wishId).orElseThrow(WishNotFoundException::new);
         if (!stored.owner().equals(new MemberId(owner))) {
             throw new NotYourWishException();

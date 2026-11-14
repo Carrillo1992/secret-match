@@ -10,6 +10,11 @@ export interface WishlistResponse {
    * What the Member does not want to receive, oldest first.
    */
   dontList: Array<DontListEntryResponse>;
+
+  /**
+   * Whether the Group is finished: from then on the Wishlist is read-only, also to its owner.
+   */
+  finished: boolean;
   owner: WishlistOwnerResponse;
 
   /**

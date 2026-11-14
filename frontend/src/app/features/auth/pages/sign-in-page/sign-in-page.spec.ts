@@ -275,7 +275,10 @@ describe('SignInPage with Google', () => {
 
     googleSignsIn('google-id-token');
     const request = http.expectOne(GOOGLE_URL);
-    expect(request.request.body).toEqual({ idToken: 'google-id-token' });
+    expect(request.request.body).toEqual({
+      idToken: 'google-id-token',
+      language: expect.any(String),
+    });
     request.flush(signedIn);
     await settle();
 

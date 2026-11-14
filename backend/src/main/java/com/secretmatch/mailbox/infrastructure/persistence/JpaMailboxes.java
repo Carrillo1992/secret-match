@@ -6,6 +6,7 @@ import com.secretmatch.mailbox.domain.Mailbox;
 import com.secretmatch.mailbox.domain.MailboxId;
 import com.secretmatch.mailbox.domain.MemberId;
 import com.secretmatch.mailbox.domain.MessageText;
+import com.secretmatch.mailbox.domain.UserId;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -53,17 +54,17 @@ class JpaMailboxes implements Mailboxes {
     }
 
     @Override
-    public Optional<Mailbox> withGoneGiver(UUID groupId, MemberId receiver) {
-        return mailboxes.findWithGoneGiver(groupId, receiver.value()).map(MailboxEntity::toMailbox);
+    public Optional<Mailbox> withDeletedGiver(UUID groupId, MemberId receiver) {
+        return mailboxes.findWithDeletedGiver(groupId, receiver.value()).map(MailboxEntity::toMailbox);
     }
 
     @Override
-    public void removeAllReceivedBy(MemberId user) {
+    public void removeAllReceivedBy(UserId user) {
         mailboxes.removeAllReceivedBy(user.value());
     }
 
     @Override
-    public void forgetGiver(MemberId user) {
+    public void forgetGiver(UserId user) {
         mailboxes.forgetAuthor(user.value());
         mailboxes.forgetGiver(user.value());
     }

@@ -18,7 +18,7 @@ public record Mailbox(MailboxId id, GroupId groupId, MemberId giver, MemberId re
     }
 
     /** Whether its Giver deleted their account. */
-    public boolean giverIsGone() {
+    public boolean giverDeleted() {
         return giver == null;
     }
 

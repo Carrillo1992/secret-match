@@ -393,10 +393,10 @@ class MailboxIT {
                 UUID.fromString(g2.id()),
                 UUID.fromString(r1.id()));
 
-        for (Member oldPair : List.of(g1, r1)) {
-            get(oldPair.user(), messagesOf(old)).expectStatus().isNotFound();
-            send(oldPair, old, "¿Hola?").expectStatus().isNotFound();
-            assertThat(json(get(oldPair.user(), mailboxesOf(drawn.family())))
+        for (Member oldPartner : List.of(g1, r1)) {
+            get(oldPartner.user(), messagesOf(old)).expectStatus().isNotFound();
+            send(oldPartner, old, "¿Hola?").expectStatus().isNotFound();
+            assertThat(json(get(oldPartner.user(), mailboxesOf(drawn.family())))
                             .valueStream()
                             .map(mailbox -> mailbox.get("id").asString()))
                     .hasSize(2)

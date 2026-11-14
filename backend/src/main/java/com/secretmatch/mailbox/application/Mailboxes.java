@@ -4,6 +4,7 @@ import com.secretmatch.mailbox.domain.Mailbox;
 import com.secretmatch.mailbox.domain.MailboxId;
 import com.secretmatch.mailbox.domain.MemberId;
 import com.secretmatch.mailbox.domain.MessageText;
+import com.secretmatch.mailbox.domain.UserId;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -29,17 +30,17 @@ public interface Mailboxes {
      * The Mailbox in the Group whose Receiver is {@code receiver} and whose Giver deleted their account; empty if
      * there is none.
      */
-    Optional<Mailbox> withGoneGiver(UUID groupId, MemberId receiver);
+    Optional<Mailbox> withDeletedGiver(UUID groupId, MemberId receiver);
 
     /** Deletes every Mailbox in the Group, with its Messages. */
     void removeAllIn(UUID groupId);
 
     /** Deletes every Mailbox, in any Group, this User is the Receiver of, with its Messages. */
-    void removeAllReceivedBy(MemberId user);
+    void removeAllReceivedBy(UserId user);
 
     /**
      * Keeps every Mailbox, in any Group, this User is the Giver of, and its Messages, but forgets that they are its
      * Giver and wrote those Messages.
      */
-    void forgetGiver(MemberId user);
+    void forgetGiver(UserId user);
 }

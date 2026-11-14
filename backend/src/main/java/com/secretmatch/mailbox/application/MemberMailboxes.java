@@ -8,6 +8,7 @@ import com.secretmatch.mailbox.domain.MailboxId;
 import com.secretmatch.mailbox.domain.MailboxNotFoundException;
 import com.secretmatch.mailbox.domain.MemberId;
 import com.secretmatch.mailbox.domain.MessageText;
+import com.secretmatch.mailbox.domain.UserId;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -56,17 +57,17 @@ public class MemberMailboxes {
         MemberId me = new MemberId(member);
         Optional<MemberId> receiver = assignments.receiverOf(groupId, me);
         Optional<MemberId> giver = assignments.giverOf(groupId, me);
-        Map<Pair, Mailbox> opened = openInGlobalOrder(
+        Map<Assignment, Mailbox> opened = openInGlobalOrder(
                 groupId,
                 Stream.concat(
-                                receiver.map(theirs -> new Pair(me, theirs)).stream(),
-                                giver.map(theirs -> new Pair(theirs, me)).stream())
+                                receiver.map(theirs -> new Assignment(me, theirs)).stream(),
+                                giver.map(theirs -> new Assignment(theirs, me)).stream())
                         .toList());
         List<MyMailbox> mine = new ArrayList<>(2);
-        receiver.ifPresent(theirs -> mine.add(
-                new MyMailbox.WithMyReceiver(opened.get(new Pair(me, theirs)).id(), displayNameOf(theirs, members))));
-        giver.map(theirs -> opened.get(new Pair(theirs, me)))
-                .or(() -> mailboxes.withGoneGiver(groupId, me))
+        receiver.ifPresent(theirs -> mine.add(new MyMailbox.WithMyReceiver(
+                opened.get(new Assignment(me, theirs)).id(), displayNameOf(theirs, members))));
+        giver.map(theirs -> opened.get(new Assignment(theirs, me)))
+                .or(() -> mailboxes.withDeletedGiver(groupId, me))
                 .ifPresent(mailbox -> mine.add(new MyMailbox.WithMyGiver(mailbox.id())));
         return List.copyOf(mine);
     }
@@ -114,7 +115,7 @@ public class MemberMailboxes {
      */
     @EventListener
     void on(UserDeleted event) {
-        MemberId user = new MemberId(event.userId());
+        UserId user = new UserId(event.userId());
         mailboxes.removeAllReceivedBy(user);
         mailboxes.forgetGiver(user);
     }
@@ -133,7 +134,7 @@ public class MemberMailboxes {
      * its Receiver has no Giver.
      */
     private boolean isCurrent(Mailbox mailbox) {
-        if (mailbox.giverIsGone()) {
+        if (mailbox.giverDeleted()) {
             return assignments
                     .giverOf(mailbox.groupId().value(), mailbox.receiver())
                     .isEmpty();
@@ -148,19 +149,20 @@ public class MemberMailboxes {
      * Opens the Mailboxes in one order shared by every request, so two Members listing theirs at once never wait
      * for each other's rows in opposite orders (a deadlock).
      */
-    private Map<Pair, Mailbox> openInGlobalOrder(UUID groupId, List<Pair> pairs) {
-        Map<Pair, Mailbox> opened = new HashMap<>();
-        pairs.stream()
-                .sorted(Pair.GLOBAL_ORDER)
-                .forEach(pair -> opened.put(pair, mailboxes.open(groupId, pair.giver(), pair.receiver())));
+    private Map<Assignment, Mailbox> openInGlobalOrder(UUID groupId, List<Assignment> toOpen) {
+        Map<Assignment, Mailbox> opened = new HashMap<>();
+        toOpen.stream()
+                .sorted(Assignment.GLOBAL_ORDER)
+                .forEach(assignment ->
+                        opened.put(assignment, mailboxes.open(groupId, assignment.giver(), assignment.receiver())));
         return opened;
     }
 
-    private record Pair(MemberId giver, MemberId receiver) {
+    private record Assignment(MemberId giver, MemberId receiver) {
 
-        static final Comparator<Pair> GLOBAL_ORDER = Comparator.<Pair, UUID>comparing(
-                        pair -> pair.giver().value())
-                .thenComparing(pair -> pair.receiver().value());
+        static final Comparator<Assignment> GLOBAL_ORDER = Comparator.<Assignment, UUID>comparing(
+                        assignment -> assignment.giver().value())
+                .thenComparing(assignment -> assignment.receiver().value());
     }
 
     private static String displayNameOf(MemberId member, List<GroupMember> members) {

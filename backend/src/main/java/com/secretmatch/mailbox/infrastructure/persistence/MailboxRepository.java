@@ -27,7 +27,7 @@ interface MailboxRepository extends JpaRepository<MailboxEntity, UUID> {
             value = "SELECT * FROM mailboxes WHERE group_id = :groupId AND receiver_id = :receiverId"
                     + " AND giver_id IS NULL",
             nativeQuery = true)
-    Optional<MailboxEntity> findWithGoneGiver(UUID groupId, UUID receiverId);
+    Optional<MailboxEntity> findWithDeletedGiver(UUID groupId, UUID receiverId);
 
     /** Its Messages go along ({@code ON DELETE CASCADE}). */
     @Modifying

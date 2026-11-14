@@ -1372,6 +1372,7 @@ describe('GroupPage', () => {
       expect(text(page().querySelector('[aria-labelledby="group-finished"]'))).toContain(
         'Finalizado',
       );
+      expect(document.activeElement?.id).toBe('mailbox-tab-m-1');
     });
 
     it('opens once the Admin makes the Draw', async () => {

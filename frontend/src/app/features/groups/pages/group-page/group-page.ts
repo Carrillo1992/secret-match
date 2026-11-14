@@ -1,10 +1,12 @@
 import { DOCUMENT } from '@angular/common';
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
+  Injector,
   resource,
   signal,
   untracked,
@@ -87,7 +89,9 @@ export class GroupPage {
   private readonly drawApi = inject(DrawApi);
   private readonly mailboxApi = inject(MailboxApi);
   private readonly router = inject(Router);
-  private readonly origin = inject(DOCUMENT).location.origin;
+  private readonly document = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
+  private readonly origin = this.document.location.origin;
   private readonly groupId = toSignal(
     inject(ActivatedRoute).paramMap.pipe(map((params) => params.get('groupId') ?? '')),
     { requireSync: true },
@@ -249,6 +253,10 @@ export class GroupPage {
     if (outcome.status === 'finished') {
       this.setSend(mailboxId, 'finished');
       await this.finishedMeanwhile();
+      // The composer that had the focus is gone: keep the Member in the same Mailbox.
+      afterNextRender(() => this.document.getElementById(`mailbox-tab-${mailboxId}`)?.focus(), {
+        injector: this.injector,
+      });
       return;
     }
     if (outcome.status === 'sent') {

@@ -40,6 +40,17 @@ Production serves the SPA from Cloudflare Pages (Git integration), not from the 
 
 The config writer is tested with `npm run test:pages`. To try the output locally: `API_BASE_URL=http://localhost:8080 npm run build:pages`, then `npx wrangler pages dev dist/secret-match/browser`.
 
+## PWA (installable app)
+
+Production builds are an installable Progressive Web App (#117): `public/manifest.webmanifest`, the icons in `public/icons/` (192 and 512 `any`, a 512 `maskable` with the gift inside the safe zone, rendered once from `favicon.svg`) and Angular's service worker (`ngsw-config.json`, `serviceWorker` in the production configuration of `angular.json`). `provideServiceWorker` is off under `isDevMode()`, so `ng serve` runs without one.
+
+- **What it caches:** only the app (`index.html`, the hashed bundles, the manifest, icons, fonts), so it opens fast and works as a shell offline. There are no `dataGroups`.
+- **What it never touches:** the API and `/config.json`. API responses are private to one User and a shared device must never get them from a cache; `config.json` differs per deploy and is rewritten after `ng build`. The app registers `public/app-sw.js`, which stops every request to another origin and `/config.json` before Angular's `ngsw-worker.js` (imported below it) sees them, so the browser fetches them as if there were no service worker. Keep `config.json` out of `ngsw-config.json`.
+- **Offline:** `loadAppConfig` (`core/config`) remembers the last `config.json` it read from the network in `localStorage` and uses it only when `/config.json` cannot be reached, so an installed app still starts offline and the landing shows "No podemos conectar con el servidor". Online, the network always wins.
+- **Updates** (`core/updates/AppUpdates`): the service worker fetches a new deploy in the background; once it is ready (`VERSION_READY`), the next in-app navigation becomes a full page load of the new version. No prompt, and nothing typed is lost, because the User is leaving the page anyway. A new version is also looked for whenever the app comes back to the foreground; an `unrecoverable` state reloads the page.
+- **Headers:** `ngsw.json`, `ngsw-worker.js`, `app-sw.js` and the manifest must never be served stale (`no-cache` in `pages/_headers` and `docker/nginx.conf`); a stale `ngsw.json` keeps installed apps on the old build.
+- **Try it locally:** `API_BASE_URL=http://localhost:8080 npm run build:pages`, then `npx wrangler pages dev dist/secret-match/browser`. Chrome DevTools → Application shows the manifest (no installability errors) and the active worker; `/ngsw/state` prints the worker's debug state. To test an update, rebuild and reload once (the new version downloads), then navigate inside the app. To start clean, Application → Storage → "Clear site data". Lighthouse no longer has a PWA category; DevTools' Manifest panel is the installability check.
+
 ## Gotchas
 
 - The Preferences menu button sits in both layouts' headers, so a page spec that looks for "the first `button`" finds it. Query inside `main`, where the page's own content is.

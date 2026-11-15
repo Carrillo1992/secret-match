@@ -50,6 +50,26 @@ secretmatch:
     from-address: ${MAIL_FROM_ADDRESS}
     # The SPA's public address; email links point into it.
     app-base-url: ${APP_BASE_URL}
+  # Throttling of the signed-out identity endpoints (ADR 0006). Each limit is `capacity` requests per
+  # `period`, all back once the period has passed. Override any of them with an environment variable,
+  # e.g. SECRETMATCH_RATELIMIT_DAILYEMAILCAP=80 or SECRETMATCH_RATELIMIT_PERIP_SIGNIN_CAPACITY=20.
+  rate-limit:
+    # Proxies in front of the API that append to X-Forwarded-For. 0: the remote address is the client.
+    trusted-proxies: 0
+    # Verification and Password Reset emails per UTC day, in total; keep it below the Resend quota.
+    daily-email-cap: 50
+    # Silent: over the limit the request answers as usual, but nothing is saved or sent.
+    per-email:
+      sign-up: { capacity: 3, period: 1h }
+      new-verification-link: { capacity: 3, period: 1h }
+      reset-link: { capacity: 3, period: 1h }
+    # Answered with 429 and Retry-After.
+    per-ip:
+      sign-up: { capacity: 5, period: 1h }
+      # Asking for a reset link or a new verification link, together.
+      link-email: { capacity: 10, period: 1h }
+      sign-in: { capacity: 10, period: 1m }
+      password-reset: { capacity: 10, period: 15m }
 
 springdoc:
   # Health is in the OpenAPI document so the SPA reaches it through the generated client.

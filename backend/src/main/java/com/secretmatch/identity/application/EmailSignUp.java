@@ -31,6 +31,7 @@ public class EmailSignUp {
     private final Users users;
     private final SignUpVerifications signUps;
     private final PasswordHasher passwordHasher;
+    private final LinkEmailLimits limits;
     private final ApplicationEventPublisher events;
     private final SecureRandom random;
     private final Clock clock;
@@ -39,20 +40,22 @@ public class EmailSignUp {
             Users users,
             SignUpVerifications signUps,
             PasswordHasher passwordHasher,
+            LinkEmailLimits limits,
             ApplicationEventPublisher events,
             SecureRandom random,
             Clock clock) {
         this.users = users;
         this.signUps = signUps;
         this.passwordHasher = passwordHasher;
+        this.limits = limits;
         this.events = events;
         this.random = random;
         this.clock = clock;
     }
 
     /**
-     * Keeps the sign-up and emails its verification link. If the email already has a User, nothing is
-     * kept or sent, and the id returned matches no sign-up.
+     * Keeps the sign-up and emails its verification link. If the email already has a User, asked too often,
+     * or the daily cap is reached, nothing is kept or sent, and the id returned matches no sign-up.
      */
     @Transactional
     public SignUpId signUp(SignUpCommand command) {
@@ -61,7 +64,9 @@ public class EmailSignUp {
         Language language = Language.ofCode(command.language());
         // Hashed before the lookup, so a registered email does not answer measurably faster here.
         PasswordHash passwordHash = passwordHasher.hash(new NewPassword(command.password()));
-        if (users.existsWithEmail(email)) {
+        if (!limits.allowsRequest(LinkEmailLimits.LinkRequest.SIGN_UP, email)
+                || users.existsWithEmail(email)
+                || !limits.allowsSending()) {
             return SignUpId.newId();
         }
         EmailLinkToken token = EmailLinkToken.generate(random);
@@ -89,7 +94,10 @@ public class EmailSignUp {
         signUps.save(signUp);
     }
 
-    /** Sends a new link for this sign-up, if it is still waiting for one. */
+    /**
+     * Sends a new link for this sign-up, if it is still waiting for one, its email did not ask too often and
+     * the daily cap is not reached.
+     */
     @Transactional
     public void sendNewLink(SignUpId id) {
         signUps.findById(id).ifPresent(this::replaceLink);
@@ -102,7 +110,10 @@ public class EmailSignUp {
     }
 
     private void replaceLink(SignUpVerification signUp) {
-        if (signUp.isUsed() || users.existsWithEmail(signUp.email())) {
+        if (!limits.allowsRequest(LinkEmailLimits.LinkRequest.NEW_VERIFICATION_LINK, signUp.email())
+                || signUp.isUsed()
+                || users.existsWithEmail(signUp.email())
+                || !limits.allowsSending()) {
             return;
         }
         EmailLinkToken token = EmailLinkToken.generate(random);

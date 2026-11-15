@@ -1,10 +1,11 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Api } from '../api/generated/api';
 import { refresh, signIn, signInWithGoogle, signOut } from '../api/generated/functions';
-import { problemCode } from '../api/problem';
+import { isTooManyRequests, problemCode } from '../api/problem';
 import { currentLanguage } from '../language';
 
-export type SignInOutcome = 'signed-in' | 'invalid-credentials' | 'email-not-verified' | 'failed';
+export type SignInOutcome =
+  'signed-in' | 'invalid-credentials' | 'email-not-verified' | 'throttled' | 'failed';
 
 /** `rejected`: the API did not trust the Google ID token (forged, expired, unverified email…). */
 export type GoogleSignInOutcome = 'signed-in' | 'rejected' | 'failed';
@@ -30,6 +31,9 @@ export class AuthSession {
       this.token.set(accessToken);
       return 'signed-in';
     } catch (error) {
+      if (isTooManyRequests(error)) {
+        return 'throttled';
+      }
       const code = problemCode(error);
       return code === 'invalid-credentials' || code === 'email-not-verified' ? code : 'failed';
     }

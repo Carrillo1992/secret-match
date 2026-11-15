@@ -829,6 +829,25 @@
         "responses" : {
           "202" : {
             "description" : "Accepted"
+          },
+          "429" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description" : "Too many requests from this client. Try again after Retry-After seconds.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Seconds to wait before trying again.",
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            }
           }
         },
         "summary" : "Email a link to set a new password",
@@ -852,6 +871,25 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          },
+          "429" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description" : "Too many requests from this client. Try again after Retry-After seconds.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Seconds to wait before trying again.",
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            }
           }
         },
         "summary" : "Set a new password with the token from a reset link",
@@ -882,6 +920,25 @@
               }
             },
             "description" : "OK"
+          },
+          "429" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description" : "Too many requests from this client. Try again after Retry-After seconds.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Seconds to wait before trying again.",
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            }
           }
         },
         "summary" : "Sign in with email and password",
@@ -975,6 +1032,25 @@
               }
             },
             "description" : "Accepted"
+          },
+          "429" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description" : "Too many requests from this client. Try again after Retry-After seconds.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Seconds to wait before trying again.",
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            }
           }
         },
         "summary" : "Sign up with email and password",
@@ -997,6 +1073,25 @@
         "responses" : {
           "202" : {
             "description" : "Accepted"
+          },
+          "429" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description" : "Too many requests from this client. Try again after Retry-After seconds.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Seconds to wait before trying again.",
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            }
           }
         },
         "summary" : "Send a new verification link for a sign-up",
@@ -1131,6 +1226,25 @@
         "responses" : {
           "202" : {
             "description" : "Accepted"
+          },
+          "429" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description" : "Too many requests from this client. Try again after Retry-After seconds.",
+            "headers" : {
+              "Retry-After" : {
+                "description" : "Seconds to wait before trying again.",
+                "schema" : {
+                  "type" : "integer",
+                  "format" : "int32"
+                }
+              }
+            }
           }
         },
         "summary" : "Send a new verification link in place of an old one",
@@ -1608,6 +1722,28 @@
           "preferences" : {
             "type" : "string",
             "description" : "Left out when there are none."
+          }
+        }
+      },
+      "Problem" : {
+        "type" : "object",
+        "description" : "An RFC 9457 problem.",
+        "properties" : {
+          "detail" : {
+            "type" : "string"
+          },
+          "instance" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
           }
         }
       },

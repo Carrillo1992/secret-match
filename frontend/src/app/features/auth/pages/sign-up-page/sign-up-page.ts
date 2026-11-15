@@ -23,7 +23,7 @@ import { Alert } from '../../../../shared/ui/alert/alert';
 import { GoogleSignIn } from '../../components/google-sign-in/google-sign-in';
 import { HOME, SIGN_IN } from '../../../../core/route-paths';
 
-type SubmitError = 'invalid' | 'failed';
+type SubmitError = 'invalid' | 'throttled' | 'failed';
 
 @Component({
   selector: 'app-sign-up-page',

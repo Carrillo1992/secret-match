@@ -29,6 +29,11 @@ import { NewLinkStatus } from '../../data-access/new-verification-link';
               ese correo ya tenga una cuenta.
             </p>
           }
+          @case ('throttled') {
+            <p class="font-semibold text-danger" i18n>
+              Demasiados intentos. Inténtalo de nuevo más tarde.
+            </p>
+          }
           @case ('failed') {
             <p class="font-semibold text-danger" i18n>
               No hemos podido enviar el enlace. Inténtalo de nuevo.

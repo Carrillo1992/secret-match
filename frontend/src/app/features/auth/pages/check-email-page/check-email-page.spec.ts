@@ -59,6 +59,19 @@ describe('CheckEmailPage', () => {
     expect(page().querySelector('[role="status"]')?.textContent).toContain('enlace nuevo');
   });
 
+  it('says to wait when there were too many attempts', async () => {
+    await arriveFromSignUp();
+
+    page().querySelector('button')?.click();
+    http.expectOne(NEW_LINK_URL).flush(null, { status: 429, statusText: 'Too Many Requests' });
+    await new Promise((resolve) => setTimeout(resolve));
+    harness.detectChanges();
+
+    expect(page().querySelector('[role="status"]')?.textContent).toContain(
+      'Demasiados intentos. Inténtalo de nuevo más tarde.',
+    );
+  });
+
   it('keeps the new-link button after a reload, without the email', async () => {
     await harness.navigateByUrl('/check-email?signUp=id-1');
 

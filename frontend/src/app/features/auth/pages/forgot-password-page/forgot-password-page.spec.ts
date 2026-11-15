@@ -93,4 +93,18 @@ describe('ForgotPasswordPage', () => {
     );
     expect(emailInput()).not.toBeNull();
   });
+
+  it('says to wait when there were too many attempts, and keeps the form', async () => {
+    await harness.navigateByUrl('/forgot-password');
+    typeEmail('ana@example.com');
+    await submit();
+
+    http.expectOne(RESET_EMAIL_URL).flush(null, { status: 429, statusText: 'Too Many Requests' });
+    await settle();
+
+    expect(page().querySelector('[role="alert"]')?.textContent).toContain(
+      'Demasiados intentos. Inténtalo de nuevo más tarde.',
+    );
+    expect(emailInput()).not.toBeNull();
+  });
 });

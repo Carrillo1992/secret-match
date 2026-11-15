@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../../core/api/generated/api';
-import { problemCode } from '../../../core/api/problem';
+import { isTooManyRequests, problemCode } from '../../../core/api/problem';
 import { currentLanguage } from '../../../core/language';
 import {
   sendNewLinkForSignUp,
@@ -10,7 +10,7 @@ import {
   verifyEmail,
 } from '../../../core/api/generated/functions';
 import { SignUpRequest } from '../../../core/api/generated/models';
-import { accepted } from './accepted';
+import { accepted, RequestOutcome } from './accepted';
 
 /**
  * `accepted` also covers an email that already has an account: the API answers both the same, with a
@@ -19,6 +19,7 @@ import { accepted } from './accepted';
 export type SignUpOutcome =
   | { readonly status: 'accepted'; readonly signUpId: string }
   | { readonly status: 'invalid' }
+  | { readonly status: 'throttled' }
   | { readonly status: 'failed' };
 
 export type VerifyEmailOutcome = 'verified' | 'expired' | 'used' | 'invalid' | 'failed';
@@ -42,6 +43,9 @@ export class SignUpApi {
       });
       return { status: 'accepted', signUpId };
     } catch (error) {
+      if (isTooManyRequests(error)) {
+        return { status: 'throttled' };
+      }
       return { status: isClientError(error) ? 'invalid' : 'failed' };
     }
   }
@@ -55,13 +59,13 @@ export class SignUpApi {
     }
   }
 
-  /** Resolves `true` once the API has taken the request, whether or not it sends anything. */
-  newLinkForSignUp(signUpId: string): Promise<boolean> {
+  /** Resolves `accepted` once the API has taken the request, whether or not it sends anything. */
+  newLinkForSignUp(signUpId: string): Promise<RequestOutcome> {
     return accepted(this.api.invoke(sendNewLinkForSignUp, { signUpId }));
   }
 
-  /** Resolves `true` once the API has taken the request, whether or not it sends anything. */
-  newLinkInPlaceOf(token: string): Promise<boolean> {
+  /** Resolves `accepted` once the API has taken the request, whether or not it sends anything. */
+  newLinkInPlaceOf(token: string): Promise<RequestOutcome> {
     return accepted(this.api.invoke(sendNewLinkInPlaceOf, { body: { token } }));
   }
 }

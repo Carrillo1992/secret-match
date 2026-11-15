@@ -30,6 +30,7 @@ public class PasswordResetting {
     private final PasswordResets resets;
     private final RefreshTokens refreshTokens;
     private final PasswordHasher passwordHasher;
+    private final LinkEmailLimits limits;
     private final ApplicationEventPublisher events;
     private final SecureRandom random;
     private final Clock clock;
@@ -39,6 +40,7 @@ public class PasswordResetting {
             PasswordResets resets,
             RefreshTokens refreshTokens,
             PasswordHasher passwordHasher,
+            LinkEmailLimits limits,
             ApplicationEventPublisher events,
             SecureRandom random,
             Clock clock) {
@@ -46,6 +48,7 @@ public class PasswordResetting {
         this.resets = resets;
         this.refreshTokens = refreshTokens;
         this.passwordHasher = passwordHasher;
+        this.limits = limits;
         this.events = events;
         this.random = random;
         this.clock = clock;
@@ -53,11 +56,16 @@ public class PasswordResetting {
 
     /**
      * Emails a reset link to the User with this email, replacing any earlier link of theirs. An email
-     * without a User gets nothing, and the caller cannot tell.
+     * without a User gets nothing, and the caller cannot tell. Neither can they tell when the email asked
+     * too often or the daily cap is reached: nothing is replaced or sent then either.
      */
     @Transactional
     public void sendResetLink(EmailAddress email) {
-        users.findByEmail(email).ifPresent(this::issueLinkTo);
+        // Counted before the lookup, so an email with a User and one without reach the limit alike.
+        if (!limits.allowsRequest(LinkEmailLimits.LinkRequest.RESET_LINK, email)) {
+            return;
+        }
+        users.findByEmail(email).filter(user -> limits.allowsSending()).ifPresent(this::issueLinkTo);
     }
 
     /**

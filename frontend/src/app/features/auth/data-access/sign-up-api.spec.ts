@@ -140,7 +140,7 @@ describe('SignUpApi', () => {
     expect(request.request.method).toBe('POST');
     request.flush(null, { status: 202, statusText: 'Accepted' });
 
-    await expect(done).resolves.toBe(true);
+    await expect(done).resolves.toBe('accepted');
   });
 
   it('asks for a new link in place of an old one', async () => {
@@ -150,13 +150,13 @@ describe('SignUpApi', () => {
     expect(request.request.body).toEqual({ token: 'tok-123' });
     request.flush(null, { status: 202, statusText: 'Accepted' });
 
-    await expect(done).resolves.toBe(true);
+    await expect(done).resolves.toBe('accepted');
   });
 
   it('reports a failed request for a new link', async () => {
     const done = signUpApi.newLinkInPlaceOf('tok-123');
     http.expectOne(`${API}/verification-emails`).error(new ProgressEvent('error'), { status: 0 });
 
-    await expect(done).resolves.toBe(false);
+    await expect(done).resolves.toBe('failed');
   });
 });

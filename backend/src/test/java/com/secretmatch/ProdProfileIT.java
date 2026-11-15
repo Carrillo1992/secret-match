@@ -3,6 +3,7 @@ package com.secretmatch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.secretmatch.notification.application.EmailSender;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -12,6 +13,7 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTe
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
@@ -53,5 +55,27 @@ class ProdProfileIT {
     @DisplayName("still serves health and the OpenAPI document in prod")
     void stillServesHealthAndOpenApi(String path) {
         http.get().uri(path).exchange().expectStatus().isOk();
+    }
+
+    @Test
+    @DisplayName("behind Render's proxies, a client that writes its own X-Forwarded-For entries still hits its limit")
+    void spoofedForwardedForDoesNotResetTheLimit() {
+        // Render appends Cloudflare's edge address, and Cloudflare appended the real client before it.
+        for (int i = 0; i < 10; i++) {
+            signIn("10.0.0." + i + ", 203.0.113.7, 104.22.17.40").expectStatus().isEqualTo(422);
+        }
+
+        signIn("10.0.0.99, 203.0.113.7, 104.22.17.40").expectStatus().isEqualTo(429);
+        // Another real client keeps its own limit.
+        signIn("203.0.113.7, 198.51.100.9, 104.22.17.40").expectStatus().isEqualTo(422);
+    }
+
+    private RestTestClient.ResponseSpec signIn(String forwardedFor) {
+        return http.post()
+                .uri("/api/v1/sessions")
+                .header("X-Forwarded-For", forwardedFor)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("email", "nobody@example.com", "password", "turrón-y-polvorones"))
+                .exchange();
     }
 }

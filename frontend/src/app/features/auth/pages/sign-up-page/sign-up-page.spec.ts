@@ -155,6 +155,17 @@ describe('SignUpPage', () => {
     expect(page.querySelector('[role="alert"]')?.textContent).toContain('Inténtalo de nuevo');
     expect(page.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
   });
+
+  it('says to wait when there were too many attempts', async () => {
+    fillValidForm();
+    await submit();
+    http.expectOne(SIGN_UP_URL).flush(null, { status: 429, statusText: 'Too Many Requests' });
+    await settle();
+
+    expect(page.querySelector('[role="alert"]')?.textContent).toContain(
+      'Demasiados intentos. Inténtalo de nuevo más tarde.',
+    );
+  });
 });
 
 describe('SignUpPage on the way somewhere', () => {

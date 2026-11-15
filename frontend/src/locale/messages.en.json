@@ -410,6 +410,8 @@
     "1500181871307171807": "Language",
     "8951812121956160613": "We couldn't change the language. Try again.",
     "7141801258089700354": "Your emails use it too.",
-    "1199908807070149151": "SecretMatch couldn't start. Reload the page in a few minutes."
+    "1199908807070149151": "SecretMatch couldn't start. Reload the page in a few minutes.",
+    "5390567353277988250": "Too many attempts. Try again later.",
+    "5218097783606911738": " Too many attempts. Try again later. "
   }
 }

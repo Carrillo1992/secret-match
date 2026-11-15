@@ -23,7 +23,7 @@ import { emailShape, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { GoogleSignIn } from '../../components/google-sign-in/google-sign-in';
 
-type SubmitError = 'invalid' | 'failed';
+type SubmitError = 'invalid' | 'throttled' | 'failed';
 
 @Component({
   selector: 'app-sign-up-page',

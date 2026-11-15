@@ -129,4 +129,17 @@ describe('ResetPasswordPage', () => {
     );
     expect(passwordInput()).not.toBeNull();
   });
+
+  it('says to wait when there were too many attempts, and keeps the form', async () => {
+    await harness.navigateByUrl('/reset-password?token=tok-123');
+    typePassword('mazapán-de-toledo');
+    await submit();
+    http.expectOne(RESET_URL).flush(null, { status: 429, statusText: 'Too Many Requests' });
+    await settle();
+
+    expect(page().querySelector('[role="alert"]')?.textContent).toContain(
+      'Demasiados intentos. Inténtalo de nuevo más tarde.',
+    );
+    expect(passwordInput()).not.toBeNull();
+  });
 });

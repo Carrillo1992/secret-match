@@ -18,14 +18,28 @@ Items marked 🟡 are open decisions. Settle them through grilling/specs and rec
                                             └─────────────┘
 ```
 
-| Part | Hosting (free tier) |
-|---|---|
-| SPA | Cloudflare Pages (or Vercel) |
-| API | Docker image on Render (or Koyeb) |
-| Database | Neon (or Supabase) PostgreSQL |
-| Email | Resend |
+| Part | Hosting (production, #107) | Address |
+|---|---|---|
+| SPA | Cloudflare Pages, free plan | `https://app.secret-match.app` |
+| API | Heroku, Common Runtime, EU region, container stack: one Basic dyno (512 MB, never sleeps), image built from `backend/Dockerfile` by `heroku.yml` | `https://api.secret-match.app` |
+| Database | Heroku Postgres Essential-0 (1 GB, 20 connections) | `DATABASE_URL`, set by Heroku |
+| Email | Resend, free plan (3,000 a month, 100 a day) | from `no-reply@secret-match.app` |
 
-Constraints: fewer than 100 users, €0 infrastructure. Free hosts sleep when idle, so the first request after a pause can be slow. That is accepted, not engineered around.
+DNS is on Cloudflare. The `api` record is DNS-only (not proxied), so the Heroku router is the only proxy in front of the API; Heroku's Automated Certificate Management serves its TLS certificate. SPA and API share one registrable domain, so the refresh cookie is first-party.
+
+Constraints: fewer than 100 users, €0 out of pocket. The Heroku dyno ($7/month) and database ($5/month) are paid from the GitHub Student Pack credit ($13/month), so the API does not sleep and has no cold start. Cost guardrails that must stay true:
+
+- Exactly one Basic web dyno: no second dyno, no Performance or Eco dynos. The in-memory rate limits (ADR 0006) also assume one instance.
+- No paid third-party add-ons (the Student credit does not cover them).
+- Heroku resources are created only once the Student credit shows in Billing.
+- Domain auto-renew off, and a reminder before the Student credit runs out. Pausing is `heroku ps:scale web=0`.
+
+**Running on Heroku** (#108):
+
+- The API listens on `$PORT` (Heroku assigns it and stops a web dyno that has not bound to it within 60 s), and on 8080 when `PORT` is unset.
+- In `prod`, `DATABASE_URL` may be Heroku's `postgres://user:password@host:port/db`. `shared.infrastructure.persistence.HerokuDatabaseUrl`, an `EnvironmentPostProcessor`, turns it into the JDBC URL (with `sslmode=require`), username and password at every start, so credentials Heroku rotates are picked up on the restart Heroku does after rotating them. A JDBC `DATABASE_URL`, and every other profile, are left alone. The Hikari pool is capped at 5 connections.
+- The JVM is sized for 512 MB through `JAVA_TOOL_OPTIONS` in `backend/Dockerfile` (explicit heap, smaller thread stacks, serial GC, C1 only); a config var of the same name replaces it.
+- No release phase: Flyway migrates at startup. Deploys come from Heroku's GitHub integration on `main`, with "wait for CI".
 
 ## 2. Backend
 
@@ -86,7 +100,7 @@ The module list is a starting point. Grilling and specs may merge or split modul
   - The JWT is signed with HS256 using `JWT_SIGNING_KEY` (Base64, at least 256 bits). The API issues and checks its own tokens, so no key pair or external issuer is needed.
   - Rotation: every refresh issues a new refresh token and invalidates the old one. Reuse of an invalidated token revokes the whole token family. Exception: for 10 seconds after a rotation, the old token still gets an access token, with no new cookie. That covers two tabs reloading at once with the same cookie, since the browser already holds the new one. After those 10 seconds it counts as a reuse.
   - A refresh or sign-out sent from any origin other than the SPA is refused with `403` by the CORS processing, before it reaches the API. Another site cannot rotate or end a session through the browser's cookie.
-  - The SPA and API live on different domains on the free hosts, so the cookie needs `SameSite=None`. A custom domain shared by both would allow `SameSite=Lax`/`Strict` later.
+  - The cookie is `SameSite=None`, from when the SPA and API lived on unrelated domains. In production they now share one registrable domain (section 1), which would allow `SameSite=Lax`/`Strict` later.
 
 ### 2.5 Cross-cutting
 
@@ -99,8 +113,8 @@ The module list is a starting point. Grilling and specs may merge or split modul
 - **Email delivery: sent after the transaction commits, off the request thread.** The use case publishes an application event and a `@TransactionalEventListener(phase = AFTER_COMMIT)` hands it to the `notification` port on a dedicated executor (`@Async`). An email is therefore never sent for a change that rolled back, and the HTTP response never waits for one. That is about anonymity, not only speed: an answer that waits for the provider would be measurably slower exactly when an email goes out, so asking for a password reset or signing up would tell whether an email has a User (#96). The executor is bounded (2 threads, a queue of 100); when the queue is full a new email is dropped and logged like a failed send, never run on the request thread. On graceful shutdown the app waits up to 10 seconds for queued emails. A failed send is logged (without personal data) and does **not** fail or undo the business action. There are no automatic retries; an outbox table is the upgrade path if that becomes a problem. The `EmailSender` port is backed by Resend in `prod` and by a local mail catcher (Mailpit, in the compose stack) in every other profile, so nothing is really delivered outside `prod`. See 2.6 for how to add an email.
 - **When a membership ends, other modules clean up through an event.** Leaving a Group or being removed from it publishes `group.application.MembershipEnded(groupId, memberId)` inside the use case's transaction. A module that keeps data per Member of a Group (the Draw module's Exclusions, the Wishlist module's Wishlist) deletes it from a plain `@EventListener`, which runs in that same transaction: if the cleanup fails, the Member stays in the Group. `group` therefore depends on none of those modules. Deleting a Group works the same way with `group.application.GroupDeleted(groupId)`, published before the Group's rows are deleted: every module that keeps data in a Group (Exclusions, the Draw, Wishlists, Mailboxes) deletes all of it from a plain `@EventListener`. Cancelling a Draw works the same way with `draw.application.DrawCancelled(groupId)`, published inside the transaction that deletes its Assignments: a module that keeps data tied to that Draw deletes it from a plain `@EventListener` (the Mailbox module deletes the Group's Mailboxes and their Messages there, #36).
 - **Deleting a User's account goes the same way, in two steps** (`identity.application.Profile.deleteAccount`, #19). First `UserDeletionRequested(userId)`: a module that must refuse throws a `DomainException` from its listener and changes nothing (the Draw module, while the User is in a Group whose Draw is made and whose Exchange Date has not passed). Then `UserDeleted(userId)`, before the User's row goes: the Groups module deletes the Groups they are the Admin of (with `GroupDeleted` and its emails) and ends their other memberships (with `MembershipEnded`), finished Groups included; the Draw module deletes their remaining Assignments; the Mailbox module deletes the Mailboxes where they are the Receiver, with their Messages, and keeps those where they are the Giver but forgets who that Giver was and who wrote their Messages (`giver_id` and `author_id` become `NULL`): their Receiver keeps "Tu Giver" as before, because a Mailbox disappearing just as a Member leaves the Group would tell the Receiver who their Giver was (ADR 0001). Their refresh tokens and Password Reset go with the row (`ON DELETE CASCADE`), so every Session ends. Two events rather than one with ordered listeners, so no refusal can come after another module already deleted something. `identity` therefore depends on none of those modules.
-- **No scheduled jobs in the MVP.** The free host sleeps when idle, so an in-process scheduler (`@Scheduled`, Quartz) cannot be trusted to fire on time. Time-triggered emails (e.g. an Exchange Date reminder) are deferred. Upgrade path: a daily `@Scheduled` job that is idempotent (sends what is due and not yet sent, also on startup) plus an external scheduled ping (e.g. GitHub Actions) to wake the API.
-- **Rate limiting** of the signed-out identity endpoints (ADR 0006), in memory with Bucket4j: per client IP, answered with `429` and `Retry-After` (the IP is the one Render's proxies append to `X-Forwarded-For`, never the leftmost entry); per email, silently, in the use cases through `identity.application.LinkEmailLimits`; and a daily cap on Verification and Password Reset emails only. Limits are properties under `secretmatch.rate-limit`.
+- **No scheduled jobs in the MVP.** Time-triggered emails (e.g. an Exchange Date reminder) are deferred: no ticket needs them yet. The Basic dyno no longer sleeps, but Heroku restarts every dyno at least once a day and on every deploy, and the app may be paused with `heroku ps:scale web=0`, so an in-process scheduler (`@Scheduled`, Quartz) still cannot assume it is running at a given moment. Upgrade path: a daily `@Scheduled` job that is idempotent (sends what is due and not yet sent, also on startup).
+- **Rate limiting** of the signed-out identity endpoints (ADR 0006), in memory with Bucket4j: per client IP, answered with `429` and `Retry-After` (the IP is the one the Heroku router appends to `X-Forwarded-For`, never an entry the client sent); per email, silently, in the use cases through `identity.application.LinkEmailLimits`; and a daily cap on Verification and Password Reset emails only. Limits are properties under `secretmatch.rate-limit`.
 - **Language**: the UI and every email exist in Spanish and English (ADR 0005). The SPA resolves its Language before bootstrap and reloads to switch it; a User has a Language, saved from the Preferences menu and applied on sign-in; each email goes out in its recipient's Language. Code, docs and API identifiers stay in English.
 
 ### 2.6 Adding an email
@@ -151,4 +165,4 @@ secret-match/
 ```
 
 - CI runs the checks in `docs/verification.md` on every PR, only for the areas the PR touches.
-- `main` is always deployable. Deploys are triggered from `main`.
+- `main` is always deployable. Deploys are triggered from `main`: Heroku's GitHub integration builds the API image (`heroku.yml`) once CI passes; Cloudflare Pages builds the SPA.

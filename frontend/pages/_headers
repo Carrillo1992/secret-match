@@ -1,0 +1,24 @@
+# Cloudflare Pages response headers: the Pages counterpart of docker/nginx.conf.
+# Copied into the build output by `npm run build:pages` (pages/finish-build.mjs).
+# Syntax: https://developers.cloudflare.com/pages/configuration/headers/
+# Every matching rule applies, in file order, and a header set twice is joined with commas, so a
+# later rule detaches Cache-Control ("! Cache-Control") before setting its own.
+
+# Everything is revalidated on each load (the SPA shell: / and every client-side route Pages
+# answers with index.html), so a deploy is picked up at once.
+/*
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+
+# Deployment-specific: never let a browser keep a stale copy.
+/config.json
+  ! Cache-Control
+  Cache-Control: no-store
+
+# No long cache for the fingerprinted bundles (main-*, chunk-*, media/*): Pages answers a request
+# for a file that does not exist with index.html (SPA fallback, 200), so an "immutable" rule would
+# pin that HTML in the browser for a stale chunk name, and a rollback to that build would then break
+# for that browser. Revalidating (no-cache above; Pages sends ETags, so unchanged files are 304s)
+# keeps them correct.

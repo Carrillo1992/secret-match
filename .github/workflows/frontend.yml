@@ -60,5 +60,8 @@ jobs:
       - name: Tests with coverage
         run: npm test -- --watch=false
 
+      - name: Cloudflare Pages config writer
+        run: npm run test:pages
+
       - name: Production build
         run: npm run build

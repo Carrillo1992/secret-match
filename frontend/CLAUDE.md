@@ -25,6 +25,21 @@ The Spanish copy in the templates is the source; English is `src/locale/messages
 - Dates and numbers go through `intlLocale()` (`core/language.ts`), never a hard-coded locale.
 - Specs run in Spanish (`test-setup.ts`). An English spec (`*.en.spec.ts`, one per feature at least) imports `src/testing/english.ts` first, imports the component dynamically in a `beforeAll` (module-level `$localize` is translated as its module loads), and asserts `spanishLeftIn(page)` is empty. Spec files run isolated (`"isolate": true` in `angular.json`) so the English copy stays in its file.
 
+## Deploying the SPA on Cloudflare Pages
+
+Production serves the SPA from Cloudflare Pages (Git integration), not from the Docker image. The app reads `/config.json` at startup, so `npm run build:pages` runs the production build and then `pages/finish-build.mjs`, which writes `config.json` from the environment variables (the build fails without `API_BASE_URL`) and copies `pages/_headers` (caching and security headers, the Pages counterpart of `docker/nginx.conf`) into the output. Deep links need no `_redirects`: with no `404.html` in the output, Pages serves `index.html` for any path that is not a file. Project settings:
+
+| Setting                | Value                                                                                                                                                           |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework preset       | None (the Angular preset assumes another output directory)                                                                                                      |
+| Root directory         | `frontend`                                                                                                                                                      |
+| Build command          | `npm run build:pages`                                                                                                                                           |
+| Build output directory | `dist/secret-match/browser`                                                                                                                                     |
+| Production branch      | `main`                                                                                                                                                          |
+| Environment variables  | `API_BASE_URL` (the API origin, required), `GOOGLE_CLIENT_ID` (optional), `NODE_VERSION=26` (the build image defaults to an older Node; `.nvmrc` says the same) |
+
+The config writer is tested with `npm run test:pages`. To try the output locally: `API_BASE_URL=http://localhost:8080 npm run build:pages`, then `npx wrangler pages dev dist/secret-match/browser`.
+
 ## Gotchas
 
 - The Preferences menu button sits in both layouts' headers, so a page spec that looks for "the first `button`" finds it. Query inside `main`, where the page's own content is.

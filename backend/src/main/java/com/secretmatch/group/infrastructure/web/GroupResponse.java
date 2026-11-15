@@ -13,9 +13,15 @@ record GroupResponse(
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String name,
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) LocalDate exchangeDate,
 
-        @Schema(description = "In euros; absent when the Group has no budget.")
+        @Schema(description = "In the Group's currency; absent when the Group has no budget.")
         @JsonInclude(JsonInclude.Include.NON_NULL)
         BigDecimal budget,
+
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                allowableValues = {"EUR", "USD"},
+                description = "The money the budget and the Wish prices are in.")
+        String currency,
 
         @Schema(
                 requiredMode = Schema.RequiredMode.REQUIRED,
@@ -51,6 +57,7 @@ record GroupResponse(
                 group.name(),
                 group.exchangeDate(),
                 group.budget(),
+                group.currency(),
                 group.timeZone(),
                 group.members().stream()
                         .map(member ->

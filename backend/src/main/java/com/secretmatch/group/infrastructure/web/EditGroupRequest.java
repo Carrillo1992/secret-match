@@ -1,5 +1,6 @@
 package com.secretmatch.group.infrastructure.web;
 
+import com.secretmatch.group.domain.Currency;
 import com.secretmatch.group.domain.GroupName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Digits;
@@ -19,10 +20,17 @@ record EditGroupRequest(
 
         @NotNull LocalDate exchangeDate,
 
-        @Schema(description = "In euros, to the cent. Leave it out to take the budget away.")
+        @Schema(description = "In the Group's currency, to the cent. Leave it out to take the budget away.")
         @PositiveOrZero
         @Digits(integer = 6, fraction = 2)
         BigDecimal budget,
+
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
+                description =
+                        "The money the budget and the Wish prices are in. Changing it relabels them, it never converts them; it can change after the Draw.")
+        @NotNull
+        Currency currency,
 
         @Schema(
                 requiredMode = Schema.RequiredMode.REQUIRED,

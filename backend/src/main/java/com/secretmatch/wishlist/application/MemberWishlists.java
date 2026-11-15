@@ -80,6 +80,7 @@ public class MemberWishlists {
                 ordered,
                 preferences.of(groupId, member.id()),
                 dontLists.of(groupId, member.id()),
+                roster.currency(),
                 roster.finished());
     }
 

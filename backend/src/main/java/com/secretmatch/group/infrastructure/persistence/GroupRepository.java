@@ -1,5 +1,6 @@
 package com.secretmatch.group.infrastructure.persistence;
 
+import com.secretmatch.group.domain.Currency;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -67,10 +68,12 @@ interface GroupRepository extends JpaRepository<GroupEntity, UUID> {
     @Modifying
     @Query("""
             UPDATE GroupEntity g
-            SET g.name = :name, g.exchangeDate = :exchangeDate, g.budget = :budget, g.timeZone = :timeZone
+            SET g.name = :name, g.exchangeDate = :exchangeDate, g.budget = :budget, g.currency = :currency,
+                g.timeZone = :timeZone
             WHERE g.id = :groupId
             """)
-    int updateDetails(UUID groupId, String name, LocalDate exchangeDate, BigDecimal budget, String timeZone);
+    int updateDetails(
+            UUID groupId, String name, LocalDate exchangeDate, BigDecimal budget, Currency currency, String timeZone);
 
     @Modifying
     @Query("UPDATE GroupEntity g SET g.inviteCode = :inviteCode WHERE g.id = :groupId")

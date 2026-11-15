@@ -448,7 +448,7 @@ class MemberWishlistsTest {
             return Optional.ofNullable(groups.get(groupId))
                     .filter(members ->
                             members.stream().anyMatch(m -> m.id().value().equals(viewer)))
-                    .map(members -> new Roster(members, finished.contains(groupId)));
+                    .map(members -> new Roster(members, "EUR", finished.contains(groupId)));
         }
     }
 

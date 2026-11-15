@@ -87,6 +87,39 @@ class WishlistIT {
     }
 
     @Test
+    @DisplayName(
+            "Wish prices are in the Group's Currency, for the owner and their Giver; changing it never converts them")
+    void pricesAreInTheGroupsCurrency() {
+        Family family = family();
+        addWish(family.luis(), family, Map.of("title", "Bufanda", "price", 30))
+                .expectStatus()
+                .isCreated();
+        assertThat(json(get(family.luis(), wishlistOf(family, family.luisId())))
+                        .get("currency")
+                        .asString())
+                .isEqualTo("EUR");
+
+        put(
+                        family.carmen(),
+                        "/api/v1/groups/" + family.groupId(),
+                        Map.of("name", "Navidad", "exchangeDate", "2026-12-24", "currency", "USD", "timeZone", "UTC"))
+                .expectStatus()
+                .isOk();
+        User pablo = signedInUser("Pablo");
+        joinGroup(pablo, family.carmen(), family.groupId());
+        post(family.carmen(), "/api/v1/groups/" + family.groupId() + "/draw", Map.of())
+                .expectStatus()
+                .is2xxSuccessful();
+        User giver = giverOf(family, family.luisId(), List.of(family.carmen(), family.marta(), pablo));
+
+        for (User reader : List.of(family.luis(), giver)) {
+            JsonNode wishlist = json(get(reader, wishlistOf(family, family.luisId())));
+            assertThat(wishlist.get("currency").asString()).isEqualTo("USD");
+            assertThat(wishlist.at("/wishes/0/price").decimalValue()).isEqualByComparingTo("30");
+        }
+    }
+
+    @Test
     @DisplayName("a Wish with only a title is medium priority, and its absent fields are left out")
     void defaultsAndOwnership() {
         Family family = family();
@@ -797,8 +830,10 @@ class WishlistIT {
     record User(String accessToken, String email) {}
 
     private String createGroup(User admin, String name) {
-        RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", "UTC"));
+        RestTestClient.ResponseSpec created = post(
+                admin,
+                "/api/v1/groups",
+                Map.of("name", name, "exchangeDate", "2026-12-24", "currency", "EUR", "timeZone", "UTC"));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

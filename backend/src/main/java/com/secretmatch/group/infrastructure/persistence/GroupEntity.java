@@ -1,6 +1,7 @@
 package com.secretmatch.group.infrastructure.persistence;
 
 import com.secretmatch.group.domain.Budget;
+import com.secretmatch.group.domain.Currency;
 import com.secretmatch.group.domain.Group;
 import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.GroupName;
@@ -12,6 +13,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OrderBy;
@@ -39,6 +42,10 @@ class GroupEntity {
 
     @Column(precision = 8, scale = 2)
     private BigDecimal budget;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 3)
+    private Currency currency;
 
     @Column(name = "time_zone", nullable = false)
     private String timeZone;
@@ -68,7 +75,8 @@ class GroupEntity {
         entity.id = group.id().value();
         entity.name = group.name().value();
         entity.exchangeDate = group.exchangeDate();
-        entity.budget = group.budget().map(Budget::euros).orElse(null);
+        entity.budget = group.budget().map(Budget::amount).orElse(null);
+        entity.currency = group.currency();
         entity.timeZone = group.timeZone().id();
         entity.adminId = group.admin().value();
         entity.inviteCode = group.inviteCode().value();
@@ -84,6 +92,7 @@ class GroupEntity {
                 new GroupName(name),
                 exchangeDate,
                 budget == null ? null : new Budget(budget),
+                currency,
                 new TimeZone(timeZone),
                 new MemberId(adminId),
                 members.stream().map(member -> new MemberId(member.userId)).toList(),

@@ -18,7 +18,8 @@ record WishResponse(
         @Schema(description = "Always an http or https address.")
         String link,
 
-        @Schema(description = "Approximately, in euros.") BigDecimal price,
+        @Schema(description = "Approximately, in the Group's currency.")
+        BigDecimal price,
 
         String notes,
 

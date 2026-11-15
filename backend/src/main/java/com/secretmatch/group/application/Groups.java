@@ -40,7 +40,7 @@ public interface Groups {
      */
     boolean removeMember(GroupId group, MemberId user);
 
-    /** Stores the Group's name, Exchange Date, budget and Time Zone. */
+    /** Stores the Group's name, Exchange Date, budget, Currency and Time Zone. */
     void saveDetails(Group group);
 
     /**

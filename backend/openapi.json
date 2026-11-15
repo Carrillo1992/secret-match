@@ -186,7 +186,7 @@
             "description" : "OK"
           }
         },
-        "summary" : "Edit the Group's name, budget, Exchange Date and Time Zone",
+        "summary" : "Edit the Group's name, budget, Currency, Exchange Date and Time Zone",
         "tags" : [ "groups" ]
       }
     },
@@ -1188,8 +1188,13 @@
         "properties" : {
           "budget" : {
             "type" : "number",
-            "description" : "In euros, to the cent. Leave it out for a Group without a budget.",
+            "description" : "In the Group's currency, to the cent. Leave it out for a Group without a budget.",
             "minimum" : 0
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The money the budget and the Wish prices are in.",
+            "enum" : [ "EUR", "USD" ]
           },
           "exchangeDate" : {
             "type" : "string",
@@ -1208,7 +1213,7 @@
             "minLength" : 0
           }
         },
-        "required" : [ "exchangeDate", "name", "timeZone" ]
+        "required" : [ "currency", "exchangeDate", "name", "timeZone" ]
       },
       "CurrentUserResponse" : {
         "type" : "object",
@@ -1281,8 +1286,13 @@
         "properties" : {
           "budget" : {
             "type" : "number",
-            "description" : "In euros, to the cent. Leave it out to take the budget away.",
+            "description" : "In the Group's currency, to the cent. Leave it out to take the budget away.",
             "minimum" : 0
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The money the budget and the Wish prices are in. Changing it relabels them, it never converts them; it can change after the Draw.",
+            "enum" : [ "EUR", "USD" ]
           },
           "exchangeDate" : {
             "type" : "string",
@@ -1301,7 +1311,7 @@
             "minLength" : 0
           }
         },
-        "required" : [ "exchangeDate", "name", "timeZone" ]
+        "required" : [ "currency", "exchangeDate", "name", "timeZone" ]
       },
       "ExcludedMemberResponse" : {
         "type" : "object",
@@ -1360,7 +1370,12 @@
           },
           "budget" : {
             "type" : "number",
-            "description" : "In euros; absent when the Group has no budget."
+            "description" : "In the Group's currency; absent when the Group has no budget."
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The money the budget and the Wish prices are in.",
+            "enum" : [ "EUR", "USD" ]
           },
           "drawn" : {
             "type" : "boolean",
@@ -1397,7 +1412,7 @@
             "description" : "IANA time zone id the day of each Mailbox Message is cut in; frozen by the Draw."
           }
         },
-        "required" : [ "admin", "drawn", "exchangeDate", "finished", "id", "inviteCode", "members", "name", "timeZone" ]
+        "required" : [ "admin", "currency", "drawn", "exchangeDate", "finished", "id", "inviteCode", "members", "name", "timeZone" ]
       },
       "GroupSummaryResponse" : {
         "type" : "object",
@@ -1408,7 +1423,12 @@
           },
           "budget" : {
             "type" : "number",
-            "description" : "In euros; absent when the Group has no budget."
+            "description" : "In the Group's currency; absent when the Group has no budget."
+          },
+          "currency" : {
+            "type" : "string",
+            "description" : "The money the budget and the Wish prices are in.",
+            "enum" : [ "EUR", "USD" ]
           },
           "exchangeDate" : {
             "type" : "string",
@@ -1430,7 +1450,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "admin", "exchangeDate", "finished", "id", "memberCount", "name" ]
+        "required" : [ "admin", "currency", "exchangeDate", "finished", "id", "memberCount", "name" ]
       },
       "Health" : {
         "type" : "object",
@@ -1683,7 +1703,7 @@
           },
           "price" : {
             "type" : "number",
-            "description" : "Approximately, in euros, to the cent. Leave it out for none.",
+            "description" : "Approximately, in the Group's currency, to the cent. Leave it out for none.",
             "minimum" : 0
           },
           "priority" : {
@@ -1716,7 +1736,7 @@
           },
           "price" : {
             "type" : "number",
-            "description" : "Approximately, in euros."
+            "description" : "Approximately, in the Group's currency."
           },
           "priority" : {
             "type" : "string",
@@ -1748,6 +1768,11 @@
       "WishlistResponse" : {
         "type" : "object",
         "properties" : {
+          "currency" : {
+            "type" : "string",
+            "description" : "The Group's currency, which the Wish prices are in.",
+            "enum" : [ "EUR", "USD" ]
+          },
           "dontList" : {
             "type" : "array",
             "description" : "What the Member does not want to receive, oldest first.",
@@ -1774,7 +1799,7 @@
             }
           }
         },
-        "required" : [ "dontList", "finished", "owner", "wishes" ]
+        "required" : [ "currency", "dontList", "finished", "owner", "wishes" ]
       }
     }
   }

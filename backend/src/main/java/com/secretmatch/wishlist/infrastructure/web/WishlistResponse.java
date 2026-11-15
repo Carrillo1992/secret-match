@@ -31,6 +31,12 @@ record WishlistResponse(
 
         @Schema(
                 requiredMode = Schema.RequiredMode.REQUIRED,
+                allowableValues = {"EUR", "USD"},
+                description = "The Group's currency, which the Wish prices are in.")
+        String currency,
+
+        @Schema(
+                requiredMode = Schema.RequiredMode.REQUIRED,
                 description = "Whether the Group is finished: from then on the Wishlist is read-only, also to"
                         + " its owner.")
         boolean finished) {
@@ -42,6 +48,7 @@ record WishlistResponse(
                 wishlist.wishes().stream().map(WishResponse::of).toList(),
                 wishlist.preferences().text(),
                 wishlist.dontList().stream().map(DontListEntryResponse::of).toList(),
+                wishlist.currency(),
                 wishlist.finished());
     }
 

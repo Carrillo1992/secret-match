@@ -54,6 +54,7 @@ public class MyGroups {
                 command.name(),
                 command.exchangeDate(),
                 command.budget(),
+                command.currency(),
                 command.timeZone(),
                 creator,
                 InviteCode.generate(random),
@@ -71,7 +72,8 @@ public class MyGroups {
                         group.id().value(),
                         group.name().value(),
                         group.exchangeDate(),
-                        group.budget().map(Budget::euros).orElse(null),
+                        group.budget().map(Budget::amount).orElse(null),
+                        group.currency().name(),
                         group.members().size(),
                         group.admin().equals(user),
                         group.isFinished(now)))
@@ -145,7 +147,7 @@ public class MyGroups {
     }
 
     /**
-     * Replaces the Group's name, budget, Exchange Date and Time Zone. Nobody is emailed: the Members see the change on the
+     * Replaces the Group's name, budget, Currency, Exchange Date and Time Zone. Nobody is emailed: the Members see the change on the
      * Group page.
      *
      * @return the Group with its new details
@@ -163,6 +165,7 @@ public class MyGroups {
                         command.name(),
                         command.exchangeDate(),
                         command.budget(),
+                        command.currency(),
                         command.timeZone(),
                         clock.instant());
         groups.saveDetails(group);
@@ -329,7 +332,8 @@ public class MyGroups {
                 group.id().value(),
                 group.name().value(),
                 group.exchangeDate(),
-                group.budget().map(Budget::euros).orElse(null),
+                group.budget().map(Budget::amount).orElse(null),
+                group.currency().name(),
                 group.timeZone().id(),
                 group.members().stream()
                         // Stable: the Admin first, the rest keep the order they joined in.

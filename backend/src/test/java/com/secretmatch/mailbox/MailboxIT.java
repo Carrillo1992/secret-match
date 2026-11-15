@@ -722,8 +722,10 @@ class MailboxIT {
     }
 
     private String createGroup(User admin, String name, String timeZone) {
-        RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", timeZone));
+        RestTestClient.ResponseSpec created = post(
+                admin,
+                "/api/v1/groups",
+                Map.of("name", name, "exchangeDate", "2026-12-24", "currency", "EUR", "timeZone", timeZone));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

@@ -4,9 +4,14 @@
 export interface CreateGroupRequest {
 
   /**
-   * In euros, to the cent. Leave it out for a Group without a budget.
+   * In the Group's currency, to the cent. Leave it out for a Group without a budget.
    */
   budget?: number;
+
+  /**
+   * The money the budget and the Wish prices are in.
+   */
+  currency: 'EUR' | 'USD';
   exchangeDate: string;
   name: string;
 

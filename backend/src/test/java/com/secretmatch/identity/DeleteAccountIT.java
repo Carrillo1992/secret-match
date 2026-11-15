@@ -283,7 +283,7 @@ class DeleteAccountIT {
                 .uri("/api/v1/groups")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + admin.accessToken())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("name", name, "exchangeDate", exchangeDate, "timeZone", "UTC"))
+                .body(Map.of("name", name, "exchangeDate", exchangeDate, "currency", "EUR", "timeZone", "UTC"))
                 .exchange();
         created.expectStatus().isCreated();
         return json(created).get("id").asString();

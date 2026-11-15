@@ -1,10 +1,10 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
-import { editableEuros } from '../../../shared/format/euros';
+import { editableAmount } from '../../../shared/format/money';
 import { Wish, WishInput, WishPriority } from './wishlist-api';
 
 /**
  * The rules of a Wishlist, mirroring the API's, which checks them too. A Wish: lengths, an http(s)
- * link, a price to the cent. Preferences and Don't List entries: lengths, counted on the trimmed
+ * link, a price to the cent, in the Group's Currency. Preferences and Don't List entries: lengths, counted on the trimmed
  * text, because the API strips it before checking.
  */
 
@@ -28,7 +28,7 @@ export function httpLink(control: AbstractControl<string>): ValidationErrors | n
   return !link || HTTP_LINK.test(link) ? null : { link: true };
 }
 
-export function priceInEuros(control: AbstractControl<string>): ValidationErrors | null {
+export function priceAmount(control: AbstractControl<string>): ValidationErrors | null {
   const amount = control.value.trim();
   return !amount || PRICE.test(amount) ? null : { price: true };
 }
@@ -69,7 +69,7 @@ export function wishFormValue(wish?: Wish): WishFormValue {
   return {
     title: wish?.title ?? '',
     link: wish?.link ?? '',
-    price: wish?.price === undefined ? '' : editableEuros(wish.price),
+    price: wish?.price === undefined ? '' : editableAmount(wish.price),
     notes: wish?.notes ?? '',
     priority: wish?.priority ?? 'MEDIUM',
   };

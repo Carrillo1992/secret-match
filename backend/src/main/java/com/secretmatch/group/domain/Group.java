@@ -21,6 +21,7 @@ public final class Group {
     private final GroupName name;
     private final LocalDate exchangeDate;
     private final Budget budget;
+    private final Currency currency;
     private final TimeZone timeZone;
     private final MemberId admin;
     private final List<MemberId> members;
@@ -37,6 +38,7 @@ public final class Group {
             GroupName name,
             LocalDate exchangeDate,
             Budget budget,
+            Currency currency,
             TimeZone timeZone,
             MemberId admin,
             List<MemberId> members,
@@ -47,6 +49,7 @@ public final class Group {
         this.name = Objects.requireNonNull(name, "name");
         this.exchangeDate = Objects.requireNonNull(exchangeDate, "exchangeDate");
         this.budget = budget;
+        this.currency = requireCurrency(currency);
         this.timeZone = Objects.requireNonNull(timeZone, "timeZone");
         this.admin = Objects.requireNonNull(admin, "admin");
         this.members = List.copyOf(members);
@@ -58,7 +61,7 @@ public final class Group {
     /**
      * A new Group whose creator is its Admin and its first Member.
      *
-     * @param budget in euros; {@code null} for a Group without a budget
+     * @param budget in its {@code currency}; {@code null} for a Group without a budget
      * @param timeZone the IANA id of its {@link TimeZone}
      * @param inviteCode the code of its first Invite Link
      * @throws InvalidGroupDetailsException if a detail breaks its rules, e.g. the Exchange Date is not after
@@ -68,6 +71,7 @@ public final class Group {
             String name,
             LocalDate exchangeDate,
             BigDecimal budget,
+            Currency currency,
             String timeZone,
             MemberId creator,
             InviteCode inviteCode,
@@ -80,6 +84,7 @@ public final class Group {
                 new GroupName(name),
                 exchangeDate,
                 budget == null ? null : new Budget(budget),
+                currency,
                 new TimeZone(timeZone),
                 creator,
                 List.of(creator),
@@ -122,13 +127,15 @@ public final class Group {
         }
         requireNotFinished(now);
         requireNotDrawn();
-        return new Group(id, name, exchangeDate, budget, timeZone, admin, members, newCode, createdAt, drawn);
+        return new Group(id, name, exchangeDate, budget, currency, timeZone, admin, members, newCode, createdAt, drawn);
     }
 
     /**
      * The same Group with new details, which replace all the current ones.
      *
-     * @param newBudget in euros; {@code null} to leave the Group without a budget
+     * @param newBudget in {@code newCurrency}; {@code null} to leave the Group without a budget
+     * @param newCurrency unlike the Time Zone, it can change after the Draw: it reveals nothing about any Giver. A
+     *     change relabels the budget and the Wish prices, it never converts them.
      * @param newTimeZone the IANA id of its {@link TimeZone}
      * @throws AdminOnlyException if {@code by} is not the Admin
      * @throws GroupFinishedException if the Group is finished
@@ -143,6 +150,7 @@ public final class Group {
             String newName,
             LocalDate newExchangeDate,
             BigDecimal newBudget,
+            Currency newCurrency,
             String newTimeZone,
             Instant now) {
         if (!admin.equals(by)) {
@@ -161,6 +169,7 @@ public final class Group {
                 new GroupName(newName),
                 newExchangeDate,
                 newBudget == null ? null : new Budget(newBudget),
+                newCurrency,
                 changedTimeZone,
                 admin,
                 members,
@@ -193,7 +202,8 @@ public final class Group {
         requireNotDrawn();
         List<MemberId> remaining =
                 members.stream().filter(other -> !other.equals(member)).toList();
-        return new Group(id, name, exchangeDate, budget, timeZone, admin, remaining, inviteCode, createdAt, drawn);
+        return new Group(
+                id, name, exchangeDate, budget, currency, timeZone, admin, remaining, inviteCode, createdAt, drawn);
     }
 
     /**
@@ -201,7 +211,8 @@ public final class Group {
      * no Assignment is ever left without its Giver or its Receiver (ADR 0001).
      */
     public Group markDrawn() {
-        return new Group(id, name, exchangeDate, budget, timeZone, admin, members, inviteCode, createdAt, true);
+        return new Group(
+                id, name, exchangeDate, budget, currency, timeZone, admin, members, inviteCode, createdAt, true);
     }
 
     /**
@@ -209,7 +220,8 @@ public final class Group {
      * are removed again, its Invite Link works again, and it can be drawn again.
      */
     public Group cancelDraw() {
-        return new Group(id, name, exchangeDate, budget, timeZone, admin, members, inviteCode, createdAt, false);
+        return new Group(
+                id, name, exchangeDate, budget, currency, timeZone, admin, members, inviteCode, createdAt, false);
     }
 
     /**
@@ -241,6 +253,10 @@ public final class Group {
         return Optional.ofNullable(budget);
     }
 
+    public Currency currency() {
+        return currency;
+    }
+
     public TimeZone timeZone() {
         return timeZone;
     }
@@ -268,6 +284,13 @@ public final class Group {
     /** Whether the Group's Draw is made, which freezes its membership. */
     public boolean isDrawn() {
         return drawn;
+    }
+
+    private static Currency requireCurrency(Currency currency) {
+        if (currency == null) {
+            throw InvalidGroupDetailsException.currency();
+        }
+        return currency;
     }
 
     private void requireNotFinished(Instant now) {

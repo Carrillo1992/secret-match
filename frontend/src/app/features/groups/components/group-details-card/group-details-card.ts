@@ -23,14 +23,16 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import {
-  budgetInEuros,
+  budgetAmount,
   budgetText,
+  CURRENCIES,
+  currencySignOf,
   groupDetailsInput,
   NAME_MAX_LENGTH,
   notBefore,
 } from '../../data-access/group-details-form';
 import { notBlank } from '../../../../shared/forms/validators';
-import { euros } from '../../../../shared/format/euros';
+import { Currency, money } from '../../../../shared/format/money';
 import { earliestExchangeDate, longExchangeDate } from '../../data-access/group-format';
 import { Group, GroupEdit } from '../../data-access/groups-api';
 import { TimeZoneRegion, timeZoneNote, timeZoneRegions } from '../../data-access/time-zones';
@@ -39,12 +41,13 @@ import { TimeZoneRegion, timeZoneNote, timeZoneRegions } from '../../data-access
 export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-future' | 'failed';
 
 /**
- * The Group's Exchange Date and budget. The Admin gets a quiet "Editar" that turns the card into a
- * form for the name, the Exchange Date and the budget; it closes once the page reports `saved`.
+ * The Group's Exchange Date and budget, in its Currency. The Admin gets a quiet "Editar" that turns
+ * the card into a form for the name, the Exchange Date, the budget and the Currency; it closes once
+ * the page reports `saved`.
  * Chosen on #23 (option A). An alert about the last save shows only once this opening of the form
  * has been sent, so reopening it starts clean. A finished Group is read-only, so nobody gets
  * "Editar" there (#25). The Time Zone the Mailbox dates are cut in can change only until the Draw
- * (#74).
+ * (#74); the Currency can change after it too, and only relabels the amounts (#93).
  */
 @Component({
   selector: 'app-group-details-card',
@@ -141,18 +144,35 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
               <span
                 aria-hidden="true"
                 class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-ink-muted"
-                >€</span
+                >{{ currencySign() }}</span
               >
             </div>
             @if (showsError(form.controls.budget)) {
               <p id="edit-group-budget-error" class="text-sm font-semibold text-danger" i18n>
-                Escribe una cantidad en euros, por ejemplo 25 o 25,50.
+                Escribe una cantidad, por ejemplo 25 o 25,50.
               </p>
             } @else {
               <p id="edit-group-budget-hint" class="text-sm text-ink-muted" i18n>
-                Orientativo, en euros por regalo. Déjalo vacío para quitarlo.
+                Orientativo, por regalo. Déjalo vacío para quitarlo.
               </p>
             }
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label for="edit-group-currency" class="font-bold" i18n>Moneda</label>
+            <select
+              id="edit-group-currency"
+              formControlName="currency"
+              appField
+              aria-describedby="edit-group-currency-hint"
+            >
+              @for (currency of currencies; track currency.code) {
+                <option [value]="currency.code">{{ currency.label }}</option>
+              }
+            </select>
+            <p id="edit-group-currency-hint" class="text-sm text-ink-muted" i18n>
+              Las cantidades no se convierten: 30 € pasan a ser 30 $.
+            </p>
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -238,7 +258,9 @@ export type EditStatus = 'idle' | 'saving' | 'saved' | 'exchange-date-not-in-fut
               <dt class="font-bold" i18n>Presupuesto</dt>
               <dd class="text-ink-muted">
                 @if (group().budget !== undefined) {
-                  <ng-container i18n>{{ euros(group().budget ?? 0) }} por regalo</ng-container>
+                  <ng-container i18n
+                    >{{ money(group().budget ?? 0, group().currency) }} por regalo</ng-container
+                  >
                 } @else {
                   <ng-container i18n>Sin presupuesto</ng-container>
                 }
@@ -268,7 +290,8 @@ export class GroupDetailsCard {
 
   protected readonly nameMaxLength = NAME_MAX_LENGTH;
   protected readonly date = longExchangeDate;
-  protected readonly euros = euros;
+  protected readonly money = money;
+  protected readonly currencies = CURRENCIES;
   protected readonly timeZoneNote = timeZoneNote;
   /** Built when the form opens: the browser's list, plus the Group's own zone in case it lacks it. */
   protected readonly timeZoneRegions = signal<TimeZoneRegion[]>([]);
@@ -281,9 +304,12 @@ export class GroupDetailsCard {
   protected readonly form = inject(NonNullableFormBuilder).group({
     name: ['', [Validators.required, notBlank, Validators.maxLength(NAME_MAX_LENGTH)]],
     exchangeDate: [''],
-    budget: ['', budgetInEuros],
+    budget: ['', budgetAmount],
+    currency: ['EUR' as Currency],
     timeZone: [''],
   });
+  /** The budget field shows the sign of the Currency picked, as it changes. */
+  protected readonly currencySign = currencySignOf(this.form.controls.currency);
 
   constructor() {
     effect(() => {
@@ -310,6 +336,7 @@ export class GroupDetailsCard {
       name: group.name,
       exchangeDate: group.exchangeDate,
       budget: budgetText(group.budget),
+      currency: group.currency,
       timeZone: group.timeZone,
     });
     if (group.drawn) {

@@ -4,9 +4,14 @@
 export interface EditGroupRequest {
 
   /**
-   * In euros, to the cent. Leave it out to take the budget away.
+   * In the Group's currency, to the cent. Leave it out to take the budget away.
    */
   budget?: number;
+
+  /**
+   * The money the budget and the Wish prices are in. Changing it relabels them, it never converts them; it can change after the Draw.
+   */
+  currency: 'EUR' | 'USD';
   exchangeDate: string;
   name: string;
 

@@ -127,7 +127,7 @@ describe('NewGroupPage', () => {
     fill('Navidad', '2026-12-24', budget);
     await submit();
 
-    expect(errorFor('Presupuesto')).toContain('Escribe una cantidad en euros');
+    expect(errorFor('Presupuesto')).toContain('Escribe una cantidad, por ejemplo 25 o 25,50');
     http.expectNone(GROUPS_URL);
   });
 
@@ -140,6 +140,7 @@ describe('NewGroupPage', () => {
       name: 'Navidad',
       exchangeDate: '2026-12-24',
       budget: 25.5,
+      currency: 'EUR',
       timeZone: 'America/New_York',
     });
     expect(submitButton()?.disabled).toBe(true);
@@ -156,6 +157,44 @@ describe('NewGroupPage', () => {
     expect(http.expectOne(GROUPS_URL).request.body).toEqual({
       name: 'Navidad',
       exchangeDate: '2026-12-24',
+      currency: 'EUR',
+      timeZone: 'America/New_York',
+    });
+  });
+
+  /** The sign shown inside the budget field, next to the number. */
+  const budgetSign = () => field('Presupuesto').parentElement?.textContent?.trim();
+
+  it('preselects euros, and the budget field shows the sign of the Currency picked', async () => {
+    const currency = field('Moneda') as unknown as HTMLSelectElement;
+
+    expect(currency.tagName).toBe('SELECT');
+    expect(currency.value).toBe('EUR');
+    expect([...currency.options].map((option) => option.textContent?.trim())).toEqual([
+      'Euro (€)',
+      'Dólar estadounidense ($)',
+    ]);
+    expect(budgetSign()).toBe('€');
+
+    currency.value = 'USD';
+    currency.dispatchEvent(new Event('change'));
+    await harness.fixture.whenStable();
+
+    expect(budgetSign()).toBe('$');
+  });
+
+  it('sends the Currency the Admin picks', async () => {
+    fill('Navidad', '2026-12-24', '30');
+    const currency = field('Moneda') as unknown as HTMLSelectElement;
+    currency.value = 'USD';
+    currency.dispatchEvent(new Event('change'));
+    await submit();
+
+    expect(http.expectOne(GROUPS_URL).request.body).toEqual({
+      name: 'Navidad',
+      exchangeDate: '2026-12-24',
+      budget: 30,
+      currency: 'USD',
       timeZone: 'America/New_York',
     });
   });
@@ -180,6 +219,7 @@ describe('NewGroupPage', () => {
     expect(http.expectOne(GROUPS_URL).request.body).toEqual({
       name: 'Navidad',
       exchangeDate: '2026-12-24',
+      currency: 'EUR',
       timeZone: 'Asia/Tokyo',
     });
   });

@@ -27,7 +27,7 @@ import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel'
 import { Notice } from '../../../../shared/ui/notice/notice';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
-import { euros } from '../../../../shared/format/euros';
+import { money } from '../../../../shared/format/money';
 import {
   DontListAddition,
   DontListCard,
@@ -148,7 +148,7 @@ export class WishlistPage {
   });
   protected readonly groupLink = computed(() => `/groups/${this.params().groupId}`);
 
-  protected readonly euros = euros;
+  protected readonly money = money;
   protected readonly priorityLabels = PRIORITY_LABELS;
 
   protected readonly adding = signal(false);

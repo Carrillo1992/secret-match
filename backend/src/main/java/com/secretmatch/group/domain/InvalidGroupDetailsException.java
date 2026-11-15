@@ -1,8 +1,9 @@
 package com.secretmatch.group.domain;
 
 import com.secretmatch.shared.domain.DomainException;
+import java.util.Arrays;
 
-/** A Group name, Exchange Date, budget or Time Zone that breaks its rules. */
+/** A Group name, Exchange Date, budget, Currency or Time Zone that breaks its rules. */
 public class InvalidGroupDetailsException extends DomainException {
 
     private InvalidGroupDetailsException(String code, String message) {
@@ -22,7 +23,12 @@ public class InvalidGroupDetailsException extends DomainException {
 
     static InvalidGroupDetailsException budget() {
         return new InvalidGroupDetailsException(
-                "invalid-budget", "The budget must be an amount in euros from 0 to 999999.99, to the cent.");
+                "invalid-budget", "The budget must be an amount from 0 to 999999.99, to the cent.");
+    }
+
+    static InvalidGroupDetailsException currency() {
+        return new InvalidGroupDetailsException(
+                "invalid-currency", "The Currency must be one of " + Arrays.toString(Currency.values()) + ".");
     }
 
     static InvalidGroupDetailsException timeZone() {

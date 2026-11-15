@@ -203,7 +203,7 @@ class DrawnGroupIT {
     }
 
     @Test
-    @DisplayName("the Admin can still edit a drawn Group's details")
+    @DisplayName("the Admin can still edit a drawn Group's details, its Currency included")
     void adminStillEditsTheDetails() {
         Family family = family();
         runDraw(family.carmen(), family).expectStatus().isCreated();
@@ -212,13 +212,15 @@ class DrawnGroupIT {
                 .uri(groupOf(family))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + family.carmen().accessToken())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("name", "Nochebuena", "exchangeDate", "2026-12-24", "timeZone", "UTC"))
+                .body(Map.of("name", "Nochebuena", "exchangeDate", "2026-12-24", "currency", "USD", "timeZone", "UTC"))
                 .exchange()
                 .expectStatus()
                 .isOk()
                 .expectBody()
                 .jsonPath("$.drawn")
-                .isEqualTo(true);
+                .isEqualTo(true)
+                .jsonPath("$.currency")
+                .isEqualTo("USD");
     }
 
     @Test
@@ -231,7 +233,8 @@ class DrawnGroupIT {
                 .uri(groupOf(family))
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + family.carmen().accessToken())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("name", "Navidad", "exchangeDate", "2026-12-24", "timeZone", "Asia/Tokyo"))
+                .body(Map.of(
+                        "name", "Navidad", "exchangeDate", "2026-12-24", "currency", "EUR", "timeZone", "Asia/Tokyo"))
                 .exchange()
                 .expectStatus()
                 .isEqualTo(422)
@@ -318,8 +321,10 @@ class DrawnGroupIT {
     record User(String accessToken, String email, String displayName) {}
 
     private String createGroup(User admin, String name) {
-        RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", "UTC"));
+        RestTestClient.ResponseSpec created = post(
+                admin,
+                "/api/v1/groups",
+                Map.of("name", name, "exchangeDate", "2026-12-24", "currency", "EUR", "timeZone", "UTC"));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

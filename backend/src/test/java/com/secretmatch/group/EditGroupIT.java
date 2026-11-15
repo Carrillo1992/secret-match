@@ -119,6 +119,33 @@ class EditGroupIT {
     }
 
     @Test
+    @DisplayName("the Admin changes the Currency: the budget keeps its number, relabelled, never converted")
+    void adminChangesTheCurrency() {
+        User carmen = signedInUser("Abuela Carmen");
+        User luis = signedInUser("Luis");
+        String groupId = createGroup(carmen);
+        joinGroup(luis, carmen, groupId);
+        Map<String, Object> inDollars = details("Navidad", "2026-12-24", "25");
+        inDollars.put("currency", "USD");
+
+        edit(carmen, groupId, inDollars)
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.currency")
+                .isEqualTo("USD")
+                .jsonPath("$.budget")
+                .isEqualTo(25.0);
+        get(luis, "/api/v1/groups/" + groupId)
+                .expectBody()
+                .jsonPath("$.currency")
+                .isEqualTo("USD")
+                .jsonPath("$.budget")
+                .isEqualTo(25.0);
+        get(luis, "/api/v1/groups").expectBody().jsonPath("$[0].currency").isEqualTo("USD");
+    }
+
+    @Test
     @DisplayName("leaving the budget out takes it away")
     void budgetLeftOutIsRemoved() {
         User carmen = signedInUser("Abuela Carmen");
@@ -169,7 +196,9 @@ class EditGroupIT {
         String groupId = createGroup(carmen);
         joinGroup(luis, carmen, groupId);
 
-        edit(luis, groupId, details("De Luis", "2026-12-24", null))
+        Map<String, Object> inDollars = details("De Luis", "2026-12-24", null);
+        inDollars.put("currency", "USD");
+        edit(luis, groupId, inDollars)
                 .expectStatus()
                 .isEqualTo(422)
                 .expectBody()
@@ -189,11 +218,17 @@ class EditGroupIT {
                 .expectStatus()
                 .isUnauthorized();
 
-        get(carmen, "/api/v1/groups/" + groupId).expectBody().jsonPath("$.name").isEqualTo("Navidad");
+        get(carmen, "/api/v1/groups/" + groupId)
+                .expectBody()
+                .jsonPath("$.name")
+                .isEqualTo("Navidad")
+                .jsonPath("$.currency")
+                .isEqualTo("EUR");
     }
 
     @Test
-    @DisplayName("a blank name, a missing Exchange Date or a negative budget is a bad request")
+    @DisplayName("a blank name, a missing Exchange Date, a negative budget or a missing or unknown Currency is a bad"
+            + " request")
     void malformedDetails() {
         User carmen = signedInUser("Abuela Carmen");
         String groupId = createGroup(carmen);
@@ -203,6 +238,12 @@ class EditGroupIT {
         edit(carmen, groupId, details("Navidad", "2026-12-24", "-5"))
                 .expectStatus()
                 .isBadRequest();
+        Map<String, Object> withoutCurrency = details("Navidad", "2026-12-24", null);
+        withoutCurrency.remove("currency");
+        edit(carmen, groupId, withoutCurrency).expectStatus().isBadRequest();
+        Map<String, Object> inPounds = details("Navidad", "2026-12-24", null);
+        inPounds.put("currency", "GBP");
+        edit(carmen, groupId, inPounds).expectStatus().isBadRequest();
     }
 
     @Test
@@ -228,6 +269,7 @@ class EditGroupIT {
         Map<String, Object> body = new HashMap<>();
         body.put("name", name);
         body.put("timeZone", "UTC");
+        body.put("currency", "EUR");
         if (exchangeDate != null) {
             body.put("exchangeDate", exchangeDate);
         }
@@ -261,7 +303,17 @@ class EditGroupIT {
         RestTestClient.ResponseSpec created = post(
                 admin,
                 "/api/v1/groups",
-                Map.of("name", "Navidad", "exchangeDate", "2026-12-24", "budget", 25, "timeZone", "UTC"));
+                Map.of(
+                        "name",
+                        "Navidad",
+                        "exchangeDate",
+                        "2026-12-24",
+                        "budget",
+                        25,
+                        "currency",
+                        "EUR",
+                        "timeZone",
+                        "UTC"));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

@@ -81,12 +81,42 @@ class GroupsIT {
                 .isEqualTo("2026-12-24")
                 .jsonPath("$.budget")
                 .isEqualTo(25.5)
+                .jsonPath("$.currency")
+                .isEqualTo("EUR")
                 .jsonPath("$.members.length()")
                 .isEqualTo(1)
                 .jsonPath("$.members[0].displayName")
                 .isEqualTo("Abuela Carmen")
                 .jsonPath("$.members[0].admin")
                 .isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName(
+            "a new Group keeps the Currency its Admin picked, and one without a Currency or with another is refused")
+    void groupKeepsItsCurrency() {
+        String carmen = signedInUser("Abuela Carmen");
+        Map<String, Object> inDollars = group("Navidad", "2026-12-24", "30");
+        inDollars.put("currency", "USD");
+
+        RestTestClient.ResponseSpec created = createGroup(carmen, inDollars);
+
+        created.expectStatus().isCreated();
+        String groupId = json(created).get("id").asString();
+        get(carmen, "/api/v1/groups/" + groupId)
+                .expectBody()
+                .jsonPath("$.currency")
+                .isEqualTo("USD")
+                .jsonPath("$.budget")
+                .isEqualTo(30.0);
+        get(carmen, "/api/v1/groups").expectBody().jsonPath("$[0].currency").isEqualTo("USD");
+        Map<String, Object> withoutCurrency = group("Navidad", "2026-12-24", null);
+        withoutCurrency.remove("currency");
+        createGroup(carmen, withoutCurrency).expectStatus().isBadRequest();
+        Map<String, Object> inPounds = group("Navidad", "2026-12-24", null);
+        inPounds.put("currency", "GBP");
+        createGroup(carmen, inPounds).expectStatus().isBadRequest();
+        get(carmen, "/api/v1/groups").expectBody().jsonPath("$.length()").isEqualTo(1);
     }
 
     @Test
@@ -243,6 +273,7 @@ class GroupsIT {
         body.put("name", name);
         body.put("exchangeDate", exchangeDate);
         body.put("timeZone", "UTC");
+        body.put("currency", "EUR");
         if (budget != null) {
             body.put("budget", new java.math.BigDecimal(budget));
         }

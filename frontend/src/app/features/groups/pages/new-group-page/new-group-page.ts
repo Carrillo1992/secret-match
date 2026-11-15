@@ -12,7 +12,9 @@ import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import {
-  budgetInEuros,
+  budgetAmount,
+  CURRENCIES,
+  currencySignOf,
   groupDetailsInput,
   NAME_MAX_LENGTH,
   notBefore,
@@ -22,6 +24,7 @@ import { earliestExchangeDate } from '../../data-access/group-format';
 import { GroupsApi } from '../../data-access/groups-api';
 import { browserTimeZone, timeZoneRegions } from '../../data-access/time-zones';
 import { Alert } from '../../../../shared/ui/alert/alert';
+import { Currency } from '../../../../shared/format/money';
 
 type SubmitError = 'exchange-date-not-in-future' | 'failed';
 
@@ -53,9 +56,14 @@ export class NewGroupPage {
   protected readonly form = inject(NonNullableFormBuilder).group({
     name: ['', [Validators.required, notBlank, Validators.maxLength(NAME_MAX_LENGTH)]],
     exchangeDate: ['', [Validators.required, notBefore(this.earliestDate)]],
-    budget: ['', budgetInEuros],
+    budget: ['', budgetAmount],
+    currency: ['EUR' as Currency],
     timeZone: [this.defaultTimeZone, Validators.required],
   });
+
+  protected readonly currencies = CURRENCIES;
+  /** The budget field shows the sign of the Currency picked, as it changes. */
+  protected readonly currencySign = currencySignOf(this.form.controls.currency);
 
   protected readonly submitted = signal(false);
   protected readonly sending = signal(false);

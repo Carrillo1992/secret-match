@@ -58,7 +58,8 @@ class JpaGroups implements Groups {
                 group.id().value(),
                 group.name().value(),
                 group.exchangeDate(),
-                group.budget().map(Budget::euros).orElse(null),
+                group.budget().map(Budget::amount).orElse(null),
+                group.currency(),
                 group.timeZone().id());
         if (changed != 1) {
             throw new IllegalStateException("no stored Group to change");

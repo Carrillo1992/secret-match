@@ -10,9 +10,14 @@ export interface GroupResponse {
   admin: boolean;
 
   /**
-   * In euros; absent when the Group has no budget.
+   * In the Group's currency; absent when the Group has no budget.
    */
   budget?: number;
+
+  /**
+   * The money the budget and the Wish prices are in.
+   */
+  currency: 'EUR' | 'USD';
 
   /**
    * Whether its Draw is made: from then on nobody joins it, leaves it or is removed from it, its Invite Link no longer works and its Exclusions cannot change.

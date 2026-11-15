@@ -18,6 +18,7 @@ const christmas = {
   name: 'Christmas at home',
   exchangeDate: '2026-12-24',
   budget: 30,
+  currency: 'EUR',
   timeZone: 'Europe/Madrid',
   members: [
     { id: 'u-grace', displayName: 'Grandma Grace', admin: true, you: true },
@@ -87,6 +88,34 @@ describe('GroupPage in English', () => {
     expect(text(page())).toContain('Members (2)');
     expect(text(page())).toContain('so far there are 2 of you');
     expect(spanishLeftIn(page())).toEqual([]);
+  });
+
+  it("shows a dollar budget in English's format, and the edit form speaks English", async () => {
+    http.expectOne(GROUP_URL).flush({ ...christmas, budget: 25.5, currency: 'USD' });
+    await settle();
+    http
+      .expectOne((request) => request.url === DRAW_URL)
+      .flush(
+        { type: 'urn:secretmatch:problem:draw-not-found', status: 404 },
+        { status: 404, statusText: 'Not Found' },
+      );
+    http.expectOne(EXCLUSIONS_URL).flush([]);
+    await settle();
+
+    expect(text(page())).toContain('$25.50 per gift');
+
+    [...page().querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Edit')?.click();
+    await settle();
+
+    const currency = page().querySelector<HTMLSelectElement>('#edit-group-currency');
+    expect([...(currency?.options ?? [])].map((option) => option.textContent?.trim())).toEqual([
+      'Euro (€)',
+      'US dollar ($)',
+    ]);
+    // Place names such as "Los Angeles" or "La Paz" among the Time Zones are not Spanish copy.
+    const form = page().cloneNode(true) as Element;
+    form.querySelector('#edit-group-time-zone')?.remove();
+    expect(spanishLeftIn(form)).toEqual([]);
   });
 
   it('speaks English once the Draw is made, the Reveal and the Mailbox included', async () => {

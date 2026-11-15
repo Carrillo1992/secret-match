@@ -63,6 +63,7 @@
         @if (adding()) {
           <app-wish-form
             idPrefix="new-wish"
+            [currency]="wishlist.currency"
             [status]="addStatus()"
             (save)="add($event)"
             (cancelled)="closeAdd()"
@@ -104,6 +105,7 @@
               <app-wish-form
                 [idPrefix]="'wish-' + wish.id"
                 [wish]="wish"
+                [currency]="wishlist.currency"
                 [status]="editStatus()"
                 (save)="edit(wish.id, $event)"
                 (cancelled)="closeEdit()"
@@ -118,7 +120,7 @@
                 </span>
               </div>
               @if (wish.price !== undefined) {
-                <p class="mt-1.5" i18n>Unos {{ euros(wish.price) }}</p>
+                <p class="mt-1.5" i18n>Unos {{ money(wish.price, wishlist.currency) }}</p>
               }
               @if (wish.notes) {
                 <p class="mt-1.5 whitespace-pre-line break-words text-ink-muted">

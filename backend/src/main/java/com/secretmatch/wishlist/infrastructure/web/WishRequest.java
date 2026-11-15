@@ -19,7 +19,7 @@ record WishRequest(
         @Schema(description = "An http or https address. Leave it out for none.") @Size(max = Wish.LINK_MAX_LENGTH)
         String link,
 
-        @Schema(description = "Approximately, in euros, to the cent. Leave it out for none.")
+        @Schema(description = "Approximately, in the Group's currency, to the cent. Leave it out for none.")
         @PositiveOrZero
         @Digits(integer = 6, fraction = 2)
         BigDecimal price,

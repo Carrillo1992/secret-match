@@ -23,7 +23,7 @@ Until #86, SecretMatch spoke only Spanish (UI and emails) and its dark mode only
 - The Theme needs no API, no migration and no session: it works the same signed in or not, and a shared device keeps whatever was chosen on it last.
 - A Language change is a full reload. The app never swaps copy at runtime, so no screen has to react to a Language change; the cost is a second load when someone switches.
 - Every user-visible string and every email exists twice. A check fails when the English file is missing a message (#89), and the anonymity review of an email covers both Languages.
-- Euros only: English formats them as `€25.50`, and a whole amount as `€30` (Spanish: `25,50 €`, `30 €`).
+- Amounts: the Language decides the format, the Group decides the Currency (#93). English writes `€25.50` and `$30`, Spanish `25,50 €` and `30 $`.
 
 ## Considered Options
 

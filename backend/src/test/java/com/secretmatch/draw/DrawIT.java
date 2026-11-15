@@ -509,8 +509,10 @@ class DrawIT {
     record User(String accessToken, String email, String displayName) {}
 
     private String createGroup(User admin, String name) {
-        RestTestClient.ResponseSpec created =
-                post(admin, "/api/v1/groups", Map.of("name", name, "exchangeDate", "2026-12-24", "timeZone", "UTC"));
+        RestTestClient.ResponseSpec created = post(
+                admin,
+                "/api/v1/groups",
+                Map.of("name", name, "exchangeDate", "2026-12-24", "currency", "EUR", "timeZone", "UTC"));
         created.expectStatus().isCreated();
         return json(created).get("id").asString();
     }

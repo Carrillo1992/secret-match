@@ -19,6 +19,7 @@ const navidad = {
   name: 'Navidad en casa',
   exchangeDate: '2026-12-24',
   budget: 30,
+  currency: 'EUR',
   timeZone: 'Europe/Madrid',
   members: [
     { id: 'u-carmen', displayName: 'Abuela Carmen', admin: true, you: false },
@@ -518,6 +519,7 @@ describe('GroupPage', () => {
       expect(edit.request.body).toEqual({
         name: 'Reyes en el pueblo',
         exchangeDate: '2027-01-06',
+        currency: 'EUR',
         timeZone: 'Europe/Madrid',
       });
       edit.flush({
@@ -554,12 +556,61 @@ describe('GroupPage', () => {
         name: 'Navidad en casa',
         exchangeDate: '2026-12-24',
         budget: 30,
+        currency: 'EUR',
         timeZone: 'America/New_York',
       });
       edit.flush({ ...asAdmin, timeZone: 'America/New_York' });
       await settle();
 
       expect(text(details())).toContain('Fechas en hora de New York');
+    });
+
+    it('lets the Admin change the Currency, even after the Draw: the budget keeps its number', async () => {
+      http.expectOne(GROUP_URL).flush({ ...asAdmin, drawn: true });
+      await settle();
+      http
+        .match((r) => r.url === DRAW_URL && r.method === 'GET')
+        .forEach((r) => r.flush({ myReceiver: { id: 'u-marta', displayName: 'Marta' } }));
+      await settle();
+
+      button('Editar')?.click();
+      await settle();
+      const currency = field('Moneda') as unknown as HTMLSelectElement;
+      const budgetSign = () => field('Presupuesto')?.parentElement?.textContent?.trim();
+      expect(currency.value).toBe('EUR');
+      expect(currency.disabled).toBe(false);
+      expect(budgetSign()).toBe('€');
+      expect(text(details())).toContain('no se convierten');
+      currency.value = 'USD';
+      currency.dispatchEvent(new Event('change'));
+      await settle();
+      expect(budgetSign()).toBe('$');
+      button('Guardar cambios')?.click();
+      await settle();
+
+      const edit = http.expectOne(GROUP_URL);
+      expect(edit.request.body).toEqual({
+        name: 'Navidad en casa',
+        exchangeDate: '2026-12-24',
+        budget: 30,
+        currency: 'USD',
+        timeZone: 'Europe/Madrid',
+      });
+      edit.flush({ ...asAdmin, drawn: true, currency: 'USD' });
+      await settle();
+
+      expect(text(details())).toContain('30 $ por regalo');
+    });
+
+    it('opens the form on the Currency the Group has', async () => {
+      http.expectOne(GROUP_URL).flush({ ...asAdmin, currency: 'USD' });
+      await settle();
+
+      button('Editar')?.click();
+      await settle();
+
+      expect((field('Moneda') as unknown as HTMLSelectElement).value).toBe('USD');
+      expect(field('Presupuesto')?.parentElement?.textContent?.trim()).toBe('$');
     });
 
     it('keeps the Time Zone as it is once the Draw is made, and says why', async () => {
@@ -583,6 +634,7 @@ describe('GroupPage', () => {
         name: 'Navidad en casa',
         exchangeDate: '2026-12-24',
         budget: 30,
+        currency: 'EUR',
         timeZone: 'Europe/Madrid',
       });
     });
@@ -619,7 +671,7 @@ describe('GroupPage', () => {
 
       expect(text(details())).toContain('Escribe un nombre para el grupo.');
       expect(text(details())).toContain('Elige una fecha a partir de mañana.');
-      expect(text(details())).toContain('Escribe una cantidad en euros');
+      expect(text(details())).toContain('Escribe una cantidad, por ejemplo 25 o 25,50.');
       expect(field('Nombre')?.getAttribute('aria-invalid')).toBe('true');
     });
 

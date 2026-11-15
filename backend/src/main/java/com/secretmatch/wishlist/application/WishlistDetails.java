@@ -7,19 +7,22 @@ import java.util.UUID;
 
 /**
  * A Member's Wishlist in a Group as its owner or their Giver sees it: whose it is, their Wishes, their Preferences
- * and their Don't List. {@code finished} says whether the Group is finished, which makes the Wishlist read-only.
+ * and their Don't List. Prices are in {@code currency}, the Group's, as its ISO 4217 code; {@code finished} says
+ * whether the Group is finished, which makes the Wishlist read-only.
  */
 public record WishlistDetails(
         Owner owner,
         List<StoredWish> wishes,
         Preferences preferences,
         List<StoredDontListEntry> dontList,
+        String currency,
         boolean finished) {
 
     public WishlistDetails {
         wishes = List.copyOf(wishes);
         Objects.requireNonNull(preferences, "preferences");
         dontList = List.copyOf(dontList);
+        Objects.requireNonNull(currency, "currency");
     }
 
     /** {@code id} is the id of the User the owner is; {@code you} says whether that is the Member looking. */

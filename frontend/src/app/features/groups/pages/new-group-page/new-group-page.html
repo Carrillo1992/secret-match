@@ -84,18 +84,35 @@
         <span
           aria-hidden="true"
           class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-ink-muted"
-          >€</span
+          >{{ currencySign() }}</span
         >
       </div>
       @if (showsError(form.controls.budget)) {
         <p id="new-group-budget-error" class="text-sm font-semibold text-danger" i18n>
-          Escribe una cantidad en euros, por ejemplo 25 o 25,50.
+          Escribe una cantidad, por ejemplo 25 o 25,50.
         </p>
       } @else {
         <p id="new-group-budget-hint" class="text-sm text-ink-muted" i18n>
-          Orientativo, en euros por regalo.
+          Orientativo, por regalo.
         </p>
       }
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label for="new-group-currency" class="font-bold" i18n>Moneda</label>
+      <select
+        id="new-group-currency"
+        formControlName="currency"
+        appField
+        aria-describedby="new-group-currency-hint"
+      >
+        @for (currency of currencies; track currency.code) {
+          <option [value]="currency.code">{{ currency.label }}</option>
+        }
+      </select>
+      <p id="new-group-currency-hint" class="text-sm text-ink-muted" i18n>
+        Para el presupuesto y los precios de los deseos.
+      </p>
     </div>
 
     <div class="flex flex-col gap-1.5">

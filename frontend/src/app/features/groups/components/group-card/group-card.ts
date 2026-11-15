@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { RouterLink } from '@angular/router';
 import { LucideCalendar, LucideChevronRight } from '@lucide/angular';
 import { Chip } from '../../../../shared/ui/chip/chip';
-import { euros } from '../../../../shared/format/euros';
+import { money } from '../../../../shared/format/money';
 import { shortExchangeDate } from '../../data-access/group-format';
 import { GroupSummary } from '../../data-access/groups-api';
 
@@ -47,7 +47,7 @@ export class GroupCard {
 
   protected readonly date = computed(() => shortExchangeDate(this.group().exchangeDate));
   protected readonly budget = computed(() => {
-    const budget = this.group().budget;
-    return budget === undefined ? null : euros(budget);
+    const { budget, currency } = this.group();
+    return budget === undefined ? null : money(budget, currency);
   });
 }

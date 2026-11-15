@@ -29,6 +29,7 @@ const seenByMarta = {
   owner: { id: 'u-luis', displayName: 'Luis', you: false },
   wishes: [auriculares, libro],
   dontList: [],
+  currency: 'EUR',
   finished: false,
 };
 /** Luis's own Wishlist, still empty. */
@@ -36,6 +37,7 @@ const ownEmpty = {
   owner: { id: 'u-luis', displayName: 'Luis', you: true },
   wishes: [],
   dontList: [],
+  currency: 'EUR',
   finished: false,
 };
 const own = { ...ownEmpty, wishes: [auriculares, libro] };
@@ -209,6 +211,16 @@ describe('WishlistPage', () => {
     expect(field('Precio aproximado')?.getAttribute('aria-invalid')).toBe('true');
     expect(text(page())).toContain('Escribe qué te gustaría.');
     expect(text(page())).toContain('Pega una dirección web que empiece por http:// o https://.');
+    expect(text(page())).toContain('Escribe una cantidad, por ejemplo 25 o 25,50.');
+  });
+
+  it("reads prices in the Group's Currency, and the price field shows its sign", async () => {
+    await open({ ...ownEmpty, currency: 'USD', wishes: [auriculares] });
+
+    expect(text(rows()[0])).toContain('Unos 49,90 $');
+    button('Añadir deseo')?.click();
+    await settle();
+    expect(field('Precio aproximado')?.parentElement?.textContent?.trim()).toBe('$');
   });
 
   it('points at the link when the API refuses it, and keeps what was typed', async () => {

@@ -30,6 +30,7 @@ class GroupRosters implements Rosters {
                 group.members().stream()
                         .map(member -> new GroupMember(new MemberId(member.id()), member.displayName()))
                         .toList(),
+                group.currency(),
                 group.finished());
     }
 }

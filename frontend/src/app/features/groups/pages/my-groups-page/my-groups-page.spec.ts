@@ -19,6 +19,7 @@ const navidad = {
   name: 'Navidad en casa',
   exchangeDate: '2026-12-24',
   budget: 30,
+  currency: 'EUR',
   memberCount: 3,
   admin: true,
   finished: false,
@@ -27,6 +28,7 @@ const reyes = {
   id: 'g-2',
   name: 'Reyes',
   exchangeDate: '2027-01-06',
+  currency: 'USD',
   memberCount: 1,
   admin: false,
   finished: false,
@@ -103,6 +105,12 @@ describe('MyGroupsPage', () => {
     expect(cards[1].text).not.toContain('Admin');
     expect(cards[1].text).not.toContain('€');
     expect(cards[0].querySelector('a')?.getAttribute('href')).toBe('/groups/g-1');
+  });
+
+  it("shows each Group's budget in its own Currency", async () => {
+    await open([{ ...reyes, budget: 25.5 }]);
+
+    expect(groupCards()[0].text).toContain('25,50 $');
   });
 
   it('marks a finished Group as such', async () => {

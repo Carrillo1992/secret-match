@@ -15,8 +15,8 @@ record CurrentUserResponse(
 
     static CurrentUserResponse of(CurrentUser user) {
         return new CurrentUserResponse(
-                user.email(),
-                user.displayName(),
+                user.email().value(),
+                user.displayName().value(),
                 user.hasPassword(),
                 user.language().code());
     }

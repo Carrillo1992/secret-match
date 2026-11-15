@@ -1,14 +1,12 @@
 package com.secretmatch.identity.infrastructure.web;
 
 import com.secretmatch.identity.application.AccessToken;
-import com.secretmatch.identity.application.CurrentUser;
 import com.secretmatch.identity.application.GoogleSignInCommand;
 import com.secretmatch.identity.application.RefreshOutcome;
 import com.secretmatch.identity.application.Sessions;
 import com.secretmatch.identity.application.SignInCommand;
 import com.secretmatch.identity.application.SignedIn;
 import com.secretmatch.identity.domain.RefreshToken;
-import com.secretmatch.identity.infrastructure.security.AccessTokenClaims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,11 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -84,13 +79,6 @@ class SessionController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
                 .header(HttpHeaders.SET_COOKIE, refreshCookie("", Duration.ZERO).toString())
                 .build();
-    }
-
-    @GetMapping(value = "/users/me", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "The signed-in User")
-    CurrentUserResponse currentUser(@AuthenticationPrincipal Jwt accessToken) {
-        CurrentUser user = sessions.currentUser(AccessTokenClaims.userId(accessToken));
-        return CurrentUserResponse.of(user);
     }
 
     private static ResponseEntity<AccessTokenResponse> signedIn(SignedIn signedIn) {

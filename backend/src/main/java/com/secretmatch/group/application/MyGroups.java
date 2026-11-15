@@ -10,6 +10,7 @@ import com.secretmatch.identity.application.EmailRecipient;
 import com.secretmatch.identity.application.UserDeleted;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
 import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -267,29 +268,8 @@ public class MyGroups {
         String groupName = group.name().value();
         for (MemberId member : toTell) {
             EmailRecipient to = recipientOf(member);
-            events.publishEvent(
-                    switch (to.language()) {
-                        case SPANISH ->
-                            new EmailRequested(
-                                    to.email(),
-                                    Language.SPANISH,
-                                    "Se ha borrado el grupo «%s»".formatted(groupName),
-                                    """
-                                    %s, que administraba el grupo «%s», lo ha borrado junto con todo lo que había en él.
-
-                                    Ya no lo verás en SecretMatch.""".formatted(admin, groupName),
-                                    "/home");
-                        case ENGLISH ->
-                            new EmailRequested(
-                                    to.email(),
-                                    Language.ENGLISH,
-                                    "The Group “%s” was deleted".formatted(groupName),
-                                    """
-                                    %s, the Admin of the Group “%s”, deleted it along with everything in it.
-
-                                    You will no longer see it in SecretMatch.""".formatted(admin, groupName),
-                                    "/home");
-                    });
+            events.publishEvent(new EmailRequested(
+                    to.email(), to.language(), groupDeletedText(to.language(), admin, groupName), "/home"));
         }
     }
 
@@ -300,28 +280,37 @@ public class MyGroups {
         EmailRecipient to = recipientOf(removed);
         String groupName = group.name().value();
         events.publishEvent(
-                switch (to.language()) {
-                    case SPANISH ->
-                        new EmailRequested(
-                                to.email(),
-                                Language.SPANISH,
-                                "Ya no estás en «%s»".formatted(groupName),
-                                """
-                                %s, que administra el grupo «%s», te ha quitado del grupo.
+                new EmailRequested(to.email(), to.language(), removedText(to.language(), admin, groupName), "/home"));
+    }
 
-                                Si crees que es un error, habla con %s.""".formatted(admin, groupName, admin),
-                                "/home");
-                    case ENGLISH ->
-                        new EmailRequested(
-                                to.email(),
-                                Language.ENGLISH,
-                                "You are no longer in “%s”".formatted(groupName),
-                                """
-                                %s, the Admin of the Group “%s”, removed you from the Group.
+    private static EmailText groupDeletedText(Language language, String admin, String groupName) {
+        return switch (language) {
+            case SPANISH ->
+                new EmailText("Se ha borrado el grupo «%s»".formatted(groupName), """
+                        %s, que administraba el grupo «%s», lo ha borrado junto con todo lo que había en él.
 
-                                If you think this is a mistake, talk to %s.""".formatted(admin, groupName, admin),
-                                "/home");
-                });
+                        Ya no lo verás en SecretMatch.""".formatted(admin, groupName));
+            case ENGLISH ->
+                new EmailText("The Group “%s” was deleted".formatted(groupName), """
+                        %s, the Admin of the Group “%s”, deleted it along with everything in it.
+
+                        You will no longer see it in SecretMatch.""".formatted(admin, groupName));
+        };
+    }
+
+    private static EmailText removedText(Language language, String admin, String groupName) {
+        return switch (language) {
+            case SPANISH ->
+                new EmailText("Ya no estás en «%s»".formatted(groupName), """
+                        %s, que administra el grupo «%s», te ha quitado del grupo.
+
+                        Si crees que es un error, habla con %s.""".formatted(admin, groupName, admin));
+            case ENGLISH ->
+                new EmailText("You are no longer in “%s”".formatted(groupName), """
+                        %s, the Admin of the Group “%s”, removed you from the Group.
+
+                        If you think this is a mistake, talk to %s.""".formatted(admin, groupName, admin));
+        };
     }
 
     private EmailRecipient recipientOf(MemberId member) {

@@ -12,6 +12,7 @@ import com.secretmatch.mailbox.domain.MemberId;
 import com.secretmatch.mailbox.domain.MessageText;
 import com.secretmatch.mailbox.domain.UserId;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
 import com.secretmatch.shared.domain.Language;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -195,28 +196,22 @@ public class MemberMailboxes {
         MemberEmails.Recipient to = memberEmails
                 .recipientOf(recipient)
                 .orElseThrow(() -> new IllegalStateException("a Mailbox side has no User"));
-        String link = "/groups/" + groupId;
-        events.publishEvent(
-                switch (to.language()) {
-                    case SPANISH -> {
-                        String notice = "Tienes un mensaje nuevo en «%s»".formatted(groupName);
-                        yield new EmailRequested(
-                                to.email(),
-                                Language.SPANISH,
-                                notice,
-                                notice + ".\n\nEntra en el grupo para leerlo y contestar.",
-                                link);
-                    }
-                    case ENGLISH -> {
-                        String notice = "You have a new Message in “%s”".formatted(groupName);
-                        yield new EmailRequested(
-                                to.email(),
-                                Language.ENGLISH,
-                                notice,
-                                notice + ".\n\nOpen the Group to read it and reply.",
-                                link);
-                    }
-                });
+        events.publishEvent(new EmailRequested(
+                to.email(), to.language(), newMessageText(to.language(), groupName), "/groups/" + groupId));
+    }
+
+    /** Email 5's text: the same for both sides of the Mailbox. */
+    private static EmailText newMessageText(Language language, String groupName) {
+        return switch (language) {
+            case SPANISH -> {
+                String notice = "Tienes un mensaje nuevo en «%s»".formatted(groupName);
+                yield new EmailText(notice, notice + ".\n\nEntra en el grupo para leerlo y contestar.");
+            }
+            case ENGLISH -> {
+                String notice = "You have a new Message in “%s”".formatted(groupName);
+                yield new EmailText(notice, notice + ".\n\nOpen the Group to read it and reply.");
+            }
+        };
     }
 
     /**

@@ -1,5 +1,5 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
-import { currentLanguage } from '../../../core/language';
+import { editableEuros } from '../../../shared/format/euros';
 import { Wish, WishInput, WishPriority } from './wishlist-api';
 
 /**
@@ -69,15 +69,8 @@ export function wishFormValue(wish?: Wish): WishFormValue {
   return {
     title: wish?.title ?? '',
     link: wish?.link ?? '',
-    price: wish?.price === undefined ? '' : priceText(wish.price),
+    price: wish?.price === undefined ? '' : editableEuros(wish.price),
     notes: wish?.notes ?? '',
     priority: wish?.priority ?? 'MEDIUM',
   };
-}
-
-/** With the decimal separator of the Language: `25.5` → "25,50" ("25.50" in English). */
-function priceText(price: number): string {
-  return Number.isInteger(price)
-    ? String(price)
-    : price.toFixed(2).replace('.', currentLanguage() === 'es' ? ',' : '.');
 }

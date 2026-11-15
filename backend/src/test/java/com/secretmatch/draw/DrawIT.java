@@ -218,12 +218,18 @@ class DrawIT {
                 family.pedro(), "Ya está hecho el sorteo de «Navidad»",
                 family.luis(), "The Draw for “Navidad” is done",
                 family.marta(), "The Draw for “Navidad” is done");
+        Map<User, String> messages = Map.of(
+                family.carmen(), "Entra para descubrir a quién le haces el regalo.",
+                family.pedro(), "Entra para descubrir a quién le haces el regalo.",
+                family.luis(), "Go in to find out who you are giving a gift to.",
+                family.marta(), "Go in to find out who you are giving a gift to.");
         for (User member : family.everyone()) {
             List<OutgoingEmail> received = mail.sentTo(member.email());
             assertThat(received).hasSize(1);
             OutgoingEmail email = received.getFirst();
             assertThat(email.subject()).isEqualTo(subjects.get(member));
             assertThat(email.text()).contains("/groups/" + family.groupId());
+            assertThat(email.text()).contains(messages.get(member));
             for (String name : family.idsByName().keySet()) {
                 assertThat(email.subject()).doesNotContain(name);
                 assertThat(email.text()).doesNotContain(name);

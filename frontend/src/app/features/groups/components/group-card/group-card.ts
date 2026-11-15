@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { LucideCalendar, LucideChevronRight } from '@lucide/angular';
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { euros } from '../../../../shared/format/euros';
-import { memberCount, shortExchangeDate } from '../../data-access/group-format';
+import { shortExchangeDate } from '../../data-access/group-format';
 import { GroupSummary } from '../../data-access/groups-api';
 
 /** One of the User's Groups in "Mis grupos": the whole card links to the Group's page. */
@@ -30,7 +30,9 @@ import { GroupSummary } from '../../data-access/groups-api';
           @if (group().admin) {
             <li appChip>Admin</li>
           }
-          <li appChip>{{ members() }}</li>
+          <li appChip i18n>
+            {group().memberCount, plural, =1 {1 miembro} other {{{ group().memberCount }} miembros}}
+          </li>
           @if (budget(); as budget) {
             <li appChip>{{ budget }}</li>
           }
@@ -44,7 +46,6 @@ export class GroupCard {
   readonly group = input.required<GroupSummary>();
 
   protected readonly date = computed(() => shortExchangeDate(this.group().exchangeDate));
-  protected readonly members = computed(() => memberCount(this.group().memberCount));
   protected readonly budget = computed(() => {
     const budget = this.group().budget;
     return budget === undefined ? null : euros(budget);

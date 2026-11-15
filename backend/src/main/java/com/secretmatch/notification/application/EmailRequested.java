@@ -28,6 +28,11 @@ public record EmailRequested(String recipient, Language language, String subject
         }
     }
 
+    /** An email to {@code recipient}, saying {@code text}, which is written in {@code language}. */
+    public EmailRequested(String recipient, Language language, EmailText text, String linkPath) {
+        this(recipient, language, text.subject(), text.message(), linkPath);
+    }
+
     /** Leaves out every field: they all may carry personal data (anonymity invariant). */
     @Override
     public String toString() {

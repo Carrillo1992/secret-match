@@ -11,6 +11,7 @@ import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.VerificationLinkInvalidException;
 import com.secretmatch.identity.domain.VerificationLinkUsedException;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
 import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -120,28 +121,29 @@ public class EmailSignUp {
 
     /** The Verification email, in the Language the sign-up was made in. */
     private static EmailRequested verificationEmail(SignUpVerification signUp, EmailLinkToken token) {
-        String to = signUp.email().value();
-        String link = "/verify-email?token=" + token.value();
-        long hours = SignUpVerification.VALIDITY.toHours();
-        return switch (signUp.language()) {
-            case SPANISH ->
-                new EmailRequested(
-                        to, Language.SPANISH, "Confirma tu correo en SecretMatch", """
+        return new EmailRequested(
+                signUp.email().value(),
+                signUp.language(),
+                verificationText(signUp.language(), SignUpVerification.VALIDITY.toHours()),
+                "/verify-email?token=" + token.value());
+    }
+
+    private static EmailText verificationText(Language language, long hours) {
+        return switch (language) {
+            case SPANISH -> new EmailText("Confirma tu correo en SecretMatch", """
                         Hola:
 
                         Para terminar de crear tu cuenta en SecretMatch, confirma que este correo es tuyo con el enlace \
                         de abajo. Caduca en %d horas y solo se puede usar una vez.
 
-                        Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(hours), link);
-            case ENGLISH ->
-                new EmailRequested(
-                        to, Language.ENGLISH, "Confirm your email on SecretMatch", """
+                        Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(hours));
+            case ENGLISH -> new EmailText("Confirm your email on SecretMatch", """
                         Hello,
 
                         To finish creating your SecretMatch account, confirm that this email is yours with the link \
                         below. It expires in %d hours and can only be used once.
 
-                        If this wasn't you, ignore this message: no account will be created.""".formatted(hours), link);
+                        If this wasn't you, ignore this message: no account will be created.""".formatted(hours));
         };
     }
 }

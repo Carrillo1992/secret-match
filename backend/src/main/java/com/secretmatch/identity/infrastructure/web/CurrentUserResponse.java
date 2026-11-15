@@ -10,7 +10,7 @@ record CurrentUserResponse(
 
         @Schema(
                 requiredMode = Schema.RequiredMode.REQUIRED,
-                allowableValues = {"es", "en"})
+                allowableValues = {LanguageRequest.ES, LanguageRequest.EN})
         String language) {
 
     static CurrentUserResponse of(CurrentUser user) {

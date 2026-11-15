@@ -22,7 +22,9 @@ record SignUpRequest(
         @NotNull @Size(min = NewPassword.MIN_LENGTH, max = NewPassword.MAX_BYTES)
         String password,
 
-        @NotNull @Pattern(regexp = LanguageRequest.CODES) @Schema(allowableValues = {"es", "en"})
+        @NotNull
+        @Pattern(regexp = LanguageRequest.CODES)
+        @Schema(allowableValues = {LanguageRequest.ES, LanguageRequest.EN})
         String language) {
 
     @Override

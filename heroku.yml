@@ -1,0 +1,7 @@
+# Heroku builds the API image from the repo (container stack). The build context is the folder that holds
+# the Dockerfile, so backend/Dockerfile builds with backend/ as its context, as `docker compose` does.
+# No run section: the image's ENTRYPOINT starts the API, which listens on $PORT. No release phase: Flyway
+# migrates the database when the API starts.
+build:
+  docker:
+    web: backend/Dockerfile

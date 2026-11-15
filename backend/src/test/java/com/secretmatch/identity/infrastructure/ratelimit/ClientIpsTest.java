@@ -29,6 +29,15 @@ class ClientIpsTest {
     }
 
     @Test
+    @DisplayName("behind the Heroku router alone, the client is the entry the router appended, not one the client sent")
+    void herokuRouter() {
+        // The client sent "1.1.1.1"; the router appended the address it got the connection from.
+        assertThat(new ClientIps(1).of(request("10.1.23.45", "1.1.1.1, 203.0.113.7")))
+                .isEqualTo("203.0.113.7");
+        assertThat(new ClientIps(1).of(request("10.1.23.45", "203.0.113.7"))).isEqualTo("203.0.113.7");
+    }
+
+    @Test
     @DisplayName("fewer entries than proxies means the request did not come through them: the remote address counts")
     void tooFewEntries() {
         assertThat(new ClientIps(2).of(request("10.21.157.68", "104.22.17.40"))).isEqualTo("10.21.157.68");

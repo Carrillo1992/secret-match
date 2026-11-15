@@ -58,16 +58,16 @@ class ProdProfileIT {
     }
 
     @Test
-    @DisplayName("behind Render's proxies, a client that writes its own X-Forwarded-For entries still hits its limit")
+    @DisplayName("behind the Heroku router, a client that writes its own X-Forwarded-For entries still hits its limit")
     void spoofedForwardedForDoesNotResetTheLimit() {
-        // Render appends Cloudflare's edge address, and Cloudflare appended the real client before it.
+        // The Heroku router appends the address of the client it got the connection from.
         for (int i = 0; i < 10; i++) {
-            signIn("10.0.0." + i + ", 203.0.113.7, 104.22.17.40").expectStatus().isEqualTo(422);
+            signIn("10.0.0." + i + ", 203.0.113.7").expectStatus().isEqualTo(422);
         }
 
-        signIn("10.0.0.99, 203.0.113.7, 104.22.17.40").expectStatus().isEqualTo(429);
+        signIn("10.0.0.99, 203.0.113.7").expectStatus().isEqualTo(429);
         // Another real client keeps its own limit.
-        signIn("203.0.113.7, 198.51.100.9, 104.22.17.40").expectStatus().isEqualTo(422);
+        signIn("203.0.113.7, 198.51.100.9").expectStatus().isEqualTo(422);
     }
 
     private RestTestClient.ResponseSpec signIn(String forwardedFor) {

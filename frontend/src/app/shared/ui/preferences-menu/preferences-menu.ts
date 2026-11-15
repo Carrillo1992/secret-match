@@ -23,6 +23,7 @@ import { Alert } from '../alert/alert';
 import { BottomSheet } from '../bottom-sheet/bottom-sheet';
 import { ChoiceOption, ChoiceRows } from '../choice-rows/choice-rows';
 import { IconButton } from '../icon-button/icon-button';
+import { KoFiLink } from '../ko-fi-link/ko-fi-link';
 
 const THEMES: readonly ChoiceOption<Theme>[] = [
   { value: 'system', label: $localize`Sistema`, icon: LucideMonitor },
@@ -48,7 +49,7 @@ const LANGUAGES: readonly ChoiceOption<Language>[] = [
 @Component({
   selector: 'app-preferences-menu',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Alert, BottomSheet, ChoiceRows, IconButton, LucideSettings2],
+  imports: [Alert, BottomSheet, ChoiceRows, IconButton, KoFiLink, LucideSettings2],
   host: { class: 'inline-flex' },
   template: `
     <button
@@ -86,6 +87,9 @@ const LANGUAGES: readonly ChoiceOption<Language>[] = [
       @if (languagePreference.saveFailed()) {
         <p appAlert class="mt-4" i18n>No hemos podido cambiar el idioma. Inténtalo de nuevo.</p>
       }
+      <p class="mt-5">
+        <app-ko-fi-link standalone i18n>Invítame a un café</app-ko-fi-link>
+      </p>
     </app-bottom-sheet>
   `,
 })

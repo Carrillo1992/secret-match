@@ -9,6 +9,7 @@ import { TextLink } from './text-link';
     <p>Mira en spam o <a id="inline" appLink href="/sign-up">vuelve a registrarte</a>.</p>
     <p class="text-center"><a id="standalone" appLink standalone href="/">Volver al inicio</a></p>
     <button id="danger" type="button" appLink tone="danger">Añadir</button>
+    <a id="inverted" appLink standalone tone="inverted" href="/sign-in">Iniciar sesión</a>
   `,
 })
 class Host {}
@@ -44,5 +45,11 @@ describe('TextLink', () => {
     expect(classesOf('danger')).toContain('text-danger');
     expect(classesOf('danger')).not.toContain('text-primary');
     expect(classesOf('danger')).toContain('focus-visible:outline-danger');
+  });
+
+  it('takes the inverted tone on a primary band, with a surface focus ring', () => {
+    expect(classesOf('inverted')).toContain('text-on-primary');
+    expect(classesOf('inverted')).not.toContain('text-primary');
+    expect(classesOf('inverted')).toContain('focus-visible:outline-surface');
   });
 });

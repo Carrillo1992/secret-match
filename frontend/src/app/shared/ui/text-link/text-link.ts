@@ -4,7 +4,8 @@ import { booleanAttribute, Directive, input } from '@angular/core';
  * The inline-link recipe from DESIGN.md on a native `<a>`, or on a `<button>` for a quiet action
  * next to a real button. Add `standalone` when it stands on its own line rather than inside a
  * sentence, so it gets a 44 px touch target. `tone="danger"` is for a link on a warning card's
- * `danger-soft`, where `primary` text falls below AA.
+ * `danger-soft`, where `primary` text falls below AA. `tone="inverted"` is for a link on a `primary`
+ * band, in `on-primary`.
  */
 @Directive({
   selector: 'a[appLink], button[appLink]',
@@ -15,8 +16,10 @@ import { booleanAttribute, Directive, input } from '@angular/core';
     '[class.hover:text-primary-hover]': 'tone() === "primary"',
     '[class.focus-visible:outline-primary]': 'tone() === "primary"',
     '[class.text-danger]': 'tone() === "danger"',
-    '[class.hover:decoration-2]': 'tone() === "danger"',
+    '[class.hover:decoration-2]': 'tone() !== "primary"',
     '[class.focus-visible:outline-danger]': 'tone() === "danger"',
+    '[class.text-on-primary]': 'tone() === "inverted"',
+    '[class.focus-visible:outline-surface]': 'tone() === "inverted"',
     '[class.inline-flex]': 'standalone()',
     '[class.min-h-11]': 'standalone()',
     '[class.items-center]': 'standalone()',
@@ -24,5 +27,5 @@ import { booleanAttribute, Directive, input } from '@angular/core';
 })
 export class TextLink {
   readonly standalone = input(false, { transform: booleanAttribute });
-  readonly tone = input<'primary' | 'danger'>('primary');
+  readonly tone = input<'primary' | 'danger' | 'inverted'>('primary');
 }

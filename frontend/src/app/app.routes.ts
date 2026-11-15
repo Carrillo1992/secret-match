@@ -5,7 +5,7 @@ import { HOME_SEGMENT, SIGN_IN_SEGMENT } from './core/route-paths';
 export const routes: Routes = [
   {
     path: '',
-    title: 'SecretMatch',
+    title: $localize`SecretMatch · Tu amigo invisible, sin papelitos`,
     loadComponent: () =>
       import('./features/landing/pages/landing-page/landing-page').then((m) => m.LandingPage),
   },

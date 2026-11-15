@@ -1,28 +1,223 @@
-<app-sheet-layout>
-  <div class="flex flex-col items-center gap-6 text-center">
-    @if (accountDeleted) {
-      <p appAlert="success" data-testid="account-deleted" class="w-full" i18n>
-        Tu cuenta se ha borrado. Te hemos enviado un email para confirmarlo.
-      </p>
-    }
-    <div class="flex flex-col gap-2">
-      <h1 class="font-display text-4xl font-bold tracking-tight">SecretMatch</h1>
-      <p class="text-lg text-ink-muted" i18n>Tu amigo invisible, sin papelitos.</p>
-    </div>
-    <div class="flex w-full flex-col items-center gap-2">
-      <a routerLink="/sign-up" appButton class="w-full" i18n>Crear cuenta</a>
-      <a [routerLink]="signIn" appLink standalone i18n>Iniciar sesión</a>
-    </div>
+<header class="mx-auto flex max-w-5xl items-center justify-between px-6 pt-5 md:px-10">
+  <a
+    routerLink="/"
+    class="inline-flex min-h-11 items-center font-display text-xl font-bold tracking-tight text-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >SecretMatch</a
+  >
+  <app-preferences-menu raised />
+</header>
 
-    <div role="status" aria-live="polite" class="flex flex-col items-center gap-3">
-      @if (health.status() === 'down') {
-        <p class="rounded-full bg-danger-soft px-4 py-1 font-semibold text-danger" i18n>
-          No podemos conectar con el servidor
+<main>
+  <section
+    class="mx-auto grid max-w-5xl items-center gap-2 px-6 pb-12 md:grid-cols-2 md:gap-10 md:px-10 md:py-16"
+  >
+    <app-gift-illustration class="h-56 md:order-2 md:h-96" />
+    <div class="flex flex-col gap-5 text-center md:text-left">
+      @if (accountDeleted) {
+        <p appAlert="success" data-testid="account-deleted" i18n>
+          Tu cuenta se ha borrado. Te hemos enviado un email para confirmarlo.
         </p>
-        <button type="button" appButton="secondary" (click)="health.recheck()" i18n>
-          Reintentar
-        </button>
       }
+      <h1 class="font-display text-4xl font-bold tracking-tight md:text-6xl" i18n>
+        Tu amigo invisible, sin papelitos.
+      </h1>
+      <p class="text-lg text-ink-muted" i18n>
+        Organiza el intercambio de regalos con tu familia, tus amigos o tu oficina. Para cumpleaños,
+        despedidas, fin de curso… o porque sí.
+      </p>
+      <div #heroCta class="flex flex-col items-center gap-2 md:flex-row md:gap-6">
+        <a routerLink="/sign-up" appButton class="w-full md:w-auto" i18n>Crear cuenta</a>
+        <a [routerLink]="signIn" appLink standalone i18n>Iniciar sesión</a>
+      </div>
+      <div
+        role="status"
+        aria-live="polite"
+        data-testid="api-status"
+        class="flex flex-col items-center gap-3 md:items-start"
+      >
+        @if (health.status() === 'down') {
+          <p class="rounded-full bg-danger-soft px-4 py-1 font-semibold text-danger" i18n>
+            No podemos conectar con el servidor
+          </p>
+          <button type="button" appButton="secondary" (click)="health.recheck()" i18n>
+            Reintentar
+          </button>
+        }
+      </div>
     </div>
-  </div>
-</app-sheet-layout>
+  </section>
+
+  <app-feature-band
+    tone="surface"
+    i18n-heading
+    heading="Un sobre que abres tú"
+    i18n-lead
+    lead="Tu persona secreta aparece al abrir el sobre, y solo la ves tú."
+  >
+    <div
+      bandDecoration
+      aria-hidden="true"
+      class="absolute -top-16 -right-16 size-48 rounded-full bg-mustard"
+    ></div>
+    <svg bandIcon lucideGift [size]="20"></svg>
+    <app-envelope-demo />
+  </app-feature-band>
+
+  <app-feature-band
+    reverse
+    i18n-heading
+    heading="Pregunta sin delatarte"
+    i18n-lead
+    lead="Escribe a tu persona secreta desde un buzón anónimo y acierta con la talla."
+  >
+    <div
+      bandDecoration
+      aria-hidden="true"
+      class="absolute -bottom-20 -left-16 h-48 w-72 rounded-full bg-sage"
+    ></div>
+    <svg bandIcon lucideMessageCircle [size]="20"></svg>
+    <p bandNote class="mt-4 flex items-start gap-2 font-bold">
+      <svg lucideShieldCheck [size]="20" class="mt-0.5 shrink-0 text-success"></svg>
+      <span i18n>Quien recibe el regalo nunca puede saber quién se lo hace.</span>
+    </p>
+    <div class="flex flex-col gap-2 rounded-card bg-surface p-5 shadow-card">
+      <p
+        class="max-w-5/6 self-end rounded-card rounded-br-md bg-primary px-4 py-2.5 text-on-primary motion-safe:animate-pop"
+      >
+        <span class="sr-only" i18n>Tú:</span> <span i18n>¿Talla M o L?</span>
+      </p>
+      <p
+        class="max-w-5/6 self-start rounded-card rounded-bl-md bg-subtle px-4 py-2.5 text-ink motion-safe:animate-pop motion-safe:[animation-delay:700ms]"
+      >
+        <span class="sr-only">Marta:</span> <span i18n>¡M! 😊</span>
+      </p>
+    </div>
+  </app-feature-band>
+
+  <app-feature-band
+    tone="surface"
+    i18n-heading
+    heading="Sabes qué regalar (y qué no)"
+    i18n-lead
+    lead="Cada uno apunta sus deseos, sus preferencias y lo que no quiere ni ver."
+  >
+    <div
+      bandDecoration
+      aria-hidden="true"
+      class="absolute top-10 -right-10 size-28 rounded-full bg-clay"
+    ></div>
+    <svg bandIcon lucideListChecks [size]="20"></svg>
+    <div class="flex flex-col gap-4">
+      <ul class="flex flex-wrap gap-2">
+        <li appChip i18n>Un libro de cocina</li>
+        <li appChip i18n>Calcetines divertidos</li>
+        <li appChip i18n>Plantas</li>
+      </ul>
+      <div class="rounded-card bg-danger-soft p-5 shadow-card">
+        <p class="flex items-center gap-2 font-display text-lg font-semibold text-danger">
+          <svg lucideBan [size]="20"></svg>
+          <span i18n>Nada de…</span>
+        </p>
+        <ul class="mt-2 list-inside list-disc text-ink">
+          <li i18n>velas</li>
+          <li i18n>chocolate</li>
+        </ul>
+      </div>
+    </div>
+  </app-feature-band>
+
+  <app-feature-band
+    reverse
+    i18n-heading
+    heading="Las parejas, por separado"
+    i18n-lead
+    lead="Marca a las parejas o a quienes viven juntos y nunca se sortearán entre sí."
+  >
+    <div
+      bandDecoration
+      aria-hidden="true"
+      class="absolute -top-10 left-1/3 size-24 rounded-full bg-mustard"
+    ></div>
+    <svg bandIcon lucideUnlink [size]="20"></svg>
+    <figure class="flex flex-col items-center gap-4">
+      <div class="flex items-center gap-3" aria-hidden="true">
+        <span
+          class="grid size-20 place-items-center rounded-full bg-sage font-display text-3xl font-bold text-ink"
+          >A</span
+        >
+        <span class="h-1 w-8 rounded-full bg-line"></span>
+        <span
+          class="grid size-12 place-items-center rounded-full bg-surface text-danger shadow-card"
+        >
+          <svg lucideUnlink [size]="22"></svg>
+        </span>
+        <span class="h-1 w-8 rounded-full bg-line"></span>
+        <span
+          class="grid size-20 place-items-center rounded-full bg-clay font-display text-3xl font-bold text-ink"
+          >L</span
+        >
+      </div>
+      <figcaption class="font-semibold" i18n>
+        A Ana y a Luis nunca les tocará regalarse entre ellos.
+      </figcaption>
+    </figure>
+  </app-feature-band>
+
+  <section class="bg-surface px-6 py-16 md:px-10">
+    <div class="mx-auto max-w-5xl">
+      <h2 class="font-display text-3xl font-bold tracking-tight md:text-5xl" i18n>Cómo funciona</h2>
+      <ol class="mt-8 grid gap-4 md:grid-cols-3">
+        @for (step of steps; track $index) {
+          <li class="rounded-card bg-canvas p-5">
+            <span
+              aria-hidden="true"
+              class="grid size-10 place-items-center rounded-full bg-primary font-display text-lg font-bold text-on-primary"
+              >{{ $index + 1 }}</span
+            >
+            <p class="mt-4 font-display text-xl font-bold">{{ step.title }}</p>
+            <p class="mt-1 text-ink-muted">{{ step.body }}</p>
+          </li>
+        }
+      </ol>
+      <ul class="mt-8 flex flex-wrap gap-2">
+        <li appChip><svg lucideLink [size]="16"></svg> <span i18n>Un enlace y listo</span></li>
+        <li appChip>
+          <svg lucideSparkles [size]="16"></svg> <span i18n>Gratis y sin anuncios</span>
+        </li>
+      </ul>
+      <div class="mt-8 flex flex-col items-start gap-3" data-testid="ko-fi">
+        <p class="font-display text-lg font-semibold" i18n>¿Te ha gustado?</p>
+        <app-ko-fi-link look="button" i18n>Invítame a un café</app-ko-fi-link>
+      </div>
+    </div>
+  </section>
+
+  <section
+    class="relative overflow-hidden bg-primary px-6 py-16 text-center text-on-primary md:px-10 md:py-24"
+  >
+    <div
+      aria-hidden="true"
+      class="absolute -bottom-12 -left-12 size-40 rounded-full bg-mustard opacity-80"
+    ></div>
+    <div aria-hidden="true" class="absolute -top-8 right-6 size-16 rounded-full bg-clay"></div>
+    <div #closingCta class="relative mx-auto flex max-w-xl flex-col items-center gap-4">
+      <h2 class="font-display text-4xl font-bold tracking-tight md:text-5xl" i18n>
+        ¿Organizamos el vuestro?
+      </h2>
+      <p class="text-lg" i18n>Crear el grupo te lleva un minuto.</p>
+      <a routerLink="/sign-up" appButton="inverted" class="mt-2 w-full md:w-auto" i18n
+        >Crear cuenta</a
+      >
+      <a [routerLink]="signIn" appLink standalone tone="inverted" i18n>Iniciar sesión</a>
+    </div>
+  </section>
+
+  @if (showStickyCta()) {
+    <div
+      data-testid="sticky-cta"
+      class="fixed inset-x-0 bottom-0 z-40 bg-surface px-6 pt-3 pb-4 shadow-sheet md:hidden motion-safe:animate-sheet-rise"
+    >
+      <a routerLink="/sign-up" appButton class="w-full" i18n>Crear cuenta</a>
+    </div>
+  }
+</main>

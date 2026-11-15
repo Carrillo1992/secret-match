@@ -1,14 +1,20 @@
 import { computed, Directive, input } from '@angular/core';
 
-/** `primary`: the one main action of a screen. `secondary`: an outlined, quieter action. */
-export type ButtonVariant = 'primary' | 'secondary';
+/**
+ * `primary`: the one main action of a screen. `secondary`: an outlined, quieter action.
+ * `inverted`: the main action standing on a `primary` band, so it takes the surface instead.
+ */
+export type ButtonVariant = 'primary' | 'secondary' | 'inverted';
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-full px-6 font-display font-semibold transition-colors duration-200 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60';
+  'inline-flex items-center justify-center gap-2 rounded-full px-6 font-display font-semibold transition-colors duration-200 focus-visible:outline-3 focus-visible:outline-offset-3 disabled:cursor-not-allowed disabled:opacity-60';
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'h-14 bg-primary text-lg text-on-primary hover:bg-primary-hover',
-  secondary: 'h-12 border-2 border-primary text-primary hover:bg-primary hover:text-on-primary',
+  primary:
+    'h-14 bg-primary text-lg text-on-primary hover:bg-primary-hover focus-visible:outline-primary',
+  secondary:
+    'h-12 border-2 border-primary text-primary hover:bg-primary hover:text-on-primary focus-visible:outline-primary',
+  inverted: 'h-14 bg-surface text-lg text-primary hover:bg-canvas focus-visible:outline-surface',
 };
 
 /**

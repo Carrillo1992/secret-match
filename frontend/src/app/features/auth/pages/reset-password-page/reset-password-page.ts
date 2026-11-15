@@ -12,8 +12,8 @@ import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { PasswordResetApi, ResetPasswordOutcome } from '../../data-access/password-reset-api';
 import { PASSWORD_RESET_RULES } from '../../data-access/password-reset-rules';
 
-/** `choosing`: the form. The rest are what the API answered (`failed` keeps the form, with an alert). */
-type ResetPasswordStatus = 'choosing' | Exclude<ResetPasswordOutcome, 'failed'>;
+/** `choosing`: the form. The rest are what the API answered (`throttled` and `failed` keep the form, with an alert). */
+type ResetPasswordStatus = 'choosing' | Exclude<ResetPasswordOutcome, 'throttled' | 'failed'>;
 
 /** Where the link in the Password Reset email lands: `/reset-password?token=…`. */
 @Component({
@@ -54,7 +54,7 @@ export class ResetPasswordPage {
   protected readonly status = signal<ResetPasswordStatus>('choosing');
   protected readonly submitted = signal(false);
   protected readonly sending = signal(false);
-  protected readonly failed = signal(false);
+  protected readonly alert = signal<'throttled' | 'failed' | null>(null);
 
   constructor() {
     const route = inject(ActivatedRoute);
@@ -73,7 +73,7 @@ export class ResetPasswordPage {
 
   protected async submit(): Promise<void> {
     this.submitted.set(true);
-    this.failed.set(false);
+    this.alert.set(null);
     if (this.form.invalid || this.sending()) {
       return;
     }
@@ -83,8 +83,8 @@ export class ResetPasswordPage {
       this.form.getRawValue().newPassword,
     );
     this.sending.set(false);
-    if (outcome === 'failed') {
-      this.failed.set(true);
+    if (outcome === 'throttled' || outcome === 'failed') {
+      this.alert.set(outcome);
     } else {
       this.status.set(outcome);
     }

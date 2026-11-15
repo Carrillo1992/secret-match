@@ -27,3 +27,11 @@ function problemBody(body: unknown): { type?: unknown } | null {
     return null;
   }
 }
+
+/**
+ * Whether the API turned the request away because this client made too many (429, ADR 0006). It says
+ * nothing about any account, so a page can always say so.
+ */
+export function isTooManyRequests(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && error.status === 429;
+}

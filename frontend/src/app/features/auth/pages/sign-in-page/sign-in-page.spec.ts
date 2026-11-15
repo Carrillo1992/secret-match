@@ -183,6 +183,15 @@ describe('SignInPage', () => {
     expect(page().querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
   });
 
+  it('says to wait when there were too many attempts', async () => {
+    await harness.navigateByUrl('/sign-in');
+    await fillAndSubmit();
+    http.expectOne(SIGN_IN_URL).flush(null, { status: 429, statusText: 'Too Many Requests' });
+    await settle();
+
+    expect(alert()).toContain('Demasiados intentos. Inténtalo de nuevo más tarde.');
+  });
+
   it('offers a reset for a forgotten password, handing over the typed email outside the URL', async () => {
     await harness.navigateByUrl('/sign-in');
     type('Correo electrónico', ' ana@example.com ');

@@ -103,6 +103,8 @@
       <p appAlert>
         @if (error === 'invalid') {
           <ng-container i18n>Revisa los datos: alguno no es válido.</ng-container>
+        } @else if (error === 'throttled') {
+          <ng-container i18n>Demasiados intentos. Inténtalo de nuevo más tarde.</ng-container>
         } @else {
           <ng-container i18n
             >No hemos podido crear la cuenta. Inténtalo de nuevo en un momento.</ng-container

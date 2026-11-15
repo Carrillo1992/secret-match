@@ -59,7 +59,7 @@ describe('MailboxCard', () => {
     fixture.componentRef.setInput('receiverRevealed', false);
     await fixture.whenStable();
 
-    expect(tabs().map(text)).toEqual(['Tu Receiver', 'Tu Giver']);
+    expect(tabs().map(text)).toEqual(['A quien regalas', 'Chat misterioso']);
     expect(text(element())).not.toContain('Lucía');
   });
 
@@ -67,7 +67,7 @@ describe('MailboxCard', () => {
     await render(both, { 'm-1': empty, 'm-2': empty });
 
     expect(text(element().querySelector('h2'))).toBe('Buzón');
-    expect(tabs().map(text)).toEqual(['Con Lucía', 'Tu Giver']);
+    expect(tabs().map(text)).toEqual(['Con Lucía', 'Chat misterioso']);
     const giverTab = tabs()[1];
     expect(giverTab.querySelector('img, svg')).toBeNull();
     expect(text(panel('m-2'))).not.toContain('Lucía');
@@ -86,7 +86,7 @@ describe('MailboxCard', () => {
     expect(panel('m-1')?.hidden).toBe(false);
     expect(panel('m-2')?.hidden).toBe(true);
     expect(text(panel('m-1'))).toContain('Le regalas tú. No sabrá quién eres.');
-    expect(text(panel('m-2'))).toContain('Quien te regala. Nunca sabrás quién es.');
+    expect(text(panel('m-2'))).toContain('Alguien te regala. Nunca sabrás quién es.');
   });
 
   it('asks for the other Mailbox when its tab is chosen', async () => {

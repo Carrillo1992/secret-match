@@ -46,16 +46,16 @@ describe('LandingPage', () => {
     api.expectOne(HEALTH_URL);
   });
 
-  it('says it is checking the API while the health request is in flight', () => {
-    expect(statusText()).toContain('Comprobando');
+  it('shows nothing while the health request is in flight', () => {
+    expect(statusText().trim()).toBe('');
     api.expectOne(HEALTH_URL);
   });
 
-  it('shows "API OK" when the API reports itself up', async () => {
+  it('shows nothing when the API reports itself up', async () => {
     api.expectOne(HEALTH_URL).flush({ status: 'UP' });
     await fixture.whenStable();
 
-    expect(statusText()).toContain('API OK');
+    expect(statusText().trim()).toBe('');
     expect(retryButton()).toBeNull();
   });
 
@@ -63,8 +63,8 @@ describe('LandingPage', () => {
     api.expectOne(HEALTH_URL).error(new ProgressEvent('error'), { status: 0 });
     await fixture.whenStable();
 
-    expect(statusText()).toContain('No se puede conectar con la API');
-    expect(statusText()).not.toContain('API OK');
+    expect(statusText()).toContain('No podemos conectar con el servidor');
+    expect(retryButton()).not.toBeNull();
   });
 
   it('shows the error state when the API reports itself down', async () => {
@@ -73,7 +73,7 @@ describe('LandingPage', () => {
       .flush({ status: 'DOWN' }, { status: 503, statusText: 'Service Unavailable' });
     await fixture.whenStable();
 
-    expect(statusText()).toContain('No se puede conectar con la API');
+    expect(statusText()).toContain('No podemos conectar con el servidor');
   });
 
   it('checks again when the user retries after an error', async () => {
@@ -85,7 +85,8 @@ describe('LandingPage', () => {
     api.expectOne(HEALTH_URL).flush({ status: 'UP' });
     await fixture.whenStable();
 
-    expect(statusText()).toContain('API OK');
+    expect(statusText().trim()).toBe('');
+    expect(retryButton()).toBeNull();
   });
 
   describe('after the User deleted their account', () => {

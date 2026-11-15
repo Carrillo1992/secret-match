@@ -136,7 +136,7 @@ describe('GroupPage in English', () => {
     await settle();
 
     expect(text(page())).toContain("You're giving a gift to Luke");
-    expect(text(page())).toContain('Your Giver');
+    expect(text(page())).toContain('Mystery chat');
     expect(spanishLeftIn(page())).toEqual([]);
   });
 });

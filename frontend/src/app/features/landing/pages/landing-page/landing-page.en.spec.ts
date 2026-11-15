@@ -33,7 +33,7 @@ describe('LandingPage in English', () => {
 
     const page = fixture.nativeElement as HTMLElement;
     expect(page.textContent).toContain('Create account');
-    expect(page.textContent).toContain("Can't connect to the API");
+    expect(page.textContent).toContain("We can't reach the server");
     expect(spanishLeftIn(page)).toEqual([]);
   });
 });

@@ -58,7 +58,7 @@ describe('MailboxThread', () => {
     expect(theirs.parentElement?.classList).not.toContain('justify-end');
   });
 
-  it('names the Giver only as "Tu Giver" for the screen reader', async () => {
+  it('names the Giver only as "Quien te regala" for the screen reader', async () => {
     const element = (
       await render(
         {
@@ -67,11 +67,11 @@ describe('MailboxThread', () => {
           fresh: 0,
         },
         'RECEIVER',
-        'Tu Giver',
+        'Quien te regala',
       )
     ).nativeElement as HTMLElement;
 
-    expect(text(bubbles(element)[0])).toBe('Tu Giver: ¿Qué talla usas?');
+    expect(text(bubbles(element)[0])).toBe('Quien te regala: ¿Qué talla usas?');
   });
 
   it('pops in only the Messages just sent', async () => {

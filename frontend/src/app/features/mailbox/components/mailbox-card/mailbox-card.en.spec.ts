@@ -47,14 +47,14 @@ describe('MailboxCard in English', () => {
     expect(spanishLeftIn(card)).toEqual([]);
   });
 
-  it('calls the other side "Your Giver" and nothing more', async () => {
+  it('calls the other side "Mystery chat" and nothing more', async () => {
     const card = await render('m-2');
 
     const tabs = [...card.querySelectorAll('[role="tab"]')].map(text);
-    expect(tabs).toEqual(['With Lucy', 'Your Giver']);
+    expect(tabs).toEqual(['With Lucy', 'Mystery chat']);
     const panel = card.querySelector('#mailbox-panel-m-2');
-    expect(text(panel)).toContain("Your Giver. You'll never know who it is.");
-    expect(text(panel)).toContain('Your Giver: Hi!');
+    expect(text(panel)).toContain("Someone's getting you a gift. You'll never know who.");
+    expect(text(panel)).toContain('Your gift-giver: Hi!');
     expect(card.querySelector('[role="tablist"]')?.getAttribute('aria-label')).toBe('Mailboxes');
     expect(spanishLeftIn(card)).toEqual([]);
   });

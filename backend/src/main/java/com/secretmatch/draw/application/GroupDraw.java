@@ -209,7 +209,7 @@ public class GroupDraw {
             case ENGLISH -> new Email("The Draw for “%s” is done".formatted(groupName), """
                         The Draw for the Group “%s” is done.
 
-                        Go in to do your Reveal and find out who you are giving a gift to.""".formatted(groupName));
+                        Go in to find out who you are giving a gift to.""".formatted(groupName));
         });
     }
 

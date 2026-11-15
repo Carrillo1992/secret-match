@@ -63,6 +63,7 @@ Run from `frontend/` with Node 26, the version CI and the frontend image use (`f
 | `npm run lint` | ESLint (+ Prettier check) |
 | `npm test -- --watch=false` | Unit and component tests |
 | `npx ng test --watch=false --include='src/app/features/groups/**/*.spec.ts'` | Only the specs matching the glob, while iterating |
+| `npm run test:pages` | The Cloudflare Pages build step (`pages/finish-build.mjs`: `config.json` from env vars, `_headers`) |
 | `npm run build` | Production build compiles with strict TypeScript |
 | `npm run api:generate` + `git status --porcelain src/app/core/api/generated` (must print nothing) | Generated API client matches the committed OpenAPI snapshot `backend/openapi.json` |
 | `npm run extract-i18n` + `git status --porcelain src/locale` (must print nothing) | The committed source messages `src/locale/messages.json` match the templates; the English entries for them are checked by `src/locale/translations.spec.ts` |
@@ -99,6 +100,6 @@ GitHub Actions runs the section 2 checks on every PR, filtered by path (`.github
 | Workflow | Runs when the PR touches | Checks |
 |---|---|---|
 | `backend.yml` | `backend/**`, the workflow file itself | Spotless check, `./mvnw verify` |
-| `frontend.yml` | `frontend/**`, `backend/openapi.json`, the workflow file itself | Generated-client drift, extracted-messages drift, lint, tests with coverage (including missing English messages), production build |
+| `frontend.yml` | `frontend/**`, `backend/openapi.json`, the workflow file itself | Generated-client drift, extracted-messages drift, lint, tests with coverage (including missing English messages), the Cloudflare Pages config writer, production build |
 
 The frontend workflow also runs on snapshot changes because the generated client is built from it: a PR that changes the API contract must carry the regenerated client too. A PR is mergeable only when CI is green. Today that is a review rule, not a GitHub setting: both workflows are path-filtered, and a required status check that a PR skips stays "Expected" forever and blocks the merge. Making it enforced needs a check that always runs (for example a gate job), which is a separate decision. Local verification is still required: CI confirms it, it does not replace it.

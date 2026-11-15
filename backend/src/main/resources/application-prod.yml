@@ -6,3 +6,14 @@ secretmatch:
   mail:
     resend:
       api-key: ${RESEND_API_KEY}
+
+# Pinned so a stray DEBUG or TRACE on a parent logger (root, org.springframework, org.apache) cannot print a
+# request's headers, cookies or body: Tomcat logs the raw request, with the Authorization header and the refresh
+# cookie, and Spring's HTTP client logs the bodies it sends (#101). Raise one of these only to debug, never in prod.
+logging:
+  level:
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.apache.coyote: INFO
+    org.apache.tomcat: INFO
+    org.apache.catalina: INFO

@@ -113,6 +113,17 @@ class SessionsIT {
     }
 
     @Test
+    @DisplayName("an email that is not an email address gets the same answer as a wrong password")
+    void malformedEmailLooksLikeAWrongPassword() {
+        verifiedUser(email, "Ana", PASSWORD);
+
+        String wrongPassword = body(expectProblem(signIn(email, "not-the-password"), "invalid-credentials"));
+        String malformedEmail = body(expectProblem(signIn("not-an-email", PASSWORD), "invalid-credentials"));
+
+        assertThat(malformedEmail).isEqualTo(wrongPassword);
+    }
+
+    @Test
     @DisplayName("a sign-up whose link was never opened cannot sign in")
     void unverifiedUserIsRefused() {
         post("/api/v1/sign-ups", Map.of("email", email, "displayName", "Ana", "password", PASSWORD, "language", "es"))

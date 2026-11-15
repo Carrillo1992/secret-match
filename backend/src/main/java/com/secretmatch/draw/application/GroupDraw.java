@@ -17,6 +17,7 @@ import com.secretmatch.identity.application.UserDeleted;
 import com.secretmatch.identity.application.UserDeletionRequested;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
 import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -202,11 +203,12 @@ public class GroupDraw {
     private void emailDrawMade(UUID groupId, Roster roster) {
         String groupName = roster.groupName();
         emailEveryMember(groupId, roster, language -> switch (language) {
-            case SPANISH -> new Email("Ya está hecho el sorteo de «%s»".formatted(groupName), """
+            case SPANISH ->
+                new EmailText("Ya está hecho el sorteo de «%s»".formatted(groupName), """
                         Ya está hecho el sorteo del grupo «%s».
 
                         Entra para descubrir a quién le haces el regalo.""".formatted(groupName));
-            case ENGLISH -> new Email("The Draw for “%s” is done".formatted(groupName), """
+            case ENGLISH -> new EmailText("The Draw for “%s” is done".formatted(groupName), """
                         The Draw for the Group “%s” is done.
 
                         Go in to find out who you are giving a gift to.""".formatted(groupName));
@@ -221,12 +223,13 @@ public class GroupDraw {
         String groupName = roster.groupName();
         emailEveryMember(groupId, roster, language -> switch (language) {
             case SPANISH ->
-                new Email("Se ha cancelado el sorteo de «%s»".formatted(groupName), """
+                new EmailText("Se ha cancelado el sorteo de «%s»".formatted(groupName), """
                         Se ha cancelado el sorteo del grupo «%s»: las asignaciones anteriores ya no cuentan.
 
                         El administrador del grupo puede volver a hacer el sorteo; cuando lo haga, te avisaremos \
                         para que descubras a quién le haces el regalo.""".formatted(groupName));
-            case ENGLISH -> new Email("The Draw for “%s” was cancelled".formatted(groupName), """
+            case ENGLISH ->
+                new EmailText("The Draw for “%s” was cancelled".formatted(groupName), """
                         The Draw for the Group “%s” was cancelled: the previous Assignments no longer count.
 
                         The Group's Admin can run the Draw again; when they do, we will let you know so you can find \
@@ -234,17 +237,13 @@ public class GroupDraw {
         });
     }
 
-    /** The subject and message of an email, in one Language. */
-    private record Email(String subject, String message) {}
-
     /** Emails every Member, each in their own Language. */
-    private void emailEveryMember(UUID groupId, Roster roster, Function<Language, Email> written) {
+    private void emailEveryMember(UUID groupId, Roster roster, Function<Language, EmailText> written) {
         for (Roster.Member member : roster.members()) {
             EmailRecipient to = users.recipientOf(member.id().value())
                     .orElseThrow(() -> new IllegalStateException("a Member has no User"));
-            Email email = written.apply(to.language());
-            events.publishEvent(new EmailRequested(
-                    to.email(), to.language(), email.subject(), email.message(), "/groups/" + groupId));
+            events.publishEvent(
+                    new EmailRequested(to.email(), to.language(), written.apply(to.language()), "/groups/" + groupId));
         }
     }
 

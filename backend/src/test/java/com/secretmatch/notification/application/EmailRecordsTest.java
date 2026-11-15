@@ -22,6 +22,25 @@ class EmailRecordsTest {
     }
 
     @Test
+    @DisplayName("an email's text prints no subject or message")
+    void emailTextPrintsNoPersonalData() {
+        String printed = new EmailText("Luis se unió", "Luis ya está dentro.").toString();
+
+        assertThat(printed).doesNotContain("Luis");
+    }
+
+    @Test
+    @DisplayName("an email request takes its subject and message from the text written for the recipient")
+    void emailRequestTakesItsText() {
+        EmailRequested email = new EmailRequested(
+                "ana@example.com", Language.ENGLISH, new EmailText("Luis joined", "Luis is in."), "/groups/7");
+
+        assertThat(email.subject()).isEqualTo("Luis joined");
+        assertThat(email.message()).isEqualTo("Luis is in.");
+        assertThat(email.language()).isEqualTo(Language.ENGLISH);
+    }
+
+    @Test
     @DisplayName("a composed email prints no address, subject or body")
     void outgoingEmailPrintsNoPersonalData() {
         String printed = new OutgoingEmail(

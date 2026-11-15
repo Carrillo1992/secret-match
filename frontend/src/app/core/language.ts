@@ -3,6 +3,11 @@ import { CurrentUserResponse } from './api/generated/models';
 /** A Language SecretMatch speaks (GLOSSARY.md), as the API names it. */
 export type Language = CurrentUserResponse['language'];
 
+/** Whether a code names a Language SecretMatch speaks. */
+export function isLanguage(code: string | null): code is Language {
+  return code === 'es' || code === 'en';
+}
+
 /** Where the Language chosen on this device is kept (ADR 0005). */
 const KEY = 'secretmatch.language';
 
@@ -13,7 +18,7 @@ const KEY = 'secretmatch.language';
 export function browserLanguage(languages: readonly string[] = navigator.languages): Language {
   for (const tag of languages) {
     const primary = tag.split('-')[0].toLowerCase();
-    if (primary === 'es' || primary === 'en') {
+    if (isLanguage(primary)) {
       return primary;
     }
   }
@@ -25,7 +30,7 @@ export function browserLanguage(languages: readonly string[] = navigator.languag
  * English. `stored` is what was kept in `localStorage`, if anything.
  */
 export function resolveLanguage(stored: string | null, languages: readonly string[]): Language {
-  return stored === 'es' || stored === 'en' ? stored : browserLanguage(languages);
+  return isLanguage(stored) ? stored : browserLanguage(languages);
 }
 
 /**

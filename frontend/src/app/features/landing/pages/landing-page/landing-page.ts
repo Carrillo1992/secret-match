@@ -5,6 +5,7 @@ import { Button } from '../../../../shared/ui/button/button';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { ApiHealth } from '../../data-access/api-health';
+import { SIGN_IN } from '../../../../core/route-paths';
 
 @Component({
   selector: 'app-landing-page',
@@ -14,6 +15,7 @@ import { ApiHealth } from '../../data-access/api-health';
   providers: [ApiHealth],
 })
 export class LandingPage {
+  protected readonly signIn = SIGN_IN;
   protected readonly health = inject(ApiHealth);
   /**
    * Whether the User arrives right after deleting their account (`ProfilePage`). It travels in the

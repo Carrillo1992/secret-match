@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { HOME_SEGMENT, SIGN_IN_SEGMENT } from './core/route-paths';
 
 export const routes: Routes = [
   {
@@ -32,7 +33,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'sign-in',
+    path: SIGN_IN_SEGMENT,
     title: $localize`Iniciar sesión · SecretMatch`,
     loadComponent: () =>
       import('./features/auth/pages/sign-in-page/sign-in-page').then((m) => m.SignInPage),
@@ -55,7 +56,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'home',
+    path: HOME_SEGMENT,
     title: $localize`Mis grupos · SecretMatch`,
     canActivate: [authGuard],
     loadComponent: () =>

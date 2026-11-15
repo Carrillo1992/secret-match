@@ -25,6 +25,7 @@ import { GroupsApi } from '../../data-access/groups-api';
 import { browserTimeZone, timeZoneRegions } from '../../data-access/time-zones';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Currency } from '../../../../shared/format/money';
+import { HOME } from '../../../../core/route-paths';
 
 type SubmitError = 'exchange-date-not-in-future' | 'failed';
 
@@ -45,6 +46,7 @@ type SubmitError = 'exchange-date-not-in-future' | 'failed';
   templateUrl: './new-group-page.html',
 })
 export class NewGroupPage {
+  protected readonly home = HOME;
   private readonly groupsApi = inject(GroupsApi);
   private readonly router = inject(Router);
 

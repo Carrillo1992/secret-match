@@ -11,7 +11,7 @@
     </div>
     <div class="flex w-full flex-col items-center gap-2">
       <a routerLink="/sign-up" appButton class="w-full" i18n>Crear cuenta</a>
-      <a routerLink="/sign-in" appLink standalone i18n>Iniciar sesión</a>
+      <a [routerLink]="signIn" appLink standalone i18n>Iniciar sesión</a>
     </div>
 
     <div role="status" aria-live="polite" class="flex flex-col items-center gap-3">

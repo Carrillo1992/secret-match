@@ -57,6 +57,7 @@ import { MailboxCard, MessageToSend } from '../../../mailbox/components/mailbox-
 import { SendStatus } from '../../../mailbox/components/mailbox-composer/mailbox-composer';
 import { ThreadState } from '../../../mailbox/components/mailbox-thread/mailbox-thread';
 import { MailboxApi } from '../../../mailbox/data-access/mailbox-api';
+import { HOME } from '../../../../core/route-paths';
 
 /** A Group as its Members see it: its details and who is in it. */
 @Component({
@@ -85,6 +86,7 @@ import { MailboxApi } from '../../../mailbox/data-access/mailbox-api';
   templateUrl: './group-page.html',
 })
 export class GroupPage {
+  protected readonly home = HOME;
   private readonly groupsApi = inject(GroupsApi);
   private readonly exclusionsApi = inject(ExclusionsApi);
   private readonly drawApi = inject(DrawApi);
@@ -424,7 +426,7 @@ export class GroupPage {
     this.leaveStatus.set('leaving');
     const outcome = await this.groupsApi.removeMember(this.groupId(), you.id);
     if (outcome.status === 'removed') {
-      await this.router.navigateByUrl('/home');
+      await this.router.navigateByUrl(HOME);
       return;
     }
     this.leaveStatus.set('failed');
@@ -435,7 +437,7 @@ export class GroupPage {
     this.deleteStatus.set('deleting');
     const outcome = await this.groupsApi.deleteGroup(this.groupId());
     if (outcome.status === 'deleted') {
-      await this.router.navigateByUrl('/home');
+      await this.router.navigateByUrl(HOME);
       return;
     }
     this.deleteStatus.set('failed');

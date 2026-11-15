@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthSession } from './auth-session';
+import { SIGN_IN } from '../route-paths';
 
 /**
  * Lets only a signed-in User in. After a reload the access token is gone, so it first tries to
@@ -13,5 +14,5 @@ export const authGuard: CanActivateFn = async (_route, state) => {
   if (session.isSignedIn() || (await session.refresh())) {
     return true;
   }
-  return router.createUrlTree(['/sign-in'], { queryParams: { next: state.url } });
+  return router.createUrlTree([SIGN_IN], { queryParams: { next: state.url } });
 };

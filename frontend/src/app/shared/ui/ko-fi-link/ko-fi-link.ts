@@ -23,7 +23,7 @@ import { TextLink } from '../text-link/text-link';
       class="inline-flex items-center gap-1.5"
     >
       <svg lucideCoffee [size]="18" class="shrink-0"></svg>
-      <span><ng-content /></span>
+      <span><ng-content /></span>&ngsp;
       <span class="sr-only" i18n>(se abre en una pestaña nueva)</span>
     </a>
   `,

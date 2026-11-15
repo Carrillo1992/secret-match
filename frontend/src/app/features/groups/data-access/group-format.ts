@@ -30,11 +30,6 @@ export function longExchangeDate(isoDate: string): string {
   return new Intl.DateTimeFormat(intlLocale(), LONG_DATE).format(new Date(isoDate));
 }
 
-/** `1` → "1 miembro", `3` → "3 miembros". */
-export function memberCount(count: number): string {
-  return count === 1 ? $localize`1 miembro` : $localize`${count}:count: miembros`;
-}
-
 /** Today's calendar day in Madrid, the app's one time zone, as `YYYY-MM-DD` (en-CA writes it so). */
 const MADRID_DAY = new Intl.DateTimeFormat('en-CA', {
   year: 'numeric',

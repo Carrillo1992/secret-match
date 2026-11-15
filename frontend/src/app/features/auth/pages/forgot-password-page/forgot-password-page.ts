@@ -47,7 +47,7 @@ export class ForgotPasswordPage {
 
   protected readonly submitted = signal(false);
   protected readonly sending = signal(false);
-  protected readonly failed = signal(false);
+  protected readonly alert = signal<'throttled' | 'failed' | null>(null);
   /** The email the link was asked for, once the API has taken the request. */
   protected readonly sentTo = signal<string | null>(null);
 
@@ -58,18 +58,18 @@ export class ForgotPasswordPage {
 
   protected async submit(): Promise<void> {
     this.submitted.set(true);
-    this.failed.set(false);
+    this.alert.set(null);
     if (this.form.invalid || this.sending()) {
       return;
     }
     this.sending.set(true);
     const email = this.form.getRawValue().email.trim();
-    const accepted = await this.passwordResetApi.sendResetLink(email);
+    const outcome = await this.passwordResetApi.sendResetLink(email);
     this.sending.set(false);
-    if (accepted) {
+    if (outcome === 'accepted') {
       this.sentTo.set(email);
     } else {
-      this.failed.set(true);
+      this.alert.set(outcome);
     }
   }
 }

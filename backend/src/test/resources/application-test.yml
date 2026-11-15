@@ -18,3 +18,15 @@ secretmatch:
     # Nothing listens here: tests that send replace the EmailSender or start their own Mailpit.
     mailpit:
       url: http://localhost:1
+  # Out of the way of the other tests, which all come from one address; RateLimitingIT sets small ones.
+  rate-limit:
+    daily-email-cap: 1000000
+    per-email:
+      sign-up: { capacity: 1000000, period: 1h }
+      new-verification-link: { capacity: 1000000, period: 1h }
+      reset-link: { capacity: 1000000, period: 1h }
+    per-ip:
+      sign-up: { capacity: 1000000, period: 1h }
+      link-email: { capacity: 1000000, period: 1h }
+      sign-in: { capacity: 1000000, period: 1m }
+      password-reset: { capacity: 1000000, period: 15m }

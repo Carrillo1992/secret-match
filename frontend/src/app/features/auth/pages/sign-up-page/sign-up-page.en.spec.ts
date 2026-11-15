@@ -37,4 +37,40 @@ describe('SignUpPage in English', () => {
     expect(spanishLeftIn(page)).toEqual([]);
     TestBed.inject(HttpTestingController).verify();
   });
+
+  it('says in English to wait when there were too many attempts', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideApiConfiguration('http://api.test'),
+      ],
+    });
+    const fixture = TestBed.createComponent(SignUpPage);
+    const page = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+    const type = (id: string, value: string) => {
+      const input = page.querySelector<HTMLInputElement>(`#${id}`);
+      if (!input) {
+        throw new Error(`No field #${id}`);
+      }
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    };
+    type('sign-up-email', 'ana@example.com');
+    type('sign-up-display-name', 'Ana');
+    type('sign-up-password', 'turrón-y-polvorones');
+
+    page.querySelector<HTMLButtonElement>('button[type="submit"]')?.click();
+    TestBed.inject(HttpTestingController)
+      .expectOne('http://api.test/api/v1/sign-ups')
+      .flush(null, { status: 429, statusText: 'Too Many Requests' });
+    await fixture.whenStable();
+
+    expect(page.querySelector('[role="alert"]')?.textContent).toContain(
+      'Too many attempts. Try again later.',
+    );
+    expect(spanishLeftIn(page)).toEqual([]);
+  });
 });

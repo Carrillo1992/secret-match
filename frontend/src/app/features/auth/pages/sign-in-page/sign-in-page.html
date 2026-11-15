@@ -63,6 +63,9 @@
               registrarte.</ng-container
             >
           }
+          @case ('throttled') {
+            <ng-container i18n>Demasiados intentos. Inténtalo de nuevo más tarde.</ng-container>
+          }
           @default {
             <ng-container i18n
               >No hemos podido iniciar sesión. Inténtalo de nuevo en un momento.</ng-container

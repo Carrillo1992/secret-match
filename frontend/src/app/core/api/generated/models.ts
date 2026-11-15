@@ -28,6 +28,7 @@ export type { PasswordResetEmailRequest } from './models/password-reset-email-re
 export type { PasswordResetRequest } from './models/password-reset-request';
 export type { PreferencesRequest } from './models/preferences-request';
 export type { PreferencesResponse } from './models/preferences-response';
+export type { Problem } from './models/problem';
 export type { ReceiverResponse } from './models/receiver-response';
 export type { SendMessageRequest } from './models/send-message-request';
 export type { SignInRequest } from './models/sign-in-request';

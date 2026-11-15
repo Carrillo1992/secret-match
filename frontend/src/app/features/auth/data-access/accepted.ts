@@ -1,12 +1,16 @@
+import { isTooManyRequests } from '../../../core/api/problem';
+
 /**
- * Resolves `true` once the API has taken a request that answers the same whether or not it acts on it
- * (a new link, a reset link), and `false` if it could not be sent.
+ * How a request went that the API answers the same whether or not it acts on it (a new link, a reset
+ * link): `accepted` once it was taken, `throttled` when this client asked too often, else `failed`.
  */
-export async function accepted(request: Promise<void>): Promise<boolean> {
+export type RequestOutcome = 'accepted' | 'throttled' | 'failed';
+
+export async function accepted(request: Promise<void>): Promise<RequestOutcome> {
   try {
     await request;
-    return true;
-  } catch {
-    return false;
+    return 'accepted';
+  } catch (error) {
+    return isTooManyRequests(error) ? 'throttled' : 'failed';
   }
 }

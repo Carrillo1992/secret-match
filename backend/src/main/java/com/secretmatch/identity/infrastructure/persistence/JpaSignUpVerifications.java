@@ -5,7 +5,6 @@ import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.SignUpId;
 import com.secretmatch.identity.domain.SignUpVerification;
 import com.secretmatch.identity.domain.TokenHash;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
@@ -29,10 +28,10 @@ class JpaSignUpVerifications implements SignUpVerifications {
     }
 
     @Override
-    public List<SignUpVerification> findWaitingFor(EmailAddress email) {
-        return repository.findByEmailAndUsedAtIsNull(email.value()).stream()
-                .map(SignUpVerificationEntity::toDomain)
-                .toList();
+    public Optional<SignUpVerification> findNewestWaitingFor(EmailAddress email) {
+        return repository
+                .findFirstByEmailAndUsedAtIsNullOrderByExpiresAtDesc(email.value())
+                .map(SignUpVerificationEntity::toDomain);
     }
 
     @Override

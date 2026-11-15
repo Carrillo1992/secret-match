@@ -12,6 +12,11 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  task:
+    execution:
+      # Emails have their own executor (NotificationConfiguration). Without this, Boot would drop its
+      # general-purpose one, and anything else asynchronous would end up on the small email pool.
+      mode: force
 
 management:
   endpoints:

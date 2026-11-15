@@ -4,7 +4,6 @@ import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.SignUpId;
 import com.secretmatch.identity.domain.SignUpVerification;
 import com.secretmatch.identity.domain.TokenHash;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,8 +16,11 @@ public interface SignUpVerifications {
 
     Optional<SignUpVerification> findByTokenHash(TokenHash tokenHash);
 
-    /** The sign-ups for this email whose link was never opened, without locking them. */
-    List<SignUpVerification> findWaitingFor(EmailAddress email);
+    /**
+     * Of the sign-ups for this email whose link was never opened, the one whose link was sent last, without
+     * locking it.
+     */
+    Optional<SignUpVerification> findNewestWaitingFor(EmailAddress email);
 
     void save(SignUpVerification signUp);
 }

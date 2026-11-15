@@ -17,7 +17,6 @@ import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,7 +67,7 @@ public class Sessions {
      * Starts a session for the User with this email and password.
      *
      * @throws InvalidCredentialsException if the email has no User or the password is wrong
-     * @throws EmailNotVerifiedException if the password is that of a sign-up still waiting for its link
+     * @throws EmailNotVerifiedException if the password is that of the newest sign-up still waiting for its link
      */
     @Transactional
     public SignedIn signIn(SignInCommand command) {
@@ -82,12 +81,14 @@ public class Sessions {
             }
             return startSession(user.get().id());
         }
-        List<SignUpVerification> waiting = email.map(signUps::findWaitingFor).orElseGet(List::of);
-        if (waiting.stream().anyMatch(signUp -> passwordHasher.matches(command.password(), signUp.passwordHash()))) {
+        // Only the newest waiting sign-up is checked: one check per sign-up would make an email with several
+        // answer measurably slower than any other.
+        Optional<SignUpVerification> waiting = email.flatMap(signUps::findNewestWaitingFor);
+        boolean matches = passwordHasher.matches(
+                command.password(),
+                waiting.map(SignUpVerification::passwordHash).orElse(timingDecoy));
+        if (waiting.isPresent() && matches) {
             throw new EmailNotVerifiedException();
-        }
-        if (waiting.isEmpty()) {
-            passwordHasher.matches(command.password(), timingDecoy);
         }
         throw new InvalidCredentialsException();
     }

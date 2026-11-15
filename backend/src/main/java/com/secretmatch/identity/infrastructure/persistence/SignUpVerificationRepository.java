@@ -1,7 +1,6 @@
 package com.secretmatch.identity.infrastructure.persistence;
 
 import jakarta.persistence.LockModeType;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,5 +18,6 @@ interface SignUpVerificationRepository extends JpaRepository<SignUpVerificationE
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<SignUpVerificationEntity> findLockedByTokenHash(String tokenHash);
 
-    List<SignUpVerificationEntity> findByEmailAndUsedAtIsNull(String email);
+    /** Every link is valid for the same time, so the latest expiry is the link sent last. */
+    Optional<SignUpVerificationEntity> findFirstByEmailAndUsedAtIsNullOrderByExpiresAtDesc(String email);
 }

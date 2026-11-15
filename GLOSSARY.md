@@ -51,7 +51,7 @@ A User inside a specific Group. Every Member takes part in the Draw.
 _Avoid_: Participant, player, santa
 
 **Admin**:
-The Member who created a Group and manages it: edits its name, Exchange Date and Budget, invites, removes Members, sets Exclusions, runs or cancels the Draw. Exactly one per Group; the Admin is also a regular Member of the Draw.
+The Member who created a Group and manages it: edits its name, Exchange Date, Budget, Currency and Time Zone, invites, removes Members, sets Exclusions, runs or cancels the Draw. Exactly one per Group; the Admin is also a regular Member of the Draw.
 _Avoid_: Organizer, owner, host
 
 **Exchange Date**:
@@ -63,8 +63,12 @@ A Group whose Exchange Date is over: from 00:00 Europe/Madrid on the day after i
 _Avoid_: Closed, archived, expired, past
 
 **Budget**:
-How much each gift in a Group should cost, in euros. Optional and informational only: nothing is ever checked against it.
+How much each gift in a Group should cost, in the Group's Currency. Optional and informational only: nothing is ever checked against it.
 _Avoid_: Price limit, spending cap, max price
+
+**Currency**:
+The money a Group's amounts are in: euro or US dollar. Chosen by the Admin; changing it relabels amounts, it never converts them.
+_Avoid_: Coin, exchange rate
 
 **Time Zone**:
 The IANA time zone a Group picks (e.g. `Europe/Madrid`), in which the day of each of its Mailbox Messages is cut. The Admin chooses it, by default their browser's; it is frozen once the Draw is made.

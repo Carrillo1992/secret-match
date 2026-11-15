@@ -300,8 +300,8 @@
     "4878867550779962117": "Cómo funciona",
     "8246746108814162769": "Un enlace y listo",
     "3280294441541560971": "Gratis y sin anuncios",
-    "8070516451156351651": "SecretMatch es gratis y sin anuncios.",
-    "4345057654520454507": "¿Te ha gustado? Invítame a un café",
+    "5241860348248444298": "¿Te ha gustado?",
+    "3748539780733417651": "Invítame a un café",
     "8655242509036542761": " ¿Organizamos el vuestro? ",
     "3347589831324497166": "Crear el grupo te lleva un minuto.",
     "6536314737927789698": "Crea un grupo",
@@ -367,6 +367,8 @@
     "6898442578930379544": " Estás en un grupo con el sorteo hecho cuya fecha del intercambio aún no ha pasado. Pide al administrador que cancele el sorteo o espera a que pase la fecha del intercambio. ",
     "1716195753122348614": "No hemos podido borrar tu cuenta. Inténtalo de nuevo.",
     "2530837499670827543": "No hemos podido cargar tu perfil. Inténtalo de nuevo.",
+    "8070516451156351651": "SecretMatch es gratis y sin anuncios.",
+    "4345057654520454507": "¿Te ha gustado? Invítame a un café",
     "8618237436674161207": " No hemos podido quitar «{$INTERPOLATION}». Inténtalo de nuevo. ",
     "5788207341590798062": " Apunta lo que no quieres recibir, para que nadie te lo regale. ",
     "1749896625348797493": "¿Qué no quieres recibir?",
@@ -446,7 +448,6 @@
     "2473708249335920209": "Tema",
     "1500181871307171807": "Idioma",
     "8951812121956160613": "No hemos podido cambiar el idioma. Inténtalo de nuevo.",
-    "3748539780733417651": "Invítame a un café",
     "7141801258089700354": "También se usa en tus emails.",
     "1199908807070149151": "SecretMatch no se ha podido iniciar. Recarga la página en unos minutos."
   }

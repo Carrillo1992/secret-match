@@ -14,6 +14,7 @@ import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { GroupsApi } from '../../data-access/groups-api';
+import { HOME, SIGN_IN } from '../../../../core/route-paths';
 
 type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'finished' | 'drawn' | 'failed';
 
@@ -41,6 +42,8 @@ type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'finished' | 'drawn' | 
   templateUrl: './join-page.html',
 })
 export class JoinPage {
+  protected readonly signIn = SIGN_IN;
+  protected readonly home = HOME;
   private readonly groupsApi = inject(GroupsApi);
   private readonly session = inject(AuthSession);
   private readonly router = inject(Router);

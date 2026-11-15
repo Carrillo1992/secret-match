@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PreferencesMenu } from '../preferences-menu/preferences-menu';
+import { HOME } from '../../../core/route-paths';
 
 /**
  * Page frame for screens inside the app, once someone has signed in: a top bar on `surface` with
@@ -17,7 +18,7 @@ import { PreferencesMenu } from '../preferences-menu/preferences-menu';
     <header class="border-b border-line/40 bg-surface">
       <div class="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-4 px-6 py-3">
         <a
-          routerLink="/home"
+          [routerLink]="home"
           class="inline-flex min-h-11 items-center font-display text-xl font-bold tracking-tight text-ink focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >SecretMatch</a
         >
@@ -32,4 +33,6 @@ import { PreferencesMenu } from '../preferences-menu/preferences-menu';
     </main>
   `,
 })
-export class AppShell {}
+export class AppShell {
+  protected readonly home = HOME;
+}

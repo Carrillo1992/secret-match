@@ -11,6 +11,7 @@ import { StatusHeader } from '../../../../shared/ui/status-header/status-header'
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { PasswordResetApi, ResetPasswordOutcome } from '../../data-access/password-reset-api';
 import { PASSWORD_RESET_RULES } from '../../data-access/password-reset-rules';
+import { SIGN_IN } from '../../../../core/route-paths';
 
 /** `choosing`: the form. The rest are what the API answered (`throttled` and `failed` keep the form, with an alert). */
 type ResetPasswordStatus = 'choosing' | Exclude<ResetPasswordOutcome, 'throttled' | 'failed'>;
@@ -36,6 +37,7 @@ type ResetPasswordStatus = 'choosing' | Exclude<ResetPasswordOutcome, 'throttled
   templateUrl: './reset-password-page.html',
 })
 export class ResetPasswordPage {
+  protected readonly signIn = SIGN_IN;
   private readonly passwordResetApi = inject(PasswordResetApi);
   private readonly token: string;
 

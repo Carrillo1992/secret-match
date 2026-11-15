@@ -1125,7 +1125,7 @@
           }
         },
         "summary" : "The signed-in User",
-        "tags" : [ "sessions" ]
+        "tags" : [ "profile" ]
       }
     },
     "/api/v1/users/me/display-name" : {

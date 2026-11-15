@@ -26,6 +26,7 @@ import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { USER_RULES } from '../../../../core/auth/user-rules';
 import { maxUtf8Bytes, notBlank } from '../../../../shared/forms/validators';
 import { DeleteAccountOutcome, Me, ProfileApi } from '../../data-access/profile-api';
+import { HOME } from '../../../../core/route-paths';
 
 type FormState = 'idle' | 'sending' | 'saved' | 'failed';
 /** `created`: a User who had no password (Google only) set their first one. */
@@ -55,6 +56,7 @@ type DeleteState = 'idle' | 'confirming' | 'deleting' | Exclude<DeleteAccountOut
   providers: [CurrentUser],
 })
 export class ProfilePage {
+  protected readonly home = HOME;
   private readonly profileApi = inject(ProfileApi);
   private readonly forms = inject(NonNullableFormBuilder);
   private readonly session = inject(AuthSession);

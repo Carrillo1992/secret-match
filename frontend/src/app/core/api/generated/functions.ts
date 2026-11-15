@@ -71,8 +71,8 @@ export type { SignInWithGoogle$Params as SignInWithGoogle$Params } from './fn/se
 export { signInWithGoogle as signInWithGoogle } from './fn/sessions/sign-in-with-google';
 export type { Refresh$Params as Refresh$Params } from './fn/sessions/refresh';
 export { refresh as refresh } from './fn/sessions/refresh';
-export type { CurrentUser$Params as CurrentUser$Params } from './fn/sessions/current-user';
-export { currentUser as currentUser } from './fn/sessions/current-user';
+export type { CurrentUser$Params as CurrentUser$Params } from './fn/profile/current-user';
+export { currentUser as currentUser } from './fn/profile/current-user';
 export type { DeleteAccount$Params as DeleteAccount$Params } from './fn/profile/delete-account';
 export { deleteAccount as deleteAccount } from './fn/profile/delete-account';
 export type { ChangeDisplayName$Params as ChangeDisplayName$Params } from './fn/profile/change-display-name';

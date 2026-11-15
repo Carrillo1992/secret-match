@@ -13,7 +13,7 @@
           <ng-container i18n>¡Correo confirmado!</ng-container>
         </app-status-header>
         <p class="mt-2 text-ink-muted" i18n>Tu cuenta ya está lista.</p>
-        <a routerLink="/sign-in" [queryParams]="signInParams" appButton class="mt-6 w-full" i18n
+        <a [routerLink]="signIn" [queryParams]="signInParams" appButton class="mt-6 w-full" i18n
           >Iniciar sesión</a
         >
       }

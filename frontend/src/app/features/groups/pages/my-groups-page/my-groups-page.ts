@@ -16,6 +16,7 @@ import { GiftIllustration } from '../../../../shared/ui/gift-illustration/gift-i
 import { GroupCard } from '../../components/group-card/group-card';
 import { GroupsApi } from '../../data-access/groups-api';
 import { Alert } from '../../../../shared/ui/alert/alert';
+import { SIGN_IN } from '../../../../core/route-paths';
 
 /** "Mis grupos": the first page behind sign-in, listing every Group the User is a Member of. */
 @Component({
@@ -59,7 +60,7 @@ export class MyGroupsPage {
   protected async signOut(): Promise<void> {
     this.signOutFailed.set(false);
     if (await this.session.signOut()) {
-      await this.router.navigateByUrl('/sign-in');
+      await this.router.navigateByUrl(SIGN_IN);
     } else {
       this.signOutFailed.set(true);
     }

@@ -1,6 +1,3 @@
-/** Where a signed-out User is sent when there is nowhere better to go after signing in. */
-export const HOME = '/home';
-
 /**
  * The path itself if it is a page inside the SPA, otherwise `null`: `//host`, `/\host` or
  * `https://…` would send the User off-site.

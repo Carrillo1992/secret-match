@@ -8,7 +8,8 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideLogIn } from '@lucide/angular';
 import { AuthSession, SignInOutcome } from '../../../../core/auth/auth-session';
-import { forgetReturnPath, HOME, safeReturnPath } from '../../../../core/auth/return-path';
+import { forgetReturnPath, safeReturnPath } from '../../../../core/auth/return-path';
+import { HOME } from '../../../../core/route-paths';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
 import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';

@@ -20,7 +20,7 @@
         </a>
         <p class="mt-6" i18n>
           ¿Ya tienes cuenta?
-          <a routerLink="/sign-in" [queryParams]="comeBack" appLink>Inicia sesión</a>
+          <a [routerLink]="signIn" [queryParams]="comeBack" appLink>Inicia sesión</a>
         </p>
       }
       @case ('invalid') {
@@ -32,7 +32,7 @@
           Puede que esté mal copiado o que se haya cambiado por uno nuevo. Pide a quien te lo envió
           el enlace nuevo.
         </p>
-        <a routerLink="/home" appButton class="mt-6 w-full" i18n>Ir al inicio</a>
+        <a [routerLink]="home" appButton class="mt-6 w-full" i18n>Ir al inicio</a>
       }
       @case ('finished') {
         <app-status-header>
@@ -42,7 +42,7 @@
         <p class="mt-2 text-ink-muted" i18n>
           Su intercambio ya pasó, así que no se puede entrar en él.
         </p>
-        <a routerLink="/home" appButton class="mt-6 w-full" i18n>Ir al inicio</a>
+        <a [routerLink]="home" appButton class="mt-6 w-full" i18n>Ir al inicio</a>
       }
       @case ('drawn') {
         <app-status-header>
@@ -52,7 +52,7 @@
         <p class="mt-2 text-ink-muted" i18n>
           Cada uno ya sabe a quién le regala, así que ya no se puede entrar en él.
         </p>
-        <a routerLink="/home" appButton class="mt-6 w-full" i18n>Ir al inicio</a>
+        <a [routerLink]="home" appButton class="mt-6 w-full" i18n>Ir al inicio</a>
       }
       @case ('failed') {
         <app-status-header>

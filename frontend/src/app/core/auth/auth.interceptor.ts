@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { catchError, from, Observable, switchMap, throwError } from 'rxjs';
 import { ApiConfiguration } from '../api/generated/api-configuration';
 import { AuthSession } from './auth-session';
+import { SIGN_IN } from '../route-paths';
 
 /** The endpoints that open, refresh and end a session: the only ones the refresh cookie goes to. */
 const SESSIONS_PATH = '/api/v1/sessions';
@@ -50,7 +51,7 @@ function retryAfterRefresh(
   return from(session.refresh()).pipe(
     switchMap((signedIn) => {
       if (!signedIn) {
-        void router.navigateByUrl('/sign-in');
+        void router.navigateByUrl(SIGN_IN);
         return throwError(() => unauthorized);
       }
       return next(withAccessToken(request, session.accessToken()));

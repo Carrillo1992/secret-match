@@ -9,7 +9,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { LucideGift } from '@lucide/angular';
 import {
   forgetReturnPath,
-  HOME,
   rememberReturnPath,
   safeReturnPath,
 } from '../../../../core/auth/return-path';
@@ -22,6 +21,7 @@ import { maxUtf8Bytes, notBlank } from '../../../../shared/forms/validators';
 import { emailShape, SIGN_UP_RULES } from '../../data-access/sign-up-rules';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { GoogleSignIn } from '../../components/google-sign-in/google-sign-in';
+import { HOME, SIGN_IN } from '../../../../core/route-paths';
 
 type SubmitError = 'invalid' | 'throttled' | 'failed';
 
@@ -42,6 +42,7 @@ type SubmitError = 'invalid' | 'throttled' | 'failed';
   templateUrl: './sign-up-page.html',
 })
 export class SignUpPage {
+  protected readonly signIn = SIGN_IN;
   private readonly signUpApi = inject(SignUpApi);
   private readonly router = inject(Router);
   /** Where the User was going, e.g. an Invite Link: they get there when they sign in. */

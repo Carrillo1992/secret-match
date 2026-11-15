@@ -16,6 +16,7 @@ import { NewLinkButton } from '../../components/new-link-button/new-link-button'
 import { NewVerificationLink } from '../../data-access/new-verification-link';
 import { SignUpApi, VerifyEmailOutcome } from '../../data-access/sign-up-api';
 import { SIGN_UP_RULES } from '../../data-access/sign-up-rules';
+import { SIGN_IN } from '../../../../core/route-paths';
 
 type VerifyEmailStatus = 'verifying' | VerifyEmailOutcome;
 
@@ -40,6 +41,7 @@ type VerifyEmailStatus = 'verifying' | VerifyEmailOutcome;
   providers: [NewVerificationLink],
 })
 export class VerifyEmailPage {
+  protected readonly signIn = SIGN_IN;
   private readonly signUpApi = inject(SignUpApi);
   private readonly token: string;
 

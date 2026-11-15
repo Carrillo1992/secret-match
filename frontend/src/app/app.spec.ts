@@ -36,9 +36,9 @@ describe('App routes', () => {
     TestBed.tick();
 
     expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent).toContain(
-      'SecretMatch',
+      'Tu amigo invisible',
     );
-    expect(document.title).toBe('SecretMatch');
+    expect(document.title).toBe('SecretMatch · Tu amigo invisible, sin papelitos');
   });
 
   it.each([
@@ -89,6 +89,8 @@ describe('App routes', () => {
     await harness.navigateByUrl('/no-such-page');
 
     expect(TestBed.inject(Router).url).toBe('/');
-    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('SecretMatch');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain(
+      'Tu amigo invisible',
+    );
   });
 });

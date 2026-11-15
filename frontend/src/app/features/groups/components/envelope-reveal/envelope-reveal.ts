@@ -17,7 +17,7 @@ import { LucideChevronRight, LucideRotateCcw } from '@lucide/angular';
 import { ReceiverResponse } from '../../../../core/api/generated/models';
 import { Button } from '../../../../shared/ui/button/button';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
-import { Envelope } from '../envelope/envelope';
+import { Envelope } from '../../../../shared/ui/envelope/envelope';
 
 type Phase = 'closed' | 'opening' | 'revealed';
 

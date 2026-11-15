@@ -22,6 +22,7 @@ import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { Field } from '../../../../shared/ui/field/field';
+import { KoFiLink } from '../../../../shared/ui/ko-fi-link/ko-fi-link';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { USER_RULES } from '../../../../core/auth/user-rules';
 import { maxUtf8Bytes, notBlank } from '../../../../shared/forms/validators';
@@ -46,6 +47,7 @@ type DeleteState = 'idle' | 'confirming' | 'deleting' | Exclude<DeleteAccountOut
     Button,
     ConfirmDialog,
     Field,
+    KoFiLink,
     ReactiveFormsModule,
     RouterLink,
     TextLink,

@@ -84,6 +84,14 @@ describe('PreferencesMenu', () => {
     expect(groupNamed('Idioma')?.textContent).toMatch(/Español.*English/s);
   });
 
+  it('offers a quiet link to buy SecretMatch a coffee on Ko-fi', async () => {
+    await openMenu();
+
+    const link = dialog().querySelector<HTMLAnchorElement>('a[href="https://ko-fi.com/daniel92"]');
+    expect(link?.textContent).toContain('Invítame a un café');
+    expect(link?.target).toBe('_blank');
+  });
+
   it('shows System as the Theme on a first visit', async () => {
     await openMenu();
 

@@ -9,6 +9,7 @@ import { Button } from './button';
     <button id="default" appButton type="button" class="mt-6 w-full">Crear cuenta</button>
     <button id="secondary" appButton="secondary" type="button">Reintentar</button>
     <a id="link" appButton href="/">Ir al inicio</a>
+    <a id="inverted" appButton="inverted" href="/sign-up">Crear cuenta</a>
   `,
 })
 class Host {}
@@ -34,6 +35,14 @@ describe('Button', () => {
     expect(classesOf('secondary')).toContain('border-primary');
     expect(classesOf('secondary')).toContain('h-12');
     expect(classesOf('secondary')).not.toContain('bg-primary');
+  });
+
+  it('takes the surface, with a surface focus ring, when inverted on a primary band', () => {
+    expect(classesOf('inverted')).toContain('bg-surface');
+    expect(classesOf('inverted')).toContain('text-primary');
+    expect(classesOf('inverted')).toContain('focus-visible:outline-surface');
+    expect(classesOf('inverted')).not.toContain('bg-primary');
+    expect(classesOf('inverted')).not.toContain('focus-visible:outline-primary');
   });
 
   it('keeps the classes the screen adds for placement', () => {

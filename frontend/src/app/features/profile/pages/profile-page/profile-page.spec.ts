@@ -99,6 +99,14 @@ describe('ProfilePage', () => {
     expect(backLinks.some((link) => link.textContent?.includes('Volver a mis grupos'))).toBe(true);
   });
 
+  it('says SecretMatch is free and links to its Ko-fi page at the bottom', async () => {
+    await loaded();
+
+    const line = page().querySelector('[data-testid="ko-fi"]');
+    expect(line?.textContent).toContain('SecretMatch es gratis y sin anuncios.');
+    expect(line?.querySelector('a')?.getAttribute('href')).toBe('https://ko-fi.com/daniel92');
+  });
+
   it('saves a new display name and says so', async () => {
     await loaded();
     type('Tu nombre', 'Tía Ana');

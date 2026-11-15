@@ -7,6 +7,7 @@ import com.secretmatch.identity.application.CurrentUser;
 import com.secretmatch.identity.application.Profile;
 import com.secretmatch.identity.infrastructure.security.AccessTokenClaims;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,17 +21,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * The signed-in User's own profile. Its operations are tagged one by one rather than for the whole class, because
- * springdoc adds a class tag to every operation: reading the User keeps the {@code sessions} tag it had before it moved
- * here (#102), so the OpenAPI document and the client generated from it stay the same.
- */
+/** The signed-in User's own profile. */
 @RestController
 @RequestMapping("/api/v1/users/me")
+@Tag(name = "profile")
 class ProfileController {
-
-    private static final String PROFILE = "profile";
-    private static final String SESSIONS = "sessions";
 
     private final Profile profile;
 
@@ -39,13 +34,13 @@ class ProfileController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "The signed-in User", tags = SESSIONS)
+    @Operation(summary = "The signed-in User")
     CurrentUserResponse currentUser(@AuthenticationPrincipal Jwt accessToken) {
         return CurrentUserResponse.of(profile.currentUser(AccessTokenClaims.userId(accessToken)));
     }
 
     @PutMapping(value = "/display-name", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Change the signed-in User's display name", tags = PROFILE)
+    @Operation(summary = "Change the signed-in User's display name")
     CurrentUserResponse changeDisplayName(
             @AuthenticationPrincipal Jwt accessToken, @Valid @RequestBody DisplayNameRequest request) {
         CurrentUser user = profile.changeDisplayName(
@@ -54,7 +49,7 @@ class ProfileController {
     }
 
     @PutMapping(value = "/language", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Change the Language the signed-in User reads SecretMatch and its emails in", tags = PROFILE)
+    @Operation(summary = "Change the Language the signed-in User reads SecretMatch and its emails in")
     CurrentUserResponse changeLanguage(
             @AuthenticationPrincipal Jwt accessToken, @Valid @RequestBody LanguageRequest request) {
         CurrentUser user = profile.changeLanguage(
@@ -67,8 +62,7 @@ class ProfileController {
     @Operation(
             summary = "Change the signed-in User's password, or set a first one",
             description = "Needs the current password, if the User has one. Ends the User's Sessions on every"
-                    + " other device.",
-            tags = PROFILE)
+                    + " other device.")
     void changePassword(@AuthenticationPrincipal Jwt accessToken, @Valid @RequestBody ChangePasswordRequest request) {
         profile.changePassword(
                 AccessTokenClaims.userId(accessToken),
@@ -82,8 +76,7 @@ class ProfileController {
             summary = "Delete the signed-in User's account",
             description = "Refused (account-in-draw) while the User is in a Group whose Draw is made and whose"
                     + " Exchange Date has not passed. Otherwise the Groups they are the Admin of are deleted, and"
-                    + " their other Members emailed; they leave every other Group, and all their Sessions end.",
-            tags = PROFILE)
+                    + " their other Members emailed; they leave every other Group, and all their Sessions end.")
     void deleteAccount(@AuthenticationPrincipal Jwt accessToken) {
         profile.deleteAccount(AccessTokenClaims.userId(accessToken));
     }

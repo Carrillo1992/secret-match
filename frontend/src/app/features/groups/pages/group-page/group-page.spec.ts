@@ -1448,15 +1448,15 @@ describe('GroupPage', () => {
       http.expectOne(messagesUrl('m-1')).flush([]);
       await settle();
 
-      tab('Tu Giver')?.click();
+      tab('Chat misterioso')?.click();
       await settle();
       http
         .expectOne(messagesUrl('m-2'))
         .flush([{ mine: false, text: '¿Qué talla usas?', sentOn: '2026-12-11' }]);
       await settle();
 
-      expect(tab('Tu Giver')?.getAttribute('aria-selected')).toBe('true');
-      expect(text(panel('m-2'))).toContain('Tu Giver: ¿Qué talla usas?');
+      expect(tab('Chat misterioso')?.getAttribute('aria-selected')).toBe('true');
+      expect(text(panel('m-2'))).toContain('Quien te regala: ¿Qué talla usas?');
 
       tab('Con Marta')?.click();
       await settle();

@@ -15,23 +15,13 @@
     </div>
 
     <div role="status" aria-live="polite" class="flex flex-col items-center gap-3">
-      @switch (health.status()) {
-        @case ('checking') {
-          <p class="text-ink-muted" i18n>Comprobando la API…</p>
-        }
-        @case ('up') {
-          <p class="rounded-full bg-success-soft px-4 py-1 font-semibold text-success" i18n>
-            API OK
-          </p>
-        }
-        @case ('down') {
-          <p class="rounded-full bg-danger-soft px-4 py-1 font-semibold text-danger" i18n>
-            No se puede conectar con la API
-          </p>
-          <button type="button" appButton="secondary" (click)="health.recheck()" i18n>
-            Reintentar
-          </button>
-        }
+      @if (health.status() === 'down') {
+        <p class="rounded-full bg-danger-soft px-4 py-1 font-semibold text-danger" i18n>
+          No podemos conectar con el servidor
+        </p>
+        <button type="button" appButton="secondary" (click)="health.recheck()" i18n>
+          Reintentar
+        </button>
       }
     </div>
   </div>

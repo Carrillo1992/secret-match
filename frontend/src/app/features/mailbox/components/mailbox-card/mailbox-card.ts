@@ -17,7 +17,7 @@ const LOADING: ThreadState = { status: 'loading' };
 
 /**
  * The Group's anonymous Mailbox, right after the Draw card (#36, option B): one tab per Mailbox,
- * "Con <Receiver>" (or "Tu Receiver" until the envelope is opened) and "Tu Giver" (never a name,
+ * "Con <Receiver>" (or "Tu Receiver" until the envelope is opened) and "Chat misterioso" (never a name,
  * initials or avatar), each with a hint of who is on
  * the other side, the conversation and the composer. It renders nothing while there are no
  * Mailboxes, as before the Draw. Once the Group is finished (#38) the conversations stay and the
@@ -92,13 +92,13 @@ const LOADING: ThreadState = { status: 'loading' };
                 @if (mailbox.side === 'GIVER') {
                   <ng-container i18n>Le regalas tú. No sabrá quién eres.</ng-container>
                 } @else {
-                  <ng-container i18n>Quien te regala. Nunca sabrás quién es.</ng-container>
+                  <ng-container i18n>Alguien te regala. Nunca sabrás quién es.</ng-container>
                 }
               </p>
               <app-mailbox-thread
                 [state]="thread(mailbox)"
                 [side]="mailbox.side"
-                [author]="title(mailbox)"
+                [author]="author(mailbox)"
                 [finished]="finished()"
                 (retry)="retryMessages.emit(mailbox.id)"
               />
@@ -159,16 +159,21 @@ export class MailboxCard {
   });
 
   /**
-   * The Giver is never named: their tab is only "Tu Giver". The Receiver is named only once the
-   * envelope is opened, so the Mailbox does not spoil the Reveal.
+   * The Giver is never named: their tab is only "Chat misterioso". The Receiver is named only once
+   * the envelope is opened, so the Mailbox does not spoil the Reveal.
    */
   protected title(mailbox: Mailbox): string {
     if (mailbox.side === 'RECEIVER') {
-      return $localize`Tu Giver`;
+      return $localize`Chat misterioso`;
     }
     return this.receiverRevealed() && mailbox.receiverDisplayName
       ? $localize`Con ${mailbox.receiverDisplayName}:name:`
       : $localize`Tu Receiver`;
+  }
+
+  /** Who wrote the other side's Messages, for screen readers: never the Giver's name. */
+  protected author(mailbox: Mailbox): string {
+    return mailbox.side === 'RECEIVER' ? $localize`Quien te regala` : this.title(mailbox);
   }
 
   protected thread(mailbox: Mailbox): ThreadState {

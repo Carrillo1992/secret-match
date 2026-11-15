@@ -129,7 +129,7 @@ export class MailboxThread {
   readonly state = input.required<ThreadState>();
   /** The signed-in Member's side, which words the invitation to write. */
   readonly side = input.required<MailboxSide>();
-  /** Who wrote the other side's Messages, for screen readers: "Con Lucía", or "Tu Giver". */
+  /** Who wrote the other side's Messages, for screen readers: "Con Lucía", or "Quien te regala". */
   readonly author = input.required<string>();
   /** Whether the Group is finished: an empty conversation then invites nobody to write. */
   readonly finished = input(false);

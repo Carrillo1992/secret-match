@@ -3,6 +3,7 @@ import { ConfirmPanel } from '../../../../shared/ui/confirm-panel/confirm-panel'
 import { Chip } from '../../../../shared/ui/chip/chip';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { Group } from '../../data-access/groups-api';
+import { intlLocale } from '../../../../core/language';
 import { Alert } from '../../../../shared/ui/alert/alert';
 
 export type Member = Group['members'][number];
@@ -28,6 +29,7 @@ export interface Removal {
         id="group-members"
         tabindex="-1"
         class="font-display text-lg font-semibold focus:outline-none"
+        i18n
       >
         Miembros ({{ members().length }})
       </h2>
@@ -36,13 +38,13 @@ export interface Removal {
 
       @if (removal(); as removal) {
         @if (removal.status === 'failed') {
-          <p appAlert class="mt-3">
+          <p appAlert class="mt-3" i18n>
             No hemos podido quitar a {{ removal.member.displayName }}. Inténtalo de nuevo.
           </p>
         }
       }
 
-      <ul aria-label="Miembros" class="mt-3 flex flex-col gap-3">
+      <ul aria-label="Miembros" i18n-aria-label class="mt-3 flex flex-col gap-3">
         @for (member of members(); track member.id) {
           <li>
             <div class="flex items-center gap-3">
@@ -62,25 +64,30 @@ export interface Removal {
                   appLink
                   standalone
                   class="ml-auto shrink-0"
-                  [attr.aria-label]="'Quitar a ' + member.displayName"
+                  [attr.aria-label]="removeLabel(member)"
                   [disabled]="isRemoving(member)"
                   (click)="confirming.set(member)"
                 >
-                  {{ isRemoving(member) ? 'Quitando…' : 'Quitar' }}
+                  @if (isRemoving(member)) {
+                    <ng-container i18n>Quitando…</ng-container>
+                  } @else {
+                    <ng-container i18n>Quitar</ng-container>
+                  }
                 </button>
               }
             </div>
             @if (confirming()?.id === member.id) {
               <app-confirm-panel
                 class="mt-3"
-                [question]="'¿Quitar a ' + member.displayName + '?'"
+                [question]="removeQuestion(member)"
                 confirmLabel="Sí, quitar"
+                i18n-confirmLabel
                 [returnFocusTo]="'remove-' + member.id"
                 focusAfterConfirm="group-members"
                 (confirmed)="confirm(member)"
                 (cancelled)="confirming.set(null)"
               >
-                Dejará de ver el grupo. Le avisaremos por email.
+                <ng-container i18n>Dejará de ver el grupo. Le avisaremos por email.</ng-container>
               </app-confirm-panel>
             }
           </li>
@@ -102,8 +109,16 @@ export class MembersCard {
   protected statusText(): string {
     const removal = this.removal();
     return removal?.status === 'removed'
-      ? `${removal.member.displayName} ya no está en el grupo.`
+      ? $localize`${removal.member.displayName}:name: ya no está en el grupo.`
       : '';
+  }
+
+  protected removeLabel(member: Member): string {
+    return $localize`Quitar a ${member.displayName}:name:`;
+  }
+
+  protected removeQuestion(member: Member): string {
+    return $localize`¿Quitar a ${member.displayName}:name:?`;
   }
 
   protected isRemoving(member: Member): boolean {
@@ -112,7 +127,7 @@ export class MembersCard {
   }
 
   protected initial(displayName: string): string {
-    return displayName.charAt(0).toLocaleUpperCase('es-ES');
+    return displayName.charAt(0).toLocaleUpperCase(intlLocale());
   }
 
   /** The row may be about to disappear, so the panel moves focus to the list's heading. */

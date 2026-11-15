@@ -48,13 +48,13 @@ export type SaveStatus = 'idle' | 'saving' | 'invalid-link' | 'failed';
   template: `
     <form
       class="flex flex-col gap-4 rounded-field bg-canvas p-4"
-      [attr.aria-label]="wish() ? 'Editar ' + wish()?.title : 'Nuevo deseo'"
+      [attr.aria-label]="formLabel()"
       [formGroup]="form"
       (ngSubmit)="submit()"
       novalidate
     >
       <div class="flex flex-col gap-1.5">
-        <label [for]="id('title')" class="font-bold">Qué te gustaría</label>
+        <label [for]="id('title')" class="font-bold" i18n>Qué te gustaría</label>
         <input
           [id]="id('title')"
           type="text"
@@ -67,16 +67,16 @@ export type SaveStatus = 'idle' | 'saving' | 'invalid-link' | 'failed';
         @if (showsError(form.controls.title)) {
           <p [id]="id('title-error')" class="text-sm font-semibold text-danger">
             @if (form.controls.title.hasError('required')) {
-              Escribe qué te gustaría.
+              <ng-container i18n>Escribe qué te gustaría.</ng-container>
             } @else {
-              Usa como mucho {{ titleMax }} caracteres.
+              <ng-container i18n>Usa como mucho {{ titleMax }} caracteres.</ng-container>
             }
           </p>
         }
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label [for]="id('link')" class="font-bold">
+        <label [for]="id('link')" class="font-bold" i18n>
           Enlace <span class="font-normal text-ink-muted">(opcional)</span>
         </label>
         <input
@@ -93,16 +93,18 @@ export type SaveStatus = 'idle' | 'saving' | 'invalid-link' | 'failed';
         @if (linkShowsError()) {
           <p [id]="id('link-error')" class="text-sm font-semibold text-danger">
             @if (form.controls.link.hasError('maxlength')) {
-              El enlace es demasiado largo.
+              <ng-container i18n>El enlace es demasiado largo.</ng-container>
             } @else {
-              Pega una dirección web que empiece por http:// o https://.
+              <ng-container i18n
+                >Pega una dirección web que empiece por http:// o https://.</ng-container
+              >
             }
           </p>
         }
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label [for]="id('price')" class="font-bold">
+        <label [for]="id('price')" class="font-bold" i18n>
           Precio aproximado <span class="font-normal text-ink-muted">(opcional)</span>
         </label>
         <div class="relative">
@@ -124,14 +126,14 @@ export type SaveStatus = 'idle' | 'saving' | 'invalid-link' | 'failed';
           >
         </div>
         @if (showsError(form.controls.price)) {
-          <p [id]="id('price-error')" class="text-sm font-semibold text-danger">
+          <p [id]="id('price-error')" class="text-sm font-semibold text-danger" i18n>
             Escribe una cantidad en euros, por ejemplo 25 o 25,50.
           </p>
         }
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label [for]="id('priority')" class="font-bold">Prioridad</label>
+        <label [for]="id('priority')" class="font-bold" i18n>Prioridad</label>
         <select [id]="id('priority')" formControlName="priority" appField>
           @for (priority of priorities; track priority) {
             <option [value]="priority">{{ priorityLabels[priority] }}</option>
@@ -140,7 +142,7 @@ export type SaveStatus = 'idle' | 'saving' | 'invalid-link' | 'failed';
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label [for]="id('notes')" class="font-bold">
+        <label [for]="id('notes')" class="font-bold" i18n>
           Notas <span class="font-normal text-ink-muted">(opcional)</span>
         </label>
         <textarea
@@ -154,25 +156,31 @@ export type SaveStatus = 'idle' | 'saving' | 'invalid-link' | 'failed';
           "
         ></textarea>
         @if (showsError(form.controls.notes)) {
-          <p [id]="id('notes-error')" class="text-sm font-semibold text-danger">
+          <p [id]="id('notes-error')" class="text-sm font-semibold text-danger" i18n>
             Usa como mucho {{ notesMax }} caracteres.
           </p>
         } @else {
-          <p [id]="id('notes-hint')" class="text-sm text-ink-muted">
+          <p [id]="id('notes-hint')" class="text-sm text-ink-muted" i18n>
             Talla, color, modelo… lo que ayude a acertar.
           </p>
         }
       </div>
 
       @if (submitted() && status() === 'failed') {
-        <p appAlert>No hemos podido guardar el deseo. Inténtalo de nuevo en un momento.</p>
+        <p appAlert i18n>No hemos podido guardar el deseo. Inténtalo de nuevo en un momento.</p>
       }
 
       <div class="flex flex-wrap items-center gap-4">
         <button type="submit" appButton="secondary" [disabled]="status() === 'saving'">
-          {{ status() === 'saving' ? 'Guardando…' : wish() ? 'Guardar' : 'Añadir' }}
+          @if (status() === 'saving') {
+            <ng-container i18n>Guardando…</ng-container>
+          } @else if (wish()) {
+            <ng-container i18n>Guardar</ng-container>
+          } @else {
+            <ng-container i18n>Añadir</ng-container>
+          }
         </button>
-        <button type="button" appLink standalone (click)="cancelled.emit()">Cancelar</button>
+        <button type="button" appLink standalone (click)="cancelled.emit()" i18n>Cancelar</button>
       </div>
     </form>
   `,
@@ -207,6 +215,11 @@ export class WishForm implements OnInit {
 
   ngOnInit(): void {
     this.form.setValue(wishFormValue(this.wish()));
+  }
+
+  protected formLabel(): string {
+    const wish = this.wish();
+    return wish ? $localize`Editar ${wish.title}:title:` : $localize`Nuevo deseo`;
   }
 
   protected id(field: string): string {

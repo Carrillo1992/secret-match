@@ -11,6 +11,8 @@ import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.VerificationLinkInvalidException;
 import com.secretmatch.identity.domain.VerificationLinkUsedException;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
+import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,8 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class EmailSignUp {
-
-    static final String SUBJECT = "Confirma tu correo en SecretMatch";
 
     private final Users users;
     private final SignUpVerifications signUps;
@@ -58,13 +58,15 @@ public class EmailSignUp {
     public SignUpId signUp(SignUpCommand command) {
         EmailAddress email = new EmailAddress(command.email());
         DisplayName displayName = new DisplayName(command.displayName());
+        Language language = Language.ofCode(command.language());
         // Hashed before the lookup, so a registered email does not answer measurably faster here.
         PasswordHash passwordHash = passwordHasher.hash(new NewPassword(command.password()));
         if (users.existsWithEmail(email)) {
             return SignUpId.newId();
         }
         EmailLinkToken token = EmailLinkToken.generate(random);
-        SignUpVerification signUp = SignUpVerification.start(email, displayName, passwordHash, token, clock.instant());
+        SignUpVerification signUp =
+                SignUpVerification.start(email, displayName, passwordHash, language, token, clock.instant());
         saveAndSendLink(signUp, token);
         return signUp.id();
     }
@@ -114,15 +116,34 @@ public class EmailSignUp {
      */
     private void saveAndSendLink(SignUpVerification signUp, EmailLinkToken token) {
         signUps.save(signUp);
-        events.publishEvent(new EmailRequested(
+        events.publishEvent(verificationEmail(signUp, token));
+    }
+
+    /** The Verification email, in the Language the sign-up was made in. */
+    private static EmailRequested verificationEmail(SignUpVerification signUp, EmailLinkToken token) {
+        return new EmailRequested(
                 signUp.email().value(),
-                SUBJECT,
-                """
-                Hola:
+                signUp.language(),
+                verificationText(signUp.language(), SignUpVerification.VALIDITY.toHours()),
+                "/verify-email?token=" + token.value());
+    }
 
-                Para terminar de crear tu cuenta en SecretMatch, confirma que este correo es tuyo con el enlace de abajo. Caduca en %d horas y solo se puede usar una vez.
+    private static EmailText verificationText(Language language, long hours) {
+        return switch (language) {
+            case SPANISH -> new EmailText("Confirma tu correo en SecretMatch", """
+                        Hola:
 
-                Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(SignUpVerification.VALIDITY.toHours()),
-                "/verify-email?token=" + token.value()));
+                        Para terminar de crear tu cuenta en SecretMatch, confirma que este correo es tuyo con el enlace \
+                        de abajo. Caduca en %d horas y solo se puede usar una vez.
+
+                        Si no has sido tú, ignora este mensaje: no se creará ninguna cuenta.""".formatted(hours));
+            case ENGLISH -> new EmailText("Confirm your email on SecretMatch", """
+                        Hello,
+
+                        To finish creating your SecretMatch account, confirm that this email is yours with the link \
+                        below. It expires in %d hours and can only be used once.
+
+                        If this wasn't you, ignore this message: no account will be created.""".formatted(hours));
+        };
     }
 }

@@ -106,6 +106,18 @@ export class WishlistPage {
   protected readonly isLoading = computed(
     () => this.outcome.isLoading() && !this.outcome.hasValue(),
   );
+  protected editLabel(wish: Wish): string {
+    return $localize`Editar «${wish.title}:title:»`;
+  }
+
+  protected deleteLabel(wish: Wish): string {
+    return $localize`Borrar «${wish.title}:title:»`;
+  }
+
+  protected deleteQuestion(wish: Wish): string {
+    return $localize`¿Borrar «${wish.title}:title:»?`;
+  }
+
   /** The data-access layer never rejects: it reports `not-found` or `failed` instead. */
   private readonly result = computed(() =>
     this.outcome.hasValue() ? this.outcome.value() : undefined,
@@ -176,7 +188,7 @@ export class WishlistPage {
       return;
     }
     this.addStatus.set('idle');
-    this.statusText.set(`«${outcome.wish.title}» está en tu lista.`);
+    this.statusText.set($localize`«${outcome.wish.title}:title:» está en tu lista.`);
     this.closeAdd();
     this.outcome.reload();
   }
@@ -208,7 +220,7 @@ export class WishlistPage {
       return;
     }
     this.editStatus.set('idle');
-    this.statusText.set(`«${outcome.wish.title}» guardado.`);
+    this.statusText.set($localize`«${outcome.wish.title}:title:» guardado.`);
     this.closeEdit();
     this.outcome.reload();
   }
@@ -228,7 +240,7 @@ export class WishlistPage {
       this.deleteFailed.set(wish);
       return;
     }
-    this.statusText.set(`«${wish.title}» ya no está en tu lista.`);
+    this.statusText.set($localize`«${wish.title}:title:» ya no está en tu lista.`);
     this.outcome.reload();
   }
 
@@ -295,7 +307,7 @@ export class WishlistPage {
     this.preferencesStatus.set('idle');
     this.dontListAddition.set(null);
     this.dontListRemoval.set(null);
-    this.statusText.set('No se ha guardado: el grupo acaba de finalizar.');
+    this.statusText.set($localize`No se ha guardado: el grupo acaba de finalizar.`);
     this.outcome.reload();
     this.focusOnceRendered('wishlist-title');
   }

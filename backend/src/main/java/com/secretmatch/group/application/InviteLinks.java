@@ -5,8 +5,11 @@ import com.secretmatch.group.domain.GroupId;
 import com.secretmatch.group.domain.InviteCode;
 import com.secretmatch.group.domain.InviteLinkInvalidException;
 import com.secretmatch.group.domain.MemberId;
+import com.secretmatch.identity.application.EmailRecipient;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
+import com.secretmatch.shared.domain.Language;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -64,16 +67,30 @@ public class InviteLinks {
     /** Catalogue email 2: "a Member joined", to the Admin. */
     private void emailAdmin(Group group, MemberId newMember) {
         String name = users.displayNamesOf(List.of(newMember.value())).get(newMember.value());
-        String admin = users.emailOf(group.admin().value())
+        EmailRecipient admin = users.recipientOf(group.admin().value())
                 .orElseThrow(() -> new IllegalStateException("a Group's Admin has no User"));
         String groupName = group.name().value();
+        int members = group.members().size() + 1;
         events.publishEvent(new EmailRequested(
-                admin,
-                "%s se ha unido a «%s»".formatted(name, groupName),
-                """
-                %s se ha unido a tu grupo «%s» con el enlace de invitación.
-
-                Ya sois %d en el grupo.""".formatted(name, groupName, group.members().size() + 1),
+                admin.email(),
+                admin.language(),
+                memberJoinedText(admin.language(), name, groupName, members),
                 "/groups/" + group.id().value()));
+    }
+
+    private static EmailText memberJoinedText(Language language, String name, String groupName, int members) {
+        return switch (language) {
+            case SPANISH ->
+                new EmailText(
+                        "%s se ha unido a «%s»".formatted(name, groupName), """
+                        %s se ha unido a tu grupo «%s» con el enlace de invitación.
+
+                        Ya sois %d en el grupo.""".formatted(name, groupName, members));
+            case ENGLISH ->
+                new EmailText("%s joined “%s”".formatted(name, groupName), """
+                        %s joined your Group “%s” with the Invite Link.
+
+                        There are %d of you in the Group now.""".formatted(name, groupName, members));
+        };
     }
 }

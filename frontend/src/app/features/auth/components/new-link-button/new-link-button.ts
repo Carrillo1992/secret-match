@@ -15,18 +15,22 @@ import { NewLinkStatus } from '../../data-access/new-verification-link';
         [disabled]="status() === 'sending'"
         (click)="requested.emit()"
       >
-        {{ status() === 'sending' ? 'Enviando…' : 'Enviar otro enlace' }}
+        @if (status() === 'sending') {
+          <ng-container i18n>Enviando…</ng-container>
+        } @else {
+          <ng-container i18n>Enviar otro enlace</ng-container>
+        }
       </button>
       <div role="status" aria-live="polite" class="text-sm">
         @switch (status()) {
           @case ('sent') {
-            <p class="font-semibold text-success">
+            <p class="font-semibold text-success" i18n>
               Te hemos enviado un enlace nuevo; el anterior ya no sirve. Si tampoco llega, puede que
               ese correo ya tenga una cuenta.
             </p>
           }
           @case ('failed') {
-            <p class="font-semibold text-danger">
+            <p class="font-semibold text-danger" i18n>
               No hemos podido enviar el enlace. Inténtalo de nuevo.
             </p>
           }

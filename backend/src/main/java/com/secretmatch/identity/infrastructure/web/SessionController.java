@@ -2,6 +2,7 @@ package com.secretmatch.identity.infrastructure.web;
 
 import com.secretmatch.identity.application.AccessToken;
 import com.secretmatch.identity.application.CurrentUser;
+import com.secretmatch.identity.application.GoogleSignInCommand;
 import com.secretmatch.identity.application.RefreshOutcome;
 import com.secretmatch.identity.application.Sessions;
 import com.secretmatch.identity.application.SignInCommand;
@@ -58,9 +59,9 @@ class SessionController {
     @Operation(
             summary = "Sign in with a Google ID token",
             description = "Sets the refresh token cookie. A new email gets a User; an existing one is linked to"
-                    + " the Google account.")
+                    + " the Google account. Only a new User gets the Language sent.")
     ResponseEntity<AccessTokenResponse> signInWithGoogle(@Valid @RequestBody GoogleSignInRequest request) {
-        return signedIn(sessions.signInWithGoogle(request.idToken()));
+        return signedIn(sessions.signInWithGoogle(new GoogleSignInCommand(request.idToken(), request.language())));
     }
 
     @PostMapping(value = "/sessions/refresh", produces = MediaType.APPLICATION_JSON_VALUE)

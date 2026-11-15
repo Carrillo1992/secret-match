@@ -1,6 +1,7 @@
 package com.secretmatch.identity.infrastructure.web;
 
 import com.secretmatch.identity.application.ChangeDisplayNameCommand;
+import com.secretmatch.identity.application.ChangeLanguageCommand;
 import com.secretmatch.identity.application.ChangePasswordCommand;
 import com.secretmatch.identity.application.CurrentUser;
 import com.secretmatch.identity.application.Profile;
@@ -37,6 +38,15 @@ class ProfileController {
             @AuthenticationPrincipal Jwt accessToken, @Valid @RequestBody DisplayNameRequest request) {
         CurrentUser user = profile.changeDisplayName(
                 AccessTokenClaims.userId(accessToken), new ChangeDisplayNameCommand(request.displayName()));
+        return CurrentUserResponse.of(user);
+    }
+
+    @PutMapping(value = "/language", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Change the Language the signed-in User reads SecretMatch and its emails in")
+    CurrentUserResponse changeLanguage(
+            @AuthenticationPrincipal Jwt accessToken, @Valid @RequestBody LanguageRequest request) {
+        CurrentUser user = profile.changeLanguage(
+                AccessTokenClaims.userId(accessToken), new ChangeLanguageCommand(request.language()));
         return CurrentUserResponse.of(user);
     }
 

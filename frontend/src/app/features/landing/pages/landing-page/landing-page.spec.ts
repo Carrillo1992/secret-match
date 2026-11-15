@@ -32,7 +32,7 @@ describe('LandingPage', () => {
   const statusText = () =>
     (fixture.nativeElement as HTMLElement).querySelector('[role="status"]')?.textContent ?? '';
   const retryButton = () =>
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button');
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('main button');
 
   it('links to the sign-up page', () => {
     const link = (fixture.nativeElement as HTMLElement).querySelector('a[href="/sign-up"]');

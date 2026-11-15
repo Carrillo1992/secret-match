@@ -31,7 +31,8 @@ describe('MailboxThread', () => {
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
 
-    expect(text(element)).toBe('No hubo mensajes Este buzón se quedó en blanco.');
+    const paragraphs = [...element.querySelectorAll('p')].map(text);
+    expect(paragraphs).toEqual(['No hubo mensajes', 'Este buzón se quedó en blanco.']);
   });
 
   it('groups the Messages by day under a date separator', async () => {

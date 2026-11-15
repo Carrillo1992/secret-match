@@ -37,23 +37,24 @@ export type SendStatus =
   template: `
     <form novalidate (submit)="$event.preventDefault(); submit()">
       @if (status() === 'failed') {
-        <p appAlert class="mb-3">No se ha enviado. Tu texto sigue aquí: inténtalo otra vez.</p>
+        <p appAlert class="mb-3" i18n>No se ha enviado. Tu texto sigue aquí: inténtalo otra vez.</p>
       } @else if (status() === 'invalid') {
-        <p appAlert class="mb-3">
+        <p appAlert class="mb-3" i18n>
           No se ha enviado: el mensaje no puede estar vacío ni pasar de {{ max }} caracteres.
         </p>
       } @else if (status() === 'not-found') {
-        <p appAlert class="mb-3">
+        <p appAlert class="mb-3" i18n>
           Este buzón ya no existe, así que no se ha enviado. Recarga la página.
         </p>
       }
-      <label [for]="id()" class="sr-only">Mensaje</label>
+      <label [for]="id()" class="sr-only" i18n>Mensaje</label>
       <textarea
         [id]="id()"
         appField
         rows="3"
         class="w-full"
         placeholder="Escribe un mensaje…"
+        i18n-placeholder
         [formControl]="text"
         [readOnly]="sending()"
         [attr.aria-invalid]="problem() ? true : null"
@@ -67,10 +68,18 @@ export type SendStatus =
         }
         <button type="submit" appButton="secondary" class="shrink-0" [disabled]="sending()">
           <svg lucideSend [size]="18"></svg>
-          {{ sending() ? 'Enviando…' : 'Enviar' }}
+          @if (sending()) {
+            <ng-container i18n>Enviando…</ng-container>
+          } @else {
+            <ng-container i18n>Enviar</ng-container>
+          }
         </button>
       </div>
-      <p aria-live="polite" class="sr-only">{{ status() === 'sent' ? 'Mensaje enviado.' : '' }}</p>
+      <p aria-live="polite" class="sr-only">
+        @if (status() === 'sent') {
+          <ng-container i18n>Mensaje enviado.</ng-container>
+        }
+      </p>
     </form>
   `,
 })

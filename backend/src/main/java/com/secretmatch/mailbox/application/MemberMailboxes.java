@@ -12,6 +12,8 @@ import com.secretmatch.mailbox.domain.MemberId;
 import com.secretmatch.mailbox.domain.MessageText;
 import com.secretmatch.mailbox.domain.UserId;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
+import com.secretmatch.shared.domain.Language;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -191,12 +193,25 @@ public class MemberMailboxes {
         String groupName = groupMembers
                 .nameOf(groupId, author.value())
                 .orElseThrow(() -> new IllegalStateException("a Mailbox author outside its Group"));
-        String to = memberEmails
-                .emailOf(recipient)
+        MemberEmails.Recipient to = memberEmails
+                .recipientOf(recipient)
                 .orElseThrow(() -> new IllegalStateException("a Mailbox side has no User"));
-        String notice = "Tienes un mensaje nuevo en «%s»".formatted(groupName);
         events.publishEvent(new EmailRequested(
-                to, notice, notice + ".\n\nEntra en el grupo para leerlo y contestar.", "/groups/" + groupId));
+                to.email(), to.language(), newMessageText(to.language(), groupName), "/groups/" + groupId));
+    }
+
+    /** Email 5's text: the same for both sides of the Mailbox. */
+    private static EmailText newMessageText(Language language, String groupName) {
+        return switch (language) {
+            case SPANISH -> {
+                String notice = "Tienes un mensaje nuevo en «%s»".formatted(groupName);
+                yield new EmailText(notice, notice + ".\n\nEntra en el grupo para leerlo y contestar.");
+            }
+            case ENGLISH -> {
+                String notice = "You have a new Message in “%s”".formatted(groupName);
+                yield new EmailText(notice, notice + ".\n\nOpen the Group to read it and reply.");
+            }
+        };
     }
 
     /**

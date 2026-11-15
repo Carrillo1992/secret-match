@@ -6,6 +6,7 @@ import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.SignUpId;
 import com.secretmatch.identity.domain.SignUpVerification;
 import com.secretmatch.identity.domain.TokenHash;
+import com.secretmatch.shared.domain.Language;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -29,6 +30,9 @@ class SignUpVerificationEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(nullable = false)
+    private String language;
+
     @Column(name = "token_hash", nullable = false, unique = true)
     private String tokenHash;
 
@@ -46,6 +50,7 @@ class SignUpVerificationEntity {
         entity.email = signUp.email().value();
         entity.displayName = signUp.displayName().value();
         entity.passwordHash = signUp.passwordHash().value();
+        entity.language = signUp.language().code();
         entity.tokenHash = signUp.tokenHash().value();
         entity.expiresAt = signUp.expiresAt();
         entity.usedAt = signUp.usedAt().orElse(null);
@@ -58,6 +63,7 @@ class SignUpVerificationEntity {
                 new EmailAddress(email),
                 new DisplayName(displayName),
                 new PasswordHash(passwordHash),
+                Language.ofCode(language),
                 new TokenHash(tokenHash),
                 expiresAt,
                 usedAt);

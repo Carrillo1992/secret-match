@@ -10,8 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * What other modules may read about Users: how they are shown to others, and where to email them. An email
- * address is only for sending to that User; it is never shown to anyone else.
+ * What other modules may read about Users: how they are shown to others, and where and in which Language to email
+ * them. An email address is only for sending to that User; it is never shown to anyone else.
  */
 @Service
 public class UserDirectory {
@@ -30,9 +30,10 @@ public class UserDirectory {
                         user -> user.id().value(), user -> user.displayName().value()));
     }
 
-    /** The email address of this User, to send them an email; empty if there is no such User. */
+    /** Where to email this User and in which Language; empty if there is no such User. */
     @Transactional(readOnly = true)
-    public Optional<String> emailOf(UUID userId) {
-        return users.findById(new UserId(userId)).map(user -> user.email().value());
+    public Optional<EmailRecipient> recipientOf(UUID userId) {
+        return users.findById(new UserId(userId))
+                .map(user -> new EmailRecipient(user.email().value(), user.language()));
     }
 }

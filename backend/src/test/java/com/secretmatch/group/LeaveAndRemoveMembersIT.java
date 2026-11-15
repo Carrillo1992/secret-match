@@ -150,6 +150,27 @@ class LeaveAndRemoveMembersIT {
     }
 
     @Test
+    @DisplayName("the removed Member is emailed in their own Language, whatever the Admin's")
+    void removedMemberIsEmailedInTheirLanguage() {
+        User carmen = signedInUser("Abuela Carmen", "es");
+        User luis = signedInUser("Luis", "en");
+        String groupId = createGroup(carmen, "Navidad");
+        joinGroup(luis, carmen, groupId);
+        String luisId = memberIdOf(carmen, groupId, "Luis");
+        mail.clear();
+
+        removeMember(carmen, groupId, luisId).expectStatus().isNoContent();
+
+        assertThat(mail.sent()).singleElement().satisfies(email -> {
+            assertThat(email.to()).isEqualTo(luis.email());
+            assertThat(email.subject()).isEqualTo("You are no longer in “Navidad”");
+            assertThat(email.text())
+                    .contains("Abuela Carmen, the Admin of the Group “Navidad”, removed you from the Group.")
+                    .contains("If you think this is a mistake, talk to Abuela Carmen.");
+        });
+    }
+
+    @Test
     @DisplayName("the Admin cannot leave, and a Member who is not the Admin cannot remove anyone")
     void forbiddenRemovals() {
         User carmen = signedInUser("Abuela Carmen");
@@ -313,8 +334,15 @@ class LeaveAndRemoveMembersIT {
 
     /** Signs up, verifies and signs in a new User. */
     private User signedInUser(String displayName) {
+        return signedInUser(displayName, "es");
+    }
+
+    /** Signs up, verifies and signs in a new User who reads SecretMatch in this Language. */
+    private User signedInUser(String displayName, String language) {
         String email = "user-" + UUID.randomUUID() + "@example.com";
-        anonymousPost("/api/v1/sign-ups", Map.of("email", email, "displayName", displayName, "password", PASSWORD))
+        anonymousPost(
+                        "/api/v1/sign-ups",
+                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", language))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(email).getLast().text());

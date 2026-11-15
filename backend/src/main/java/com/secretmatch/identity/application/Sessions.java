@@ -13,6 +13,7 @@ import com.secretmatch.identity.domain.SessionExpiredException;
 import com.secretmatch.identity.domain.SignUpVerification;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
+import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
@@ -95,17 +96,18 @@ public class Sessions {
      * Starts a session for the person a Google ID token names. The User linked to that Google account signs
      * in, even if the account's email has changed since. Otherwise a new email gets a User named as in
      * Google, and an email that already has a User gets the Google account linked to it: any password keeps
-     * working.
+     * working. Only a new User gets the Language of the sign-in; an existing one keeps theirs.
      *
      * @throws GoogleSignInRejectedException if the ID token is not genuine, not for us, expired or for an
      *     unverified email, or the email's User is linked to another Google account
      */
     @Transactional
-    public SignedIn signInWithGoogle(String idToken) {
-        GoogleIdentity google = googleIdTokens.verify(idToken);
+    public SignedIn signInWithGoogle(GoogleSignInCommand command) {
+        Language language = Language.ofCode(command.language());
+        GoogleIdentity google = googleIdTokens.verify(command.idToken());
         User user = users.findByGoogleSubject(google.subject())
                 .or(() -> users.findByEmail(google.email()))
-                .orElseGet(() -> newGoogleUser(google));
+                .orElseGet(() -> newGoogleUser(google, language));
         if (!user.googleSubject().equals(Optional.of(google.subject()))) {
             user.linkGoogle(google.subject());
             users.save(user);
@@ -161,8 +163,9 @@ public class Sessions {
     }
 
     /** Creates the User, or takes the one created a moment ago with the same email by another sign-in. */
-    private User newGoogleUser(GoogleIdentity google) {
-        User user = User.fromGoogle(UserId.newId(), google.email(), google.name(), google.subject(), clock.instant());
+    private User newGoogleUser(GoogleIdentity google, Language language) {
+        User user = User.fromGoogle(
+                UserId.newId(), google.email(), google.name(), google.subject(), language, clock.instant());
         return users.add(user)
                 ? user
                 : users.findByEmail(google.email()).orElseThrow(GoogleSignInRejectedException::new);

@@ -3,6 +3,7 @@ package com.secretmatch.identity.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.secretmatch.shared.domain.Language;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +16,7 @@ class GoogleUserTest {
 
     @Test
     void newUserIsNamedAsInGoogleAndHasNoPassword() {
-        User user = User.fromGoogle(UserId.newId(), EMAIL, "  Ana García ", SUBJECT, NOW);
+        User user = User.fromGoogle(UserId.newId(), EMAIL, "  Ana García ", SUBJECT, Language.SPANISH, NOW);
 
         assertThat(user.displayName().value()).isEqualTo("Ana García");
         assertThat(user.passwordHash()).isEmpty();
@@ -24,7 +25,7 @@ class GoogleUserTest {
 
     @Test
     void aGoogleNameTooLongIsCutToTheLimit() {
-        User user = User.fromGoogle(UserId.newId(), EMAIL, "Remedios-".repeat(10), SUBJECT, NOW);
+        User user = User.fromGoogle(UserId.newId(), EMAIL, "Remedios-".repeat(10), SUBJECT, Language.SPANISH, NOW);
 
         assertThat(user.displayName().value()).isEqualTo("Remedios-Remedios-Remedios-Remedios-Remedios-Remed");
     }
@@ -33,15 +34,15 @@ class GoogleUserTest {
     void cuttingAGoogleNameNeverSplitsAnEmoji() {
         String name = "x".repeat(49) + "🎁🎁";
 
-        User user = User.fromGoogle(UserId.newId(), EMAIL, name, SUBJECT, NOW);
+        User user = User.fromGoogle(UserId.newId(), EMAIL, name, SUBJECT, Language.SPANISH, NOW);
 
         assertThat(user.displayName().value()).isEqualTo("x".repeat(49));
     }
 
     @Test
     void withoutAGoogleNameTheUserIsNamedAfterTheirEmail() {
-        User nameless = User.fromGoogle(UserId.newId(), EMAIL, null, SUBJECT, NOW);
-        User blank = User.fromGoogle(UserId.newId(), EMAIL, "   ", SUBJECT, NOW);
+        User nameless = User.fromGoogle(UserId.newId(), EMAIL, null, SUBJECT, Language.SPANISH, NOW);
+        User blank = User.fromGoogle(UserId.newId(), EMAIL, "   ", SUBJECT, Language.SPANISH, NOW);
 
         assertThat(nameless.displayName().value()).isEqualTo("ana.garcia");
         assertThat(blank.displayName().value()).isEqualTo("ana.garcia");
@@ -50,7 +51,7 @@ class GoogleUserTest {
     @Test
     void linkingGoogleKeepsThePassword() {
         PasswordHash hash = new PasswordHash("$2a$10$hash");
-        User user = User.withPassword(UserId.newId(), EMAIL, new DisplayName("Ana"), hash, NOW);
+        User user = User.withPassword(UserId.newId(), EMAIL, new DisplayName("Ana"), hash, Language.SPANISH, NOW);
 
         user.linkGoogle(SUBJECT);
 
@@ -61,7 +62,7 @@ class GoogleUserTest {
 
     @Test
     void linkingTheSameGoogleAccountAgainChangesNothing() {
-        User user = User.fromGoogle(UserId.newId(), EMAIL, "Ana", SUBJECT, NOW);
+        User user = User.fromGoogle(UserId.newId(), EMAIL, "Ana", SUBJECT, Language.SPANISH, NOW);
 
         user.linkGoogle(new GoogleSubject(SUBJECT.value()));
 
@@ -70,7 +71,7 @@ class GoogleUserTest {
 
     @Test
     void anotherGoogleAccountCannotTakeOverALinkedUser() {
-        User user = User.fromGoogle(UserId.newId(), EMAIL, "Ana", SUBJECT, NOW);
+        User user = User.fromGoogle(UserId.newId(), EMAIL, "Ana", SUBJECT, Language.SPANISH, NOW);
 
         assertThatThrownBy(() -> user.linkGoogle(new GoogleSubject("999")))
                 .isInstanceOf(GoogleSignInRejectedException.class);

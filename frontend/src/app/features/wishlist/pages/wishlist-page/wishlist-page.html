@@ -1,28 +1,35 @@
 <app-shell>
   <a [routerLink]="groupLink()" appLink standalone class="gap-1">
     <svg lucideChevronLeft [size]="18"></svg>
-    Volver al grupo
+    <ng-container i18n>Volver al grupo</ng-container>
   </a>
 
   @if (isLoading()) {
-    <p role="status" class="mt-4 text-ink-muted">Cargando…</p>
+    <p role="status" class="mt-4 text-ink-muted" i18n>Cargando…</p>
   } @else if (wishlist(); as wishlist) {
     <h1
       id="wishlist-title"
       tabindex="-1"
       class="mt-4 font-display text-3xl font-bold tracking-tight break-words focus:outline-none"
     >
-      {{ wishlist.owner.you ? 'Tus deseos' : 'Deseos de ' + wishlist.owner.displayName }}
+      @if (wishlist.owner.you) {
+        <ng-container i18n>Tus deseos</ng-container>
+      } @else {
+        <ng-container i18n>Deseos de {{ wishlist.owner.displayName }}</ng-container>
+      }
     </h1>
     <p class="mt-1.5 text-ink-muted">
       @if (wishlist.owner.you) {
         @if (drawn() === true) {
-          Quien te regala ya puede verla.
+          <ng-container i18n>Quien te regala ya puede verla.</ng-container>
         } @else if (drawn() === false) {
-          Solo la verá quien te regale, cuando se haga el sorteo.
+          <ng-container i18n>Solo la verá quien te regale, cuando se haga el sorteo.</ng-container>
         }
       } @else {
-        Solo la ves tú, porque te toca regalarle. Nadie más del grupo puede abrirla.
+        <ng-container i18n
+          >Solo la ves tú, porque te toca regalarle. Nadie más del grupo puede
+          abrirla.</ng-container
+        >
       }
     </p>
 
@@ -37,16 +44,22 @@
     }
 
     @if (wishlist.owner.you && wishlist.finished) {
-      <app-notice class="mt-6" heading="Finalizado" headingId="wishlist-finished">
+      <app-notice class="mt-6" heading="Finalizado" i18n-heading headingId="wishlist-finished">
         <svg lucideCircleCheck noticeIcon [size]="20"></svg>
-        El grupo ha finalizado: tu lista ya solo se puede consultar.
+        <ng-container i18n
+          >El grupo ha finalizado: tu lista ya solo se puede consultar.</ng-container
+        >
       </app-notice>
     }
 
     <p role="status" class="mt-1.5 text-sm text-ink-muted empty:hidden">{{ statusText() }}</p>
 
     @if (canChange()) {
-      <section aria-label="Añadir un deseo" class="mt-6 rounded-card bg-surface p-5 shadow-card">
+      <section
+        aria-label="Añadir un deseo"
+        i18n-aria-label
+        class="mt-6 rounded-card bg-surface p-5 shadow-card"
+      >
         @if (adding()) {
           <app-wish-form
             idPrefix="new-wish"
@@ -57,28 +70,34 @@
         } @else {
           <button id="add-wish" type="button" appLink standalone class="gap-1" (click)="openAdd()">
             <svg lucidePlus [size]="18"></svg>
-            Añadir deseo
+            <ng-container i18n>Añadir deseo</ng-container>
           </button>
         }
       </section>
     }
 
     @if (deleteFailed(); as wish) {
-      <p appAlert class="mt-6">No hemos podido borrar «{{ wish.title }}». Inténtalo de nuevo.</p>
+      <p appAlert class="mt-6" i18n>
+        No hemos podido borrar «{{ wish.title }}». Inténtalo de nuevo.
+      </p>
     }
 
     @if (wishlist.wishes.length === 0) {
       <p class="mt-6 text-ink-muted">
         @if (canChange()) {
-          Aún no has añadido deseos. Cuenta qué te haría ilusión recibir.
+          <ng-container i18n
+            >Aún no has añadido deseos. Cuenta qué te haría ilusión recibir.</ng-container
+          >
         } @else if (wishlist.owner.you) {
-          No añadiste deseos.
+          <ng-container i18n>No añadiste deseos.</ng-container>
         } @else {
-          {{ wishlist.owner.displayName }} aún no ha añadido deseos.
+          <ng-container i18n
+            >{{ wishlist.owner.displayName }} aún no ha añadido deseos.</ng-container
+          >
         }
       </p>
     } @else {
-      <ul aria-label="Deseos" class="mt-6 flex flex-col gap-4">
+      <ul aria-label="Deseos" i18n-aria-label class="mt-6 flex flex-col gap-4">
         @for (wish of wishlist.wishes; track wish.id) {
           <li class="rounded-card bg-surface p-5 shadow-card">
             @if (editing() === wish.id) {
@@ -95,11 +114,11 @@
                   {{ wish.title }}
                 </h2>
                 <span appChip class="shrink-0">
-                  <span class="sr-only">Prioridad </span>{{ priorityLabels[wish.priority] }}
+                  <span class="sr-only" i18n>Prioridad </span>{{ priorityLabels[wish.priority] }}
                 </span>
               </div>
               @if (wish.price !== undefined) {
-                <p class="mt-1.5">Unos {{ euros(wish.price) }}</p>
+                <p class="mt-1.5" i18n>Unos {{ euros(wish.price) }}</p>
               }
               @if (wish.notes) {
                 <p class="mt-1.5 whitespace-pre-line break-words text-ink-muted">
@@ -115,8 +134,8 @@
                   standalone
                   class="mt-1.5 gap-1"
                 >
-                  Abrir enlace
-                  <span class="sr-only">de {{ wish.title }} (se abre en otra pestaña)</span>
+                  <ng-container i18n>Abrir enlace</ng-container>
+                  <span class="sr-only" i18n>de {{ wish.title }} (se abre en otra pestaña)</span>
                   <svg lucideExternalLink [size]="16"></svg>
                 </a>
               }
@@ -125,14 +144,15 @@
                 @if (confirmingDelete() === wish.id) {
                   <app-confirm-panel
                     class="mt-3"
-                    [question]="'¿Borrar «' + wish.title + '»?'"
+                    [question]="deleteQuestion(wish)"
                     confirmLabel="Sí, borrar"
+                    i18n-confirmLabel
                     [returnFocusTo]="'delete-' + wish.id"
                     focusAfterConfirm="wishlist-title"
                     (confirmed)="delete(wish)"
                     (cancelled)="confirmingDelete.set(null)"
                   >
-                    Desaparecerá de tu lista.
+                    <ng-container i18n>Desaparecerá de tu lista.</ng-container>
                   </app-confirm-panel>
                 } @else {
                   <div class="mt-3 flex justify-end gap-4">
@@ -141,8 +161,9 @@
                       type="button"
                       appLink
                       standalone
-                      [attr.aria-label]="'Editar «' + wish.title + '»'"
+                      [attr.aria-label]="editLabel(wish)"
                       (click)="openEdit(wish)"
+                      i18n
                     >
                       Editar
                     </button>
@@ -151,11 +172,15 @@
                       type="button"
                       appLink
                       standalone
-                      [attr.aria-label]="'Borrar «' + wish.title + '»'"
+                      [attr.aria-label]="deleteLabel(wish)"
                       [disabled]="deleting() === wish.id"
                       (click)="confirmingDelete.set(wish.id)"
                     >
-                      {{ deleting() === wish.id ? 'Borrando…' : 'Borrar' }}
+                      @if (deleting() === wish.id) {
+                        <ng-container i18n>Borrando…</ng-container>
+                      } @else {
+                        <ng-container i18n>Borrar</ng-container>
+                      }
                     </button>
                   </div>
                 }
@@ -191,14 +216,16 @@
     <div class="mt-6">
       <app-status-header>
         <svg lucideSearchX statusIcon [size]="30"></svg>
-        No encontramos esta lista
+        <ng-container i18n>No encontramos esta lista</ng-container>
       </app-status-header>
-      <p class="mt-1.5 text-ink-muted">
+      <p class="mt-1.5 text-ink-muted" i18n>
         Puede que el enlace no esté bien o que esa persona ya no esté en el grupo.
       </p>
     </div>
   } @else {
-    <p appAlert class="mt-6">No hemos podido cargar la lista. Inténtalo de nuevo.</p>
-    <button type="button" appButton="secondary" class="mt-4" (click)="reload()">Reintentar</button>
+    <p appAlert class="mt-6" i18n>No hemos podido cargar la lista. Inténtalo de nuevo.</p>
+    <button type="button" appButton="secondary" class="mt-4" (click)="reload()" i18n>
+      Reintentar
+    </button>
   }
 </app-shell>

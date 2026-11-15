@@ -202,20 +202,34 @@ class DrawIT {
     }
 
     @Test
-    @DisplayName("every Member gets exactly one email saying the Draw is made, without anyone's name in it")
+    @DisplayName("every Member gets exactly one email saying the Draw is made, in their own Language, without anyone's"
+            + " name in it")
     void everyMemberIsEmailedOnceWithoutTheirReceiversName() {
         Family family = family();
+        speaks(family.luis(), "en");
+        speaks(family.marta(), "en");
         mail.clear();
 
         runDraw(family.carmen(), family).expectStatus().isCreated();
 
         assertThat(mail.sent()).hasSize(4);
+        Map<User, String> subjects = Map.of(
+                family.carmen(), "Ya está hecho el sorteo de «Navidad»",
+                family.pedro(), "Ya está hecho el sorteo de «Navidad»",
+                family.luis(), "The Draw for “Navidad” is done",
+                family.marta(), "The Draw for “Navidad” is done");
+        Map<User, String> messages = Map.of(
+                family.carmen(), "Entra para descubrir a quién le haces el regalo.",
+                family.pedro(), "Entra para descubrir a quién le haces el regalo.",
+                family.luis(), "Go in to find out who you are giving a gift to.",
+                family.marta(), "Go in to find out who you are giving a gift to.");
         for (User member : family.everyone()) {
             List<OutgoingEmail> received = mail.sentTo(member.email());
             assertThat(received).hasSize(1);
             OutgoingEmail email = received.getFirst();
-            assertThat(email.subject()).isEqualTo("Ya está hecho el sorteo de «Navidad»");
+            assertThat(email.subject()).isEqualTo(subjects.get(member));
             assertThat(email.text()).contains("/groups/" + family.groupId());
+            assertThat(email.text()).contains(messages.get(member));
             for (String name : family.idsByName().keySet()) {
                 assertThat(email.subject()).doesNotContain(name);
                 assertThat(email.text()).doesNotContain(name);
@@ -524,10 +538,24 @@ class DrawIT {
                 .exchange();
     }
 
+    /** From now on the User reads SecretMatch, and gets its emails, in this Language. */
+    private void speaks(User user, String language) {
+        http.put()
+                .uri("/api/v1/users/me/language")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("language", language))
+                .exchange()
+                .expectStatus()
+                .isOk();
+    }
+
     /** Signs up, verifies and signs in a new User. */
     private User signedInUser(String displayName) {
         String email = "user-" + UUID.randomUUID() + "@example.com";
-        anonymousPost("/api/v1/sign-ups", Map.of("email", email, "displayName", displayName, "password", PASSWORD))
+        anonymousPost(
+                        "/api/v1/sign-ups",
+                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", "es"))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(email).getLast().text());

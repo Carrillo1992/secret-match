@@ -1,4 +1,5 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
+import { editableEuros } from '../../../shared/format/euros';
 import { Wish, WishInput, WishPriority } from './wishlist-api';
 
 /**
@@ -16,9 +17,9 @@ const PRICE = /^\d{1,6}([.,]\d{1,2})?$/;
 const HTTP_LINK = /^https?:\/\/[^\s/?#]+\S*$/i;
 
 export const PRIORITY_LABELS: Readonly<Record<WishPriority, string>> = {
-  HIGH: 'Alta',
-  MEDIUM: 'Media',
-  LOW: 'Baja',
+  HIGH: $localize`Alta`,
+  MEDIUM: $localize`Media`,
+  LOW: $localize`Baja`,
 };
 
 /** Only http and https addresses: a `javascript:` link must never reach an `href`. */
@@ -68,12 +69,8 @@ export function wishFormValue(wish?: Wish): WishFormValue {
   return {
     title: wish?.title ?? '',
     link: wish?.link ?? '',
-    price: wish?.price === undefined ? '' : priceText(wish.price),
+    price: wish?.price === undefined ? '' : editableEuros(wish.price),
     notes: wish?.notes ?? '',
     priority: wish?.priority ?? 'MEDIUM',
   };
-}
-
-function priceText(price: number): string {
-  return Number.isInteger(price) ? String(price) : price.toFixed(2).replace('.', ',');
 }

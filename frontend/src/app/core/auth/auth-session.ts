@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { Api } from '../api/generated/api';
 import { refresh, signIn, signInWithGoogle, signOut } from '../api/generated/functions';
 import { problemCode } from '../api/problem';
+import { currentLanguage } from '../language';
 
 export type SignInOutcome = 'signed-in' | 'invalid-credentials' | 'email-not-verified' | 'failed';
 
@@ -36,11 +37,13 @@ export class AuthSession {
 
   /**
    * Opens a session with the ID token Google Identity Services gave the SPA. A new email gets a User;
-   * an existing one is linked to the Google account.
+   * an existing one is linked to the Google account. A new User gets the current Language.
    */
   async signInWithGoogle(idToken: string): Promise<GoogleSignInOutcome> {
     try {
-      const { accessToken } = await this.api.invoke(signInWithGoogle, { body: { idToken } });
+      const { accessToken } = await this.api.invoke(signInWithGoogle, {
+        body: { idToken, language: currentLanguage() },
+      });
       this.token.set(accessToken);
       return 'signed-in';
     } catch (error) {

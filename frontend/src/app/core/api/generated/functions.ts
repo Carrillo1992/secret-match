@@ -77,5 +77,7 @@ export type { DeleteAccount$Params as DeleteAccount$Params } from './fn/profile/
 export { deleteAccount as deleteAccount } from './fn/profile/delete-account';
 export type { ChangeDisplayName$Params as ChangeDisplayName$Params } from './fn/profile/change-display-name';
 export { changeDisplayName as changeDisplayName } from './fn/profile/change-display-name';
+export type { ChangeLanguage$Params as ChangeLanguage$Params } from './fn/profile/change-language';
+export { changeLanguage as changeLanguage } from './fn/profile/change-language';
 export type { ChangePassword$Params as ChangePassword$Params } from './fn/profile/change-password';
 export { changePassword as changePassword } from './fn/profile/change-password';

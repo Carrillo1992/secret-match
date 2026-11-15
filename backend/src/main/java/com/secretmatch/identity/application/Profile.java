@@ -9,6 +9,8 @@ import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
 import com.secretmatch.identity.domain.WrongPasswordException;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
+import com.secretmatch.shared.domain.Language;
 import java.time.Clock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -54,6 +56,21 @@ public class Profile {
     }
 
     /**
+     * Shows SecretMatch to the User, and writes them, in a new Language from now on.
+     *
+     * @throws com.secretmatch.shared.domain.UnsupportedLanguageException if the Language is not supported
+     * @throws SessionExpiredException if that User no longer exists
+     */
+    @Transactional
+    public CurrentUser changeLanguage(UserId id, ChangeLanguageCommand command) {
+        Language language = Language.ofCode(command.language());
+        User user = existing(id);
+        user.changeLanguage(language);
+        users.save(user);
+        return CurrentUser.of(user);
+    }
+
+    /**
      * Changes the User's password, or sets their first one if they have none (a User who only signs in with
      * Google). Every other Session of the User ends, so a device signed in with the old password, or without
      * one, must sign in again; the Session the change was made from stays.
@@ -92,11 +109,22 @@ public class Profile {
     /** "Your account was deleted", to the User who deleted it: sent once it is done, so they know it worked. */
     private void emailAccountDeleted(User user) {
         events.publishEvent(
-                new EmailRequested(user.email().value(), "Hemos borrado tu cuenta de SecretMatch", """
-                Hemos borrado tu cuenta de SecretMatch, como pediste. Has salido de todos tus grupos, y los que \
-                administrabas se han borrado.
+                new EmailRequested(user.email().value(), user.language(), accountDeletedText(user.language()), "/"));
+    }
 
-                Si algún día quieres volver, puedes crear una cuenta nueva.""", "/"));
+    private static EmailText accountDeletedText(Language language) {
+        return switch (language) {
+            case SPANISH -> new EmailText("Hemos borrado tu cuenta de SecretMatch", """
+                        Hemos borrado tu cuenta de SecretMatch, como pediste. Has salido de todos tus grupos, y \
+                        los que administrabas se han borrado.
+
+                        Si algún día quieres volver, puedes crear una cuenta nueva.""");
+            case ENGLISH -> new EmailText("We have deleted your SecretMatch account", """
+                        We have deleted your SecretMatch account, as you asked. You have left all your Groups, \
+                        and the ones you were the Admin of have been deleted.
+
+                        If you ever want to come back, you can create a new account.""");
+        };
     }
 
     private User existing(UserId id) {

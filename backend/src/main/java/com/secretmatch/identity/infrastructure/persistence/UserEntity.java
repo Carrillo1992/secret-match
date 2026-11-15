@@ -6,6 +6,7 @@ import com.secretmatch.identity.domain.GoogleSubject;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
+import com.secretmatch.shared.domain.Language;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -36,6 +37,9 @@ class UserEntity {
     @Column(name = "google_subject", unique = true)
     private String googleSubject;
 
+    @Column(nullable = false)
+    private String language;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -48,6 +52,7 @@ class UserEntity {
         entity.displayName = user.displayName().value();
         entity.passwordHash = user.passwordHash().map(PasswordHash::value).orElse(null);
         entity.googleSubject = user.googleSubject().map(GoogleSubject::value).orElse(null);
+        entity.language = user.language().code();
         entity.createdAt = user.createdAt();
         return entity;
     }
@@ -59,6 +64,7 @@ class UserEntity {
                 new DisplayName(displayName),
                 passwordHash == null ? null : new PasswordHash(passwordHash),
                 googleSubject == null ? null : new GoogleSubject(googleSubject),
+                Language.ofCode(language),
                 createdAt);
     }
 }

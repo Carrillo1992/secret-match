@@ -72,7 +72,8 @@ class EmailSignUpIT {
 
         OutgoingEmail sent = onlyEmailTo(email);
         assertThat(sent.subject()).isEqualTo("Confirma tu correo en SecretMatch");
-        assertThat(sent.text()).contains("24 horas");
+        assertThat(sent.text()).contains("Caduca en 24 horas y solo se puede usar una vez.");
+        assertThat(sent.html()).contains("<html lang=\"es\">");
         assertThat(sent.subject() + sent.text())
                 .as("the sender chose the display name, so the email does not repeat it")
                 .doesNotContain("Abuela Carmen");
@@ -84,6 +85,22 @@ class EmailSignUpIT {
 
         assertThat(new BCryptPasswordEncoder().matches(PASSWORD, userPasswordHash(email)))
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("a sign-up in English gets the Verification email in English, whose link works the same")
+    void verificationEmailInEnglish() {
+        signUp(email, "Abuela Carmen", PASSWORD, "en").expectStatus().isAccepted();
+
+        OutgoingEmail sent = onlyEmailTo(email);
+        assertThat(sent.subject()).isEqualTo("Confirm your email on SecretMatch");
+        assertThat(sent.text())
+                .contains("It expires in 24 hours and can only be used once.")
+                .contains("Open SecretMatch: ")
+                .doesNotContain("horas", "Abrir");
+        assertThat(sent.html()).contains("<html lang=\"en\">");
+
+        verify(tokenIn(sent)).expectStatus().isNoContent();
     }
 
     @Test
@@ -238,6 +255,30 @@ class EmailSignUpIT {
     }
 
     @Test
+    @DisplayName("the User a sign-up creates has the Language the sign-up was made in")
+    void signUpKeepsItsLanguage() {
+        signUp(email, "Ana", PASSWORD, "en").expectStatus().isAccepted();
+        verify(tokenIn(onlyEmailTo(email))).expectStatus().isNoContent();
+
+        assertThat(languageOfUser(email, PASSWORD)).isEqualTo("en");
+    }
+
+    @Test
+    @DisplayName("a sign-up in an unsupported Language, or in none, is refused with a 400 problem")
+    void unsupportedLanguageIsRefused() {
+        signUp(email, "Ana", PASSWORD, "fr")
+                .expectStatus()
+                .isBadRequest()
+                .expectHeader()
+                .contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON);
+        post("/api/v1/sign-ups", Map.of("email", email, "displayName", "Ana", "password", PASSWORD))
+                .expectStatus()
+                .isBadRequest();
+
+        assertThat(mail.sent()).isEmpty();
+    }
+
+    @Test
     @DisplayName("lets the SPA origin post a sign-up")
     void letsSpaOriginPostSignUp() {
         http.options()
@@ -253,7 +294,31 @@ class EmailSignUpIT {
     }
 
     private RestTestClient.ResponseSpec signUp(String address, String displayName, String password) {
-        return post("/api/v1/sign-ups", Map.of("email", address, "displayName", displayName, "password", password));
+        return signUp(address, displayName, password, "es");
+    }
+
+    private RestTestClient.ResponseSpec signUp(String address, String displayName, String password, String language) {
+        return post(
+                "/api/v1/sign-ups",
+                Map.of("email", address, "displayName", displayName, "password", password, "language", language));
+    }
+
+    /** The Language the User reads back once signed in, as {@code GET /users/me} gives it. */
+    private String languageOfUser(String address, String password) {
+        String accessToken = JSON.readTree(
+                        body(post("/api/v1/sessions", Map.of("email", address, "password", password))))
+                .get("accessToken")
+                .asString();
+        String me = http.get()
+                .uri("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(String.class)
+                .returnResult()
+                .getResponseBody();
+        return JSON.readTree(me).get("language").asString();
     }
 
     private RestTestClient.ResponseSpec verify(String token) {

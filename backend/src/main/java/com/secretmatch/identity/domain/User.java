@@ -1,5 +1,6 @@
 package com.secretmatch.identity.domain;
 
+import com.secretmatch.shared.domain.Language;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,6 +17,7 @@ public final class User {
     private DisplayName displayName;
     private PasswordHash passwordHash;
     private GoogleSubject googleSubject;
+    private Language language;
     private final Instant createdAt;
 
     /**
@@ -28,18 +30,26 @@ public final class User {
             DisplayName displayName,
             PasswordHash passwordHash,
             GoogleSubject googleSubject,
+            Language language,
             Instant createdAt) {
         this.id = Objects.requireNonNull(id, "id");
         this.email = Objects.requireNonNull(email, "email");
         this.displayName = Objects.requireNonNull(displayName, "displayName");
+        this.language = Objects.requireNonNull(language, "language");
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.passwordHash = passwordHash;
         this.googleSubject = googleSubject;
     }
 
     static User withPassword(
-            UserId id, EmailAddress email, DisplayName displayName, PasswordHash passwordHash, Instant now) {
-        return new User(id, email, displayName, Objects.requireNonNull(passwordHash, "passwordHash"), null, now);
+            UserId id,
+            EmailAddress email,
+            DisplayName displayName,
+            PasswordHash passwordHash,
+            Language language,
+            Instant now) {
+        return new User(
+                id, email, displayName, Objects.requireNonNull(passwordHash, "passwordHash"), null, language, now);
     }
 
     /**
@@ -47,15 +57,22 @@ public final class User {
      * to the display name limit, or by the start of their email when Google gives no name.
      *
      * @param googleName the ID token's {@code name}; may be {@code null}
+     * @param language the Language the sign-in was made in
      */
     public static User fromGoogle(
-            UserId id, EmailAddress email, String googleName, GoogleSubject googleSubject, Instant now) {
+            UserId id,
+            EmailAddress email,
+            String googleName,
+            GoogleSubject googleSubject,
+            Language language,
+            Instant now) {
         return new User(
                 id,
                 email,
                 displayNameFor(googleName, email),
                 null,
                 Objects.requireNonNull(googleSubject, "googleSubject"),
+                language,
                 now);
     }
 
@@ -76,6 +93,11 @@ public final class User {
     /** From now on, the User is shown to others by this name. */
     public void rename(DisplayName newDisplayName) {
         this.displayName = Objects.requireNonNull(newDisplayName, "newDisplayName");
+    }
+
+    /** From now on, the User reads SecretMatch and its emails in this Language. */
+    public void changeLanguage(Language newLanguage) {
+        this.language = Objects.requireNonNull(newLanguage, "newLanguage");
     }
 
     /**
@@ -119,6 +141,10 @@ public final class User {
 
     public Optional<GoogleSubject> googleSubject() {
         return Optional.ofNullable(googleSubject);
+    }
+
+    public Language language() {
+        return language;
     }
 
     public Instant createdAt() {

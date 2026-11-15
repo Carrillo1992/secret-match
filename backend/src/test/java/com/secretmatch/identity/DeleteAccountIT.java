@@ -122,6 +122,31 @@ class DeleteAccountIT {
     }
 
     @Test
+    @DisplayName("each email of an account deletion goes out in its recipient's Language")
+    void deletionEmailsInEachRecipientsLanguage() {
+        User carmen = signedInUser("Abuela Carmen", "en");
+        User luis = signedInUser("Luis", "en");
+        User marta = signedInUser("Marta", "es");
+        String groupId = createGroup(carmen, "Navidad", "2026-12-24");
+        joinGroup(luis, carmen, groupId);
+        joinGroup(marta, carmen, groupId);
+        mail.clear();
+
+        deleteAccount(carmen).expectStatus().isNoContent();
+
+        assertThat(mail.sent())
+                .extracting(OutgoingEmail::to, OutgoingEmail::subject)
+                .containsExactlyInAnyOrder(
+                        tuple(luis.email(), "The Group “Navidad” was deleted"),
+                        tuple(marta.email(), "Se ha borrado el grupo «Navidad»"),
+                        tuple(carmen.email(), "We have deleted your SecretMatch account"));
+        assertThat(mail.sentTo(carmen.email()).getFirst().text())
+                .contains("You have left all your Groups, and the ones you were the Admin of have been deleted.");
+        assertThat(mail.sentTo(luis.email()).getFirst().text())
+                .contains("Abuela Carmen, the Admin of the Group “Navidad”, deleted it along with everything in it.");
+    }
+
+    @Test
     @DisplayName("refused while in a Group with a Draw before its Exchange Date has passed; nothing changes")
     void refusedWhileInAnUnfinishedDrawnGroup() {
         Family family = drawnFamily();
@@ -278,8 +303,15 @@ class DeleteAccountIT {
 
     /** Signs up, verifies and signs in a new User. */
     private User signedInUser(String displayName) {
+        return signedInUser(displayName, "es");
+    }
+
+    /** Signs up, verifies and signs in a new User who reads SecretMatch in this Language. */
+    private User signedInUser(String displayName, String language) {
         String email = "user-" + UUID.randomUUID() + "@example.com";
-        anonymousPost("/api/v1/sign-ups", Map.of("email", email, "displayName", displayName, "password", PASSWORD))
+        anonymousPost(
+                        "/api/v1/sign-ups",
+                        Map.of("email", email, "displayName", displayName, "password", PASSWORD, "language", language))
                 .expectStatus()
                 .isAccepted();
         Matcher matcher = LINK.matcher(mail.sentTo(email).getLast().text());

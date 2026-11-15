@@ -74,10 +74,28 @@ class PasswordResetIT {
         List<OutgoingEmail> sent = mail.sentTo(email);
         assertThat(sent).hasSize(1);
         assertThat(sent.getFirst().subject()).isEqualTo("Elige una contraseña nueva en SecretMatch");
+        assertThat(sent.getFirst().text()).contains("Caduca en 1 hora y solo se puede usar una vez.");
         resetPassword(resetToken(email), NEW_PASSWORD).expectStatus().isNoContent();
 
         signIn(email, NEW_PASSWORD).expectStatus().isOk();
         expectProblem(signIn(email, PASSWORD), "invalid-credentials");
+    }
+
+    @Test
+    @DisplayName("a User whose Language is English gets the reset email in English, whose link works the same")
+    void resetEmailInEnglish() {
+        verifiedUser(email, PASSWORD, "en");
+
+        askForReset(email).expectStatus().isAccepted();
+
+        OutgoingEmail sent = mail.sentTo(email).getFirst();
+        assertThat(sent.subject()).isEqualTo("Choose a new password on SecretMatch");
+        assertThat(sent.text())
+                .contains("It expires in 1 hour and can only be used once.")
+                .contains("Open SecretMatch: ")
+                .doesNotContain("contraseña", "Abrir");
+        resetPassword(resetToken(email), NEW_PASSWORD).expectStatus().isNoContent();
+        signIn(email, NEW_PASSWORD).expectStatus().isOk();
     }
 
     @Test
@@ -166,8 +184,8 @@ class PasswordResetIT {
     @DisplayName("a User without a password (Google only) sets their first one the same way, then signs in with it")
     void userWithoutPasswordSetsTheFirstOne() {
         jdbc.update(
-                "INSERT INTO users (id, email, display_name, password_hash, google_subject, created_at)"
-                        + " VALUES (?, ?, 'Ana de Google', NULL, ?, now())",
+                "INSERT INTO users (id, email, display_name, password_hash, google_subject, language, created_at)"
+                        + " VALUES (?, ?, 'Ana de Google', NULL, ?, 'es', now())",
                 UUID.randomUUID(),
                 email,
                 "google-" + UUID.randomUUID());
@@ -199,7 +217,13 @@ class PasswordResetIT {
     // ---------- helpers ----------
 
     private void verifiedUser(String address, String password) {
-        post("/api/v1/sign-ups", Map.of("email", address, "displayName", "Ana", "password", password))
+        verifiedUser(address, password, "es");
+    }
+
+    private void verifiedUser(String address, String password, String language) {
+        post(
+                        "/api/v1/sign-ups",
+                        Map.of("email", address, "displayName", "Ana", "password", password, "language", language))
                 .expectStatus()
                 .isAccepted();
         post("/api/v1/email-verifications", Map.of("token", lastToken(address, VERIFY_LINK)))

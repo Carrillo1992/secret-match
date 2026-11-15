@@ -5,4 +5,5 @@ export interface CurrentUserResponse {
   displayName: string;
   email: string;
   hasPassword: boolean;
+  language: 'es' | 'en';
 }

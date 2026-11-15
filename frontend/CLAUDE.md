@@ -11,10 +11,21 @@ A `PreToolUse` hook (`.claude/hooks/require-design.sh`) enforces this: creating 
 ## Styling
 
 - `DESIGN.md` (repo root) is the visual language; `src/styles.css` holds its tokens in `@theme`. Style with the semantic roles (`bg-surface`, `text-ink-muted`, `bg-primary`…): the default Tailwind palette is switched off, so its class names render nothing.
-- Dark mode is automatic: the roles switch value under `prefers-color-scheme`, so templates carry no `dark:` colour variants.
-- A new token goes into `@theme` (with its dark value) and into `DESIGN.md` in the same change.
+- Dark mode is automatic: the roles switch value under `prefers-color-scheme`, or under `data-theme` on `<html>` when the Theme is forced from the Preferences menu (ADR 0005), so templates carry no `dark:` colour variants. Dark values are written once, inside `@variant dark` in `styles.css`.
+- A new token goes into `@theme`, its dark value into the `@variant dark` block, and both into `DESIGN.md` in the same change.
 - Icons: `@lucide/angular`, one standalone import per icon (`LucideGift` → `<svg lucideGift>`).
 
-## Gotcha
+## Copy in two Languages
 
-`@lucide/angular` is one ~11 MB module. The first import in a test run takes several seconds, so a spec that lazy-loads routes preloads it in `beforeAll` (see `src/app/app.spec.ts`).
+The Spanish copy in the templates is the source; English is `src/locale/messages.en.json`, loaded at runtime before bootstrap (ADR 0005, `main.ts`). To add or change copy:
+
+- Mark it: `i18n` on the element, `i18n-<attr>` for an attribute or input (`i18n-aria-label`, `i18n-label`), `` $localize`…` `` in TypeScript.
+- Run `npm run extract-i18n` (rewrites `src/locale/messages.json`), then add the English entry under the same id in `messages.en.json`, using the `GLOSSARY.md` terms. Changing a Spanish message changes its id, so its English entry has to move too. `src/locale/translations.spec.ts` fails while any message has no English, and CI fails when `messages.json` is stale.
+- Plurals and values go in ICU messages (`{count, plural, =1 {…} other {…}}`) and `$localize` placeholders (`${name}:name:`), never by concatenating strings. A `cond ? 'a' : 'b'` of copy becomes `@if` with an `<ng-container i18n>` per branch; an `aria-label` built from data comes from a component method that returns `$localize`.
+- Dates and numbers go through `intlLocale()` (`core/language.ts`), never a hard-coded locale.
+- Specs run in Spanish (`test-setup.ts`). An English spec (`*.en.spec.ts`, one per feature at least) imports `src/testing/english.ts` first, imports the component dynamically in a `beforeAll` (module-level `$localize` is translated as its module loads), and asserts `spanishLeftIn(page)` is empty. Spec files run isolated (`"isolate": true` in `angular.json`) so the English copy stays in its file.
+
+## Gotchas
+
+- The Preferences menu button sits in both layouts' headers, so a page spec that looks for "the first `button`" finds it. Query inside `main`, where the page's own content is.
+- `@lucide/angular` is one ~11 MB module. The first import in a test run takes several seconds, so a spec that lazy-loads routes preloads it in `beforeAll` (see `src/app/app.spec.ts`).

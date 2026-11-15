@@ -3,6 +3,7 @@ package com.secretmatch.identity.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,6 +20,7 @@ class SignUpVerificationTest {
             new EmailAddress("ana@example.com"),
             new com.secretmatch.identity.domain.DisplayName("Ana"),
             new PasswordHash("$2a$10$ana"),
+            Language.ENGLISH,
             token,
             STARTED);
 
@@ -30,6 +32,7 @@ class SignUpVerificationTest {
         assertThat(user.email().value()).isEqualTo("ana@example.com");
         assertThat(user.displayName().value()).isEqualTo("Ana");
         assertThat(user.passwordHash()).contains(new PasswordHash("$2a$10$ana"));
+        assertThat(user.language()).isEqualTo(Language.ENGLISH);
         assertThat(user.createdAt()).isEqualTo(STARTED.plusSeconds(60));
     }
 

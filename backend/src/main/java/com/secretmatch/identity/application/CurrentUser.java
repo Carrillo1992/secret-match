@@ -1,18 +1,20 @@
 package com.secretmatch.identity.application;
 
 import com.secretmatch.identity.domain.User;
+import com.secretmatch.shared.domain.Language;
 
 /**
  * What the signed-in User may read about themselves. {@code hasPassword} is false for a User who only signs
  * in with Google, so they set a first password instead of changing one.
  */
-public record CurrentUser(String email, String displayName, boolean hasPassword) {
+public record CurrentUser(String email, String displayName, boolean hasPassword, Language language) {
 
     static CurrentUser of(User user) {
         return new CurrentUser(
                 user.email().value(),
                 user.displayName().value(),
-                user.passwordHash().isPresent());
+                user.passwordHash().isPresent(),
+                user.language());
     }
 
     @Override

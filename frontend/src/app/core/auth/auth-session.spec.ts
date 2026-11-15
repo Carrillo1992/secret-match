@@ -41,7 +41,10 @@ describe('AuthSession', () => {
     client = TestBed.inject(HttpClient);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    vi.restoreAllMocks();
+  });
 
   const signedIn = async (accessToken = 'access-1') => {
     const done = session.signIn('ana@example.com', 'turrón-y-polvorones');
@@ -91,12 +94,13 @@ describe('AuthSession', () => {
   describe('signing in with Google', () => {
     const GOOGLE_URL = `${API}/sessions/google`;
 
-    it('posts the Google ID token with the cookie allowed, and keeps the access token', async () => {
+    it('posts the Google ID token and the browser Language with the cookie allowed, and keeps the access token', async () => {
+      vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-GB']);
       const done = session.signInWithGoogle('google-id-token');
 
       const request = http.expectOne(GOOGLE_URL);
       expect(request.request.method).toBe('POST');
-      expect(request.request.body).toEqual({ idToken: 'google-id-token' });
+      expect(request.request.body).toEqual({ idToken: 'google-id-token', language: 'en' });
       expect(request.request.withCredentials).toBe(true);
       expect(request.request.headers.has('Authorization')).toBe(false);
       request.flush(tokenResponse('access-g'));

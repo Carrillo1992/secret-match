@@ -9,6 +9,8 @@ import com.secretmatch.identity.domain.ResetLinkInvalidException;
 import com.secretmatch.identity.domain.User;
 import com.secretmatch.identity.domain.UserId;
 import com.secretmatch.notification.application.EmailRequested;
+import com.secretmatch.notification.application.EmailText;
+import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,8 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class PasswordResetting {
-
-    static final String SUBJECT = "Elige una contraseña nueva en SecretMatch";
 
     private final Users users;
     private final PasswordResets resets;
@@ -86,15 +86,34 @@ public class PasswordResetting {
     private void issueLinkTo(User user) {
         EmailLinkToken token = EmailLinkToken.generate(random);
         resets.save(PasswordReset.start(user.id(), token, clock.instant()));
-        events.publishEvent(new EmailRequested(
+        events.publishEvent(resetEmail(user, token));
+    }
+
+    /** The reset email, in the User's Language. */
+    private static EmailRequested resetEmail(User user, EmailLinkToken token) {
+        return new EmailRequested(
                 user.email().value(),
-                SUBJECT,
-                """
-                Hola:
+                user.language(),
+                resetText(user.language(), PasswordReset.VALIDITY.toHours()),
+                "/reset-password?token=" + token.value());
+    }
 
-                Alguien ha pedido elegir una contraseña nueva para tu cuenta de SecretMatch. Si has sido tú, elígela con el enlace de abajo. Caduca en %d hora y solo se puede usar una vez.
+    private static EmailText resetText(Language language, long hours) {
+        return switch (language) {
+            case SPANISH -> new EmailText("Elige una contraseña nueva en SecretMatch", """
+                        Hola:
 
-                Si no has sido tú, ignora este mensaje: tu contraseña no cambiará.""".formatted(PasswordReset.VALIDITY.toHours()),
-                "/reset-password?token=" + token.value()));
+                        Alguien ha pedido elegir una contraseña nueva para tu cuenta de SecretMatch. Si has sido tú, \
+                        elígela con el enlace de abajo. Caduca en %d hora y solo se puede usar una vez.
+
+                        Si no has sido tú, ignora este mensaje: tu contraseña no cambiará.""".formatted(hours));
+            case ENGLISH -> new EmailText("Choose a new password on SecretMatch", """
+                        Hello,
+
+                        Someone asked to choose a new password for your SecretMatch account. If it was you, choose it \
+                        with the link below. It expires in %d hour and can only be used once.
+
+                        If this wasn't you, ignore this message: your password will not change.""".formatted(hours));
+        };
     }
 }

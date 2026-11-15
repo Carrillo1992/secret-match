@@ -28,9 +28,13 @@ describe('SignUpApi', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    vi.restoreAllMocks();
+  });
 
-  it('posts the sign-up details', async () => {
+  it('posts the sign-up details in the browser Language when none was chosen', async () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['fr-FR', 'es-ES']);
     const done = signUpApi.signUp({
       email: 'ana@example.com',
       displayName: 'Ana',
@@ -43,10 +47,22 @@ describe('SignUpApi', () => {
       email: 'ana@example.com',
       displayName: 'Ana',
       password: 'secreto123',
+      language: 'es',
     });
     request.flush({ signUpId: 'id-1' }, { status: 202, statusText: 'Accepted' });
 
     await expect(done).resolves.toEqual({ status: 'accepted', signUpId: 'id-1' });
+  });
+
+  it('posts the Language chosen on this device over the browser one', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['es-ES']);
+    localStorage.setItem('secretmatch.language', 'en');
+    void signUpApi.signUp({ email: 'ana@example.com', displayName: 'Ana', password: 'secreto123' });
+
+    const request = http.expectOne(`${API}/sign-ups`);
+    expect(request.request.body).toEqual(expect.objectContaining({ language: 'en' }));
+    request.flush({ signUpId: 'id-1' }, { status: 202, statusText: 'Accepted' });
+    localStorage.clear();
   });
 
   it('reports invalid details when the API answers 400', async () => {

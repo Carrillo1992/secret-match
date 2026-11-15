@@ -55,6 +55,7 @@ class JpaUsers implements Users {
                         user.displayName().value(),
                         user.passwordHash().map(PasswordHash::value).orElse(null),
                         user.googleSubject().map(GoogleSubject::value).orElse(null),
+                        user.language().code(),
                         user.createdAt())
                 == 1;
     }

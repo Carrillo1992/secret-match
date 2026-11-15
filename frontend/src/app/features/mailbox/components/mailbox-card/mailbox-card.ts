@@ -37,21 +37,27 @@ const LOADING: ThreadState = { status: 'loading' };
           >
             <svg lucideMail [size]="20"></svg>
           </div>
-          <h2 id="group-mailbox" class="font-display text-lg font-semibold">Buzón</h2>
+          <h2 id="group-mailbox" class="font-display text-lg font-semibold" i18n>Buzón</h2>
         </div>
 
         @if (mailboxes().status === 'failed') {
-          <p appAlert class="mt-4">No hemos podido cargar el buzón. Inténtalo de nuevo.</p>
+          <p appAlert class="mt-4" i18n>No hemos podido cargar el buzón. Inténtalo de nuevo.</p>
           <button
             type="button"
             appButton="secondary"
             class="mt-4 w-full"
             (click)="retryMailboxes.emit()"
+            i18n
           >
             Reintentar
           </button>
         } @else {
-          <div role="tablist" aria-label="Buzones" class="mt-4 flex gap-1 border-b border-line">
+          <div
+            role="tablist"
+            aria-label="Buzones"
+            i18n-aria-label
+            class="mt-4 flex gap-1 border-b border-line"
+          >
             @for (mailbox of list(); track mailbox.id; let index = $index) {
               <button
                 type="button"
@@ -83,11 +89,11 @@ const LOADING: ThreadState = { status: 'loading' };
               class="mt-4"
             >
               <p class="mb-3 text-sm text-ink-muted">
-                {{
-                  mailbox.side === 'GIVER'
-                    ? 'Le regalas tú. No sabrá quién eres.'
-                    : 'Quien te regala. Nunca sabrás quién es.'
-                }}
+                @if (mailbox.side === 'GIVER') {
+                  <ng-container i18n>Le regalas tú. No sabrá quién eres.</ng-container>
+                } @else {
+                  <ng-container i18n>Quien te regala. Nunca sabrás quién es.</ng-container>
+                }
               </p>
               <app-mailbox-thread
                 [state]="thread(mailbox)"
@@ -98,12 +104,12 @@ const LOADING: ThreadState = { status: 'loading' };
               />
               @if (finished()) {
                 @if (sends()[mailbox.id] === 'finished') {
-                  <p role="status" class="mt-4 text-sm text-ink-muted">
+                  <p role="status" class="mt-4 text-sm text-ink-muted" i18n>
                     No se ha enviado: el grupo acaba de finalizar y ya solo se pueden leer los
                     mensajes.
                   </p>
                 } @else {
-                  <p class="mt-4 text-sm text-ink-muted">
+                  <p class="mt-4 text-sm text-ink-muted" i18n>
                     El grupo ha finalizado: ya solo se pueden leer los mensajes.
                   </p>
                 }
@@ -158,11 +164,11 @@ export class MailboxCard {
    */
   protected title(mailbox: Mailbox): string {
     if (mailbox.side === 'RECEIVER') {
-      return 'Tu Giver';
+      return $localize`Tu Giver`;
     }
     return this.receiverRevealed() && mailbox.receiverDisplayName
-      ? `Con ${mailbox.receiverDisplayName}`
-      : 'Tu Receiver';
+      ? $localize`Con ${mailbox.receiverDisplayName}:name:`
+      : $localize`Tu Receiver`;
   }
 
   protected thread(mailbox: Mailbox): ThreadState {

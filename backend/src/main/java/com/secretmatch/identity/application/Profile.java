@@ -17,8 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * The signed-in User manages their Profile: the display name others see and their password, and can delete their
- * account.
+ * The signed-in User reads and manages their Profile: the display name others see and their password, and can delete
+ * their account.
  */
 @Service
 public class Profile {
@@ -40,6 +40,16 @@ public class Profile {
         this.passwordHasher = passwordHasher;
         this.clock = clock;
         this.events = events;
+    }
+
+    /**
+     * The User an access token was issued to.
+     *
+     * @throws SessionExpiredException if that User no longer exists
+     */
+    @Transactional(readOnly = true)
+    public CurrentUser currentUser(UserId id) {
+        return CurrentUser.of(existing(id));
     }
 
     /**

@@ -7,7 +7,7 @@ import java.util.HexFormat;
 import java.util.regex.Pattern;
 
 /**
- * The SHA-256 of a secret token (an {@link EmailLinkToken} or a {@link RefreshTokenValue}), as 64
+ * The SHA-256 of a {@link SecretToken} (an {@link EmailLinkToken} or a {@link RefreshTokenValue}), as 64
  * lower-case hex digits: what is stored and looked up, so a leaked table cannot be turned into working
  * tokens.
  */

@@ -4,7 +4,6 @@ import com.secretmatch.identity.domain.EmailAddress;
 import com.secretmatch.identity.domain.EmailNotVerifiedException;
 import com.secretmatch.identity.domain.GoogleSignInRejectedException;
 import com.secretmatch.identity.domain.InvalidCredentialsException;
-import com.secretmatch.identity.domain.InvalidUserDetailsException;
 import com.secretmatch.identity.domain.NewPassword;
 import com.secretmatch.identity.domain.PasswordHash;
 import com.secretmatch.identity.domain.RefreshToken;
@@ -71,7 +70,7 @@ public class Sessions {
      */
     @Transactional
     public SignedIn signIn(SignInCommand command) {
-        Optional<EmailAddress> email = emailIn(command);
+        Optional<EmailAddress> email = command.emailAddress();
         Optional<User> user = email.flatMap(users::findByEmail);
         if (user.isPresent()) {
             Optional<PasswordHash> hash = user.get().passwordHash();
@@ -152,17 +151,6 @@ public class Sessions {
                 .ifPresent(token -> refreshTokens.revokeSession(token.sessionId(), clock.instant()));
     }
 
-    /**
-     * The User an access token was issued to.
-     *
-     * @throws SessionExpiredException if that User no longer exists
-     */
-    @Transactional(readOnly = true)
-    public CurrentUser currentUser(UserId id) {
-        User user = users.findById(id).orElseThrow(SessionExpiredException::new);
-        return CurrentUser.of(user);
-    }
-
     /** Creates the User, or takes the one created a moment ago with the same email by another sign-in. */
     private User newGoogleUser(GoogleIdentity google, Language language) {
         User user = User.fromGoogle(
@@ -191,14 +179,5 @@ public class Sessions {
         return cookieValue == null || cookieValue.isBlank()
                 ? Optional.empty()
                 : Optional.of(RefreshTokenValue.of(cookieValue));
-    }
-
-    /** A malformed email cannot have a User; it is refused like any unknown one. */
-    private static Optional<EmailAddress> emailIn(SignInCommand command) {
-        try {
-            return Optional.of(new EmailAddress(command.email()));
-        } catch (InvalidUserDetailsException e) {
-            return Optional.empty();
-        }
     }
 }

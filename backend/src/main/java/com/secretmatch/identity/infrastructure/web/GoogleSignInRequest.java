@@ -12,7 +12,9 @@ import jakarta.validation.constraints.Pattern;
 record GoogleSignInRequest(
         @NotBlank String idToken,
 
-        @NotNull @Pattern(regexp = LanguageRequest.CODES) @Schema(allowableValues = {"es", "en"})
+        @NotNull
+        @Pattern(regexp = LanguageRequest.CODES)
+        @Schema(allowableValues = {LanguageRequest.ES, LanguageRequest.EN})
         String language) {
 
     @Override

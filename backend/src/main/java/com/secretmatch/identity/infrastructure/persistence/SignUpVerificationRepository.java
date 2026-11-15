@@ -1,7 +1,6 @@
 package com.secretmatch.identity.infrastructure.persistence;
 
 import jakarta.persistence.LockModeType;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,5 +18,5 @@ interface SignUpVerificationRepository extends JpaRepository<SignUpVerificationE
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<SignUpVerificationEntity> findLockedByTokenHash(String tokenHash);
 
-    List<SignUpVerificationEntity> findByEmailAndUsedAtIsNull(String email);
+    Optional<SignUpVerificationEntity> findFirstByEmailAndUsedAtIsNullOrderByCreatedAtDesc(String email);
 }

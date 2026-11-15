@@ -78,6 +78,16 @@ class SignUpVerificationTest {
     }
 
     @Test
+    @DisplayName("a sign-up stays as old as when it was made, whatever new link it gets")
+    void newLinkKeepsWhenTheSignUpWasMade() {
+        assertThat(signUp.createdAt()).isEqualTo(STARTED);
+
+        signUp.reissue(EmailLinkToken.generate(RANDOM), STARTED.plus(Duration.ofHours(30)));
+
+        assertThat(signUp.createdAt()).isEqualTo(STARTED);
+    }
+
+    @Test
     @DisplayName("a used sign-up cannot get a new link")
     void usedSignUpCannotBeReissued() {
         signUp.verify(STARTED.plusSeconds(60));

@@ -57,7 +57,7 @@ public class Profile {
     /**
      * Shows SecretMatch to the User, and writes them, in a new Language from now on.
      *
-     * @throws com.secretmatch.identity.domain.InvalidUserDetailsException if the Language is not supported
+     * @throws com.secretmatch.shared.domain.UnsupportedLanguageException if the Language is not supported
      * @throws SessionExpiredException if that User no longer exists
      */
     @Transactional

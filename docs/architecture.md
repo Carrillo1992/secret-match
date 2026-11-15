@@ -143,7 +143,8 @@ frontend/src/app
         └── data-access/  # API client + types + feature state (signals)
 ```
 
-- **Runtime config**: the SPA reads `/config.json` (`apiBaseUrl`) before bootstrapping, so one build works against any API origin. `public/config.json` serves `ng serve`; the Docker image rewrites it from `API_BASE_URL` at container start; a static host writes it in its build step.
+- **Runtime config**: the SPA reads `/config.json` (`apiBaseUrl`) before bootstrapping, so one build works against any API origin. `public/config.json` serves `ng serve`; the Docker image rewrites it from `API_BASE_URL` at container start; a static host writes it in its build step. The service worker never caches it; the SPA remembers the last one it read and uses it only when the network cannot be reached, so the installed app starts offline.
+- **Installable app (PWA)**: production builds ship a manifest and Angular's service worker, which caches the app shell and bundles only: never API responses (private to one User) nor `config.json`. `core/updates/AppUpdates` moves the app to a new deploy on the next navigation. Details in `frontend/CLAUDE.md`.
 - Routes are lazy-loaded per feature.
 - An HTTP interceptor attaches the JWT. Route guards protect authenticated and admin-only pages.
 - The session lives in `core/auth` (`AuthSession`): the access token stays in a signal in memory. After a reload the guard restores it with one silent refresh. On a `401` the interceptor refreshes once and retries the request, and if that fails it sends the User to `/sign-in`. Concurrent refreshes share one request, because the API treats a second refresh with an already rotated cookie as a reuse.

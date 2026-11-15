@@ -34,6 +34,18 @@
     <link rel="icon" href="favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <!--
+      The installable app (#117). The browser bar takes the page's canvas colour, per colour scheme;
+      the manifest's theme_color (the primary) is what launchers and splash screens use. These
+      colours copy the canvas and primary tokens (DESIGN.md, styles.css): change them together.
+    -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbf3e9" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#22160f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="SecretMatch" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <script>
       // A forced Theme (ADR 0005) goes on <html> before the first paint, so it never flashes the
       // other one. Same key as ThemePreference (core/preferences). No storage: the OS decides.

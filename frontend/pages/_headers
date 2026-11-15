@@ -5,7 +5,9 @@
 # later rule detaches Cache-Control ("! Cache-Control") before setting its own.
 
 # Everything is revalidated on each load (the SPA shell: / and every client-side route Pages
-# answers with index.html), so a deploy is picked up at once.
+# answers with index.html), so a deploy is picked up at once. That includes the service worker's
+# files (app-sw.js, ngsw-worker.js, ngsw.json) and manifest.webmanifest: a stale ngsw.json would keep
+# installed apps on the old build.
 /*
   Cache-Control: no-cache
   X-Content-Type-Options: nosniff

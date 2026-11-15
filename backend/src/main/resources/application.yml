@@ -1,9 +1,15 @@
 # Shared by every profile. Every secret and URL comes from an environment variable;
 # see .env.example at the repo root for the full list.
+server:
+  # Heroku assigns the port in $PORT and stops a web dyno that has not bound to it within 60 s.
+  port: ${PORT:8080}
+
 spring:
   application:
     name: secret-match-api
   datasource:
+    # A JDBC URL. In prod it may also be Heroku's postgres://user:password@host:port/db, which
+    # HerokuDatabaseUrl turns into these three properties at startup (#108).
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}

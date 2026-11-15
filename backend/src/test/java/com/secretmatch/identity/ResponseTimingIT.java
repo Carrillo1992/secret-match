@@ -31,6 +31,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.client.RestTestClient;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Ticket #96: how long an answer takes must not tell whether an email has a User. Emails go out off the
@@ -140,7 +141,30 @@ class ResponseTimingIT {
                 .isEqualTo("urn:secretmatch:problem:email-not-verified");
     }
 
+    @Test
+    @DisplayName("a new link for an older sign-up does not make it the newest one")
+    void newLinkDoesNotMakeASignUpNewer() {
+        String older = signUpIdIn(signUpLater(email, "first-guess-password"));
+        signUpLater(email, PASSWORD);
+        clock.advance(Duration.ofMinutes(1));
+        post("/api/v1/sign-ups/" + older + "/verification-emails", Map.of())
+                .expectStatus()
+                .isAccepted();
+
+        signIn(email, PASSWORD)
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody()
+                .jsonPath("$.type")
+                .isEqualTo("urn:secretmatch:problem:email-not-verified");
+    }
+
     // ---------- helpers ----------
+
+    private static String signUpIdIn(RestTestClient.ResponseSpec response) {
+        String body = response.expectBody(String.class).returnResult().getResponseBody();
+        return JsonMapper.builder().build().readTree(body).get("signUpId").asString();
+    }
 
     private int checksToSignIn(String address, String password) {
         int before = passwordChecks.count();
@@ -166,9 +190,9 @@ class ResponseTimingIT {
     }
 
     /** Signs up a minute after the previous sign-up, so each one is newer than the last. */
-    private void signUpLater(String address, String password) {
+    private RestTestClient.ResponseSpec signUpLater(String address, String password) {
         clock.advance(Duration.ofMinutes(1));
-        signUp(address, password).expectStatus().isAccepted();
+        return signUp(address, password).expectStatus().isAccepted();
     }
 
     private RestTestClient.ResponseSpec signUp(String address, String password) {

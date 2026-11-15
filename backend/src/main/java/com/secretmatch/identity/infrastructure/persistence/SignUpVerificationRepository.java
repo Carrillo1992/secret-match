@@ -18,6 +18,5 @@ interface SignUpVerificationRepository extends JpaRepository<SignUpVerificationE
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<SignUpVerificationEntity> findLockedByTokenHash(String tokenHash);
 
-    /** Every link is valid for the same time, so the latest expiry is the link sent last. */
-    Optional<SignUpVerificationEntity> findFirstByEmailAndUsedAtIsNullOrderByExpiresAtDesc(String email);
+    Optional<SignUpVerificationEntity> findFirstByEmailAndUsedAtIsNullOrderByCreatedAtDesc(String email);
 }

@@ -17,8 +17,8 @@ public interface SignUpVerifications {
     Optional<SignUpVerification> findByTokenHash(TokenHash tokenHash);
 
     /**
-     * Of the sign-ups for this email whose link was never opened, the one whose link was sent last, without
-     * locking it.
+     * Of the sign-ups for this email whose link was never opened, the one made last, without locking it. A new
+     * link does not make a sign-up newer.
      */
     Optional<SignUpVerification> findNewestWaitingFor(EmailAddress email);
 

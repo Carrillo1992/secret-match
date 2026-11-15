@@ -33,6 +33,9 @@ class SignUpVerificationEntity {
     @Column(nullable = false)
     private String language;
 
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
     @Column(name = "token_hash", nullable = false, unique = true)
     private String tokenHash;
 
@@ -51,6 +54,7 @@ class SignUpVerificationEntity {
         entity.displayName = signUp.displayName().value();
         entity.passwordHash = signUp.passwordHash().value();
         entity.language = signUp.language().code();
+        entity.createdAt = signUp.createdAt();
         entity.tokenHash = signUp.tokenHash().value();
         entity.expiresAt = signUp.expiresAt();
         entity.usedAt = signUp.usedAt().orElse(null);
@@ -64,6 +68,7 @@ class SignUpVerificationEntity {
                 new DisplayName(displayName),
                 new PasswordHash(passwordHash),
                 Language.ofCode(language),
+                createdAt,
                 new TokenHash(tokenHash),
                 expiresAt,
                 usedAt);

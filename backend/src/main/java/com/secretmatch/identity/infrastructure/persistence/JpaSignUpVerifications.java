@@ -30,7 +30,7 @@ class JpaSignUpVerifications implements SignUpVerifications {
     @Override
     public Optional<SignUpVerification> findNewestWaitingFor(EmailAddress email) {
         return repository
-                .findFirstByEmailAndUsedAtIsNullOrderByExpiresAtDesc(email.value())
+                .findFirstByEmailAndUsedAtIsNullOrderByCreatedAtDesc(email.value())
                 .map(SignUpVerificationEntity::toDomain);
     }
 

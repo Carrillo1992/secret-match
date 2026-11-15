@@ -2,6 +2,7 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  computed,
   DOCUMENT,
   inject,
   input,
@@ -16,6 +17,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { notBlank } from '../../../../shared/forms/validators';
+import { Currency, currencySymbol } from '../../../../shared/format/money';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Button } from '../../../../shared/ui/button/button';
 import { Field } from '../../../../shared/ui/field/field';
@@ -24,7 +26,7 @@ import {
   httpLink,
   LINK_MAX_LENGTH,
   NOTES_MAX_LENGTH,
-  priceInEuros,
+  priceAmount,
   PRIORITY_LABELS,
   TITLE_MAX_LENGTH,
   wishFormValue,
@@ -122,12 +124,12 @@ export type SaveStatus = 'idle' | 'saving' | 'invalid-link' | 'failed';
           <span
             aria-hidden="true"
             class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-ink-muted"
-            >€</span
+            >{{ currencySign() }}</span
           >
         </div>
         @if (showsError(form.controls.price)) {
           <p [id]="id('price-error')" class="text-sm font-semibold text-danger" i18n>
-            Escribe una cantidad en euros, por ejemplo 25 o 25,50.
+            Escribe una cantidad, por ejemplo 25 o 25,50.
           </p>
         }
       </div>
@@ -188,6 +190,8 @@ export type SaveStatus = 'idle' | 'saving' | 'invalid-link' | 'failed';
 export class WishForm implements OnInit {
   /** The Wish being edited; none to add a new one. */
   readonly wish = input<Wish>();
+  /** The Group's, whose sign the price field shows. */
+  readonly currency = input.required<Currency>();
   readonly status = input<SaveStatus>('idle');
   /** Keeps the ids of each open form apart: one may add while another edits. */
   readonly idPrefix = input.required<string>();
@@ -200,11 +204,12 @@ export class WishForm implements OnInit {
   protected readonly notesMax = NOTES_MAX_LENGTH;
   protected readonly priorities: readonly WishPriority[] = ['HIGH', 'MEDIUM', 'LOW'];
   protected readonly priorityLabels = PRIORITY_LABELS;
+  protected readonly currencySign = computed(() => currencySymbol(this.currency()));
   protected readonly submitted = signal(false);
   protected readonly form = inject(NonNullableFormBuilder).group({
     title: ['', [notBlank, Validators.maxLength(TITLE_MAX_LENGTH)]],
     link: ['', [httpLink, Validators.maxLength(LINK_MAX_LENGTH)]],
-    price: ['', priceInEuros],
+    price: ['', priceAmount],
     notes: ['', Validators.maxLength(NOTES_MAX_LENGTH)],
     priority: ['MEDIUM' as WishPriority],
   });

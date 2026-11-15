@@ -7,6 +7,11 @@ import { WishResponse } from '../models/wish-response';
 export interface WishlistResponse {
 
   /**
+   * The Group's currency, which the Wish prices are in.
+   */
+  currency: 'EUR' | 'USD';
+
+  /**
    * What the Member does not want to receive, oldest first.
    */
   dontList: Array<DontListEntryResponse>;

@@ -64,6 +64,7 @@ describe('WishlistPage in English', () => {
       owner: { id: 'u-luke', displayName: 'Luke', you: true },
       wishes: [headphones],
       dontList: [{ id: 'd-1', text: 'Candles' }],
+      currency: 'EUR',
       finished: false,
     });
     await settle();
@@ -91,6 +92,7 @@ describe('WishlistPage in English', () => {
       wishes: [],
       dontList: [{ id: 'd-1', text: 'Candles' }],
       preferences: 'Size M',
+      currency: 'USD',
       finished: false,
     });
     await settle();
@@ -99,5 +101,18 @@ describe('WishlistPage in English', () => {
     expect(page().textContent).toContain("Luke hasn't added any Wishes yet.");
     expect(page().textContent).toContain('Their Preferences');
     expect(spanishLeftIn(page())).toEqual([]);
+  });
+
+  it("reads a dollar Group's prices in English's format", async () => {
+    http.expectOne('http://api.test/api/v1/groups/g-1/members/u-luke/wishlist').flush({
+      owner: { id: 'u-luke', displayName: 'Luke', you: false },
+      wishes: [{ id: 'w-2', title: 'Scarf', price: 25.5, priority: 'MEDIUM' }],
+      dontList: [],
+      currency: 'USD',
+      finished: false,
+    });
+    await settle();
+
+    expect(page().textContent).toContain('About $25.50');
   });
 });

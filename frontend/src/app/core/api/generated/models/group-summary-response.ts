@@ -9,9 +9,14 @@ export interface GroupSummaryResponse {
   admin: boolean;
 
   /**
-   * In euros; absent when the Group has no budget.
+   * In the Group's currency; absent when the Group has no budget.
    */
   budget?: number;
+
+  /**
+   * The money the budget and the Wish prices are in.
+   */
+  currency: 'EUR' | 'USD';
   exchangeDate: string;
 
   /**

@@ -10,7 +10,7 @@ export interface WishRequest {
   notes?: string;
 
   /**
-   * Approximately, in euros, to the cent. Leave it out for none.
+   * Approximately, in the Group's currency, to the cent. Leave it out for none.
    */
   price?: number;
 

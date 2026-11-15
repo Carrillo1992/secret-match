@@ -15,7 +15,7 @@ export interface WishResponse {
   notes?: string;
 
   /**
-   * Approximately, in euros.
+   * Approximately, in the Group's currency.
    */
   price?: number;
   priority: 'HIGH' | 'MEDIUM' | 'LOW';

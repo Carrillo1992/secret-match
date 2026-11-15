@@ -6,3 +6,7 @@ secretmatch:
   mail:
     resend:
       api-key: ${RESEND_API_KEY}
+  rate-limit:
+    # Render: Cloudflare appends the client's address to X-Forwarded-For, then Render's proxy appends
+    # Cloudflare's. The client is second from the right; anything further left was sent by the client.
+    trusted-proxies: 2

@@ -1425,7 +1425,7 @@ describe('GroupPage', () => {
       await settle();
 
       expect(text(card())).not.toContain('Marta');
-      expect(tab('Tu Receiver')).toBeDefined();
+      expect(tab('A quien regalas')).toBeDefined();
 
       const drawButton = (label: string) =>
         [
@@ -1619,7 +1619,7 @@ describe('GroupPage', () => {
       await settle();
       http.expectOne(messagesUrl('m-1')).flush([]);
       await settle();
-      expect(tab('Tu Receiver')).toBeDefined();
+      expect(tab('A quien regalas')).toBeDefined();
       expect(text(card())).not.toContain('Marta');
     });
   });

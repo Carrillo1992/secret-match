@@ -17,7 +17,7 @@ const LOADING: ThreadState = { status: 'loading' };
 
 /**
  * The Group's anonymous Mailbox, right after the Draw card (#36, option B): one tab per Mailbox,
- * "Con <Receiver>" (or "Tu Receiver" until the envelope is opened) and "Chat misterioso" (never a name,
+ * "Con <Receiver>" (or "A quien regalas" until the envelope is opened) and "Chat misterioso" (never a name,
  * initials or avatar), each with a hint of who is on
  * the other side, the conversation and the composer. It renders nothing while there are no
  * Mailboxes, as before the Draw. Once the Group is finished (#38) the conversations stay and the
@@ -168,7 +168,7 @@ export class MailboxCard {
     }
     return this.receiverRevealed() && mailbox.receiverDisplayName
       ? $localize`Con ${mailbox.receiverDisplayName}:name:`
-      : $localize`Tu Receiver`;
+      : $localize`A quien regalas`;
   }
 
   /** Who wrote the other side's Messages, for screen readers: never the Giver's name. */

@@ -59,7 +59,7 @@ describe('MailboxCard', () => {
     fixture.componentRef.setInput('receiverRevealed', false);
     await fixture.whenStable();
 
-    expect(tabs().map(text)).toEqual(['Tu Receiver', 'Chat misterioso']);
+    expect(tabs().map(text)).toEqual(['A quien regalas', 'Chat misterioso']);
     expect(text(element())).not.toContain('Lucía');
   });
 

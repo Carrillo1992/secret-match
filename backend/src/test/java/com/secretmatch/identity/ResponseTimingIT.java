@@ -122,6 +122,7 @@ class ResponseTimingIT {
         signUpLater(threeWaiting, PASSWORD);
 
         assertThat(checksToSignIn("nobody-" + email, "wrong-password")).isEqualTo(1);
+        assertThat(checksToSignIn("not-an-email", "wrong-password")).isEqualTo(1);
         assertThat(checksToSignIn(withPassword, "wrong-password")).isEqualTo(1);
         assertThat(checksToSignIn(withoutPassword, "wrong-password")).isEqualTo(1);
         assertThat(checksToSignIn(threeWaiting, "wrong-password")).isEqualTo(1);

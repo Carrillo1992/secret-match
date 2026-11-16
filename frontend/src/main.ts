@@ -1,5 +1,9 @@
 import { loadTranslations } from '@angular/localize';
+import { catchEarlyInstallOffer } from './app/core/install/app-install';
 import { currentLanguage, Language } from './app/core/language';
+
+// Chromium may offer installing before the app has started (#118): AppInstall picks it up.
+catchEarlyInstallOffer(window);
 
 /**
  * The Language is resolved before anything else runs (ADR 0005): the app module graph is only

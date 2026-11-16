@@ -58,6 +58,10 @@ import { SendStatus } from '../../../mailbox/components/mailbox-composer/mailbox
 import { ThreadState } from '../../../mailbox/components/mailbox-thread/mailbox-thread';
 import { MailboxApi } from '../../../mailbox/data-access/mailbox-api';
 import { HOME } from '../../../../core/route-paths';
+import { AppInstall } from '../../../../core/install/app-install';
+import { InstallGuide } from '../../../../shared/ui/install-guide/install-guide';
+import { InstallBar } from '../../components/install-bar/install-bar';
+import { isJustJoined } from '../../data-access/just-joined';
 
 /** A Group as its Members see it: its details and who is in it. */
 @Component({
@@ -78,6 +82,8 @@ import { HOME } from '../../../../core/route-paths';
     ExclusionsCard,
     MembershipCard,
     GroupDetailsCard,
+    InstallBar,
+    InstallGuide,
     LucideChevronLeft,
     LucideChevronRight,
     LucideCircleCheck,
@@ -265,12 +271,44 @@ export class GroupPage {
   protected readonly threads = signal<Readonly<Record<string, ThreadState>>>({});
   protected readonly sends = signal<Readonly<Record<string, SendStatus>>>({});
 
+  private readonly appInstall = inject(AppInstall);
+  /** Reached right after joining or creating this Group: when the install suggestion first shows. */
+  private readonly justJoined = isJustJoined(this.router.currentNavigation()?.extras.state);
+  protected readonly installSuggestion = this.appInstall.suggestionVisible;
+  protected readonly installGuideOpen = signal(false);
+
   constructor() {
+    effect(() => {
+      const group = this.group();
+      if (group) {
+        untracked(() =>
+          this.appInstall.considerSuggestion({
+            justJoined: this.justJoined,
+            finished: group.finished,
+          }),
+        );
+      }
+    });
     effect(() => {
       const mailboxId = this.openMailbox();
       if (mailboxId && !untracked(this.threads)[mailboxId]) {
         void this.loadMessages(mailboxId);
       }
+    });
+  }
+
+  /** The install bar's "Instalar": the browser's dialog, or the guide on iOS. */
+  protected async install(): Promise<void> {
+    if ((await this.appInstall.install()) === 'guide') {
+      this.installGuideOpen.set(true);
+    }
+  }
+
+  /** "Ahora no": the bar goes, and focus with it would be lost, so it moves to the Group's name. */
+  protected dismissInstall(): void {
+    this.appInstall.dismissSuggestion();
+    afterNextRender(() => this.document.getElementById('group-name')?.focus(), {
+      injector: this.injector,
     });
   }
 

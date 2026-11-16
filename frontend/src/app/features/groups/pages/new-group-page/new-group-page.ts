@@ -22,6 +22,7 @@ import {
 import { notBlank } from '../../../../shared/forms/validators';
 import { earliestExchangeDate } from '../../data-access/group-format';
 import { GroupsApi } from '../../data-access/groups-api';
+import { JUST_JOINED } from '../../data-access/just-joined';
 import { browserTimeZone, timeZoneRegions } from '../../data-access/time-zones';
 import { Alert } from '../../../../shared/ui/alert/alert';
 import { Currency } from '../../../../shared/format/money';
@@ -85,7 +86,7 @@ export class NewGroupPage {
     const outcome = await this.groupsApi.create(groupDetailsInput(this.form.getRawValue()));
     this.sending.set(false);
     if (outcome.status === 'created') {
-      await this.router.navigate(['/groups', outcome.groupId]);
+      await this.router.navigate(['/groups', outcome.groupId], { state: JUST_JOINED });
     } else {
       this.submitError.set(outcome.status);
     }

@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideApiConfiguration } from '../../../core/api/generated/api-configuration';
 import { authInterceptor } from '../../../core/auth/auth.interceptor';
 import { AuthSession } from '../../../core/auth/auth-session';
+import { AppInstall, InstallOutcome, InstallWay } from '../../../core/install/app-install';
 import { PAGE_RELOAD } from '../../../core/preferences/language-preference';
 import { PreferencesMenu } from './preferences-menu';
 
@@ -23,13 +24,20 @@ describe('PreferencesMenu', () => {
   let fixture: ReturnType<typeof TestBed.createComponent<Host>>;
   let reload: ReturnType<typeof vi.fn>;
   let http: HttpTestingController;
+  /** Stands in for AppInstall, whose rules are tested in its own spec. */
+  let appInstall: {
+    way: ReturnType<typeof signal<InstallWay>>;
+    install: ReturnType<typeof vi.fn<() => Promise<InstallOutcome>>>;
+  };
 
   beforeAll(() => import('@lucide/angular'), 90_000);
 
   beforeEach(async () => {
     reload = vi.fn();
+    appInstall = { way: signal<InstallWay>(null), install: vi.fn() };
     TestBed.configureTestingModule({
       providers: [
+        { provide: AppInstall, useValue: appInstall },
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         provideApiConfiguration('http://api.test'),
@@ -238,5 +246,67 @@ describe('PreferencesMenu', () => {
 
     expect(raised?.classList).toContain('bg-surface');
     expect(trigger()?.classList).not.toContain('bg-surface');
+  });
+
+  describe('installing the app', () => {
+    const entry = () =>
+      Array.from(dialog().querySelectorAll('button')).find((button) =>
+        button.textContent?.includes('Instalar la app'),
+      );
+    const guide = () => menu(page).querySelectorAll('dialog')[1] as HTMLDialogElement;
+
+    it('offers nothing where this device cannot install it', async () => {
+      await openMenu();
+
+      expect(entry()).toBeUndefined();
+      expect(dialog().textContent).not.toContain('App');
+    });
+
+    it('offers "Instalar la app" in an "App" group where it can', async () => {
+      appInstall.way.set('prompt');
+      await openMenu();
+
+      expect(entry()).toBeDefined();
+      const group = entry()?.closest('section');
+      expect(
+        document.getElementById(group?.getAttribute('aria-labelledby') ?? '')?.textContent?.trim(),
+      ).toBe('App');
+    });
+
+    it("opens the browser's dialog over the sheet", async () => {
+      appInstall.way.set('prompt');
+      appInstall.install.mockImplementation(async () => {
+        appInstall.way.set(null);
+        return 'installed';
+      });
+      await openMenu();
+
+      entry()?.click();
+      await fixture.whenStable();
+
+      expect(appInstall.install).toHaveBeenCalledOnce();
+      expect(dialog().open).toBe(true);
+      expect(entry()).toBeUndefined();
+      expect(guide().open).toBe(false);
+    });
+
+    it('on iOS swaps the sheet for the guide, and gives focus back to the button after it', async () => {
+      appInstall.way.set('guide');
+      appInstall.install.mockResolvedValue('guide');
+      await openMenu();
+
+      entry()?.click();
+      await fixture.whenStable();
+
+      expect(dialog().open).toBe(false);
+      expect(guide().open).toBe(true);
+      expect(guide().textContent).toContain('Instalar SecretMatch');
+
+      guide().dispatchEvent(new Event('cancel', { cancelable: true }));
+      await fixture.whenStable();
+
+      expect(guide().open).toBe(false);
+      expect(document.activeElement).toBe(trigger());
+    });
   });
 });

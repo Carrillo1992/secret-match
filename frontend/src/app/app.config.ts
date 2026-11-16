@@ -14,6 +14,7 @@ import { authInterceptor } from './core/auth/auth.interceptor';
 import { APP_CONFIG, AppConfig } from './core/config/app-config';
 import { Language } from './core/language';
 import { LanguagePreference } from './core/preferences/language-preference';
+import { AppInstall } from './core/install/app-install';
 import { AppUpdates } from './core/updates/app-updates';
 import { routes } from './app.routes';
 
@@ -35,6 +36,7 @@ export function appConfig(config: AppConfig, language: Language): ApplicationCon
         registrationStrategy: 'registerWhenStable:30000',
       }),
       provideAppInitializer(() => inject(AppUpdates).start()),
+      provideAppInitializer(() => inject(AppInstall).start()),
     ],
   };
 }

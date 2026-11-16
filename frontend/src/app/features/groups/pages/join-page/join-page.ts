@@ -14,6 +14,7 @@ import { SheetLayout } from '../../../../shared/ui/sheet-layout/sheet-layout';
 import { StatusHeader } from '../../../../shared/ui/status-header/status-header';
 import { TextLink } from '../../../../shared/ui/text-link/text-link';
 import { GroupsApi } from '../../data-access/groups-api';
+import { JUST_JOINED } from '../../data-access/just-joined';
 import { HOME, SIGN_IN } from '../../../../core/route-paths';
 
 type JoinStatus = 'joining' | 'signed-out' | 'invalid' | 'finished' | 'drawn' | 'failed';
@@ -61,7 +62,10 @@ export class JoinPage {
     this.status.set('joining');
     const outcome = await this.groupsApi.join(this.code);
     if (outcome.status === 'joined') {
-      await this.router.navigate(['/groups', outcome.groupId], { replaceUrl: true });
+      await this.router.navigate(['/groups', outcome.groupId], {
+        replaceUrl: true,
+        state: JUST_JOINED,
+      });
     } else {
       this.status.set(outcome.status);
     }

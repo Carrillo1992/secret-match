@@ -1,3 +1,4 @@
+import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { HOME_SEGMENT, SIGN_IN_SEGMENT } from './core/route-paths';
@@ -97,5 +98,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/groups/pages/join-page/join-page').then((m) => m.JoinPage),
   },
+  // PROTOTYPE (#118), throwaway: "Instalar la app" variants, dev builds only.
+  ...(isDevMode()
+    ? [
+        {
+          path: 'prototype/install',
+          loadComponent: () =>
+            import('./features/install/prototype/install-prototype-page').then(
+              (m) => m.InstallPrototypePage,
+            ),
+        },
+      ]
+    : []),
   { path: '**', redirectTo: '' },
 ];

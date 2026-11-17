@@ -4,8 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.secretmatch.MutableClock;
 import com.secretmatch.RecordingEmailSender;
+import com.secretmatch.RecordingPushSender;
 import com.secretmatch.TestPostgres;
 import com.secretmatch.notification.application.OutgoingEmail;
+import com.secretmatch.notification.application.PushMessage;
+import com.secretmatch.notification.application.PushUrgency;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,7 +47,7 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 @ActiveProfiles("test")
-@Import({TestPostgres.class, RecordingEmailSender.Config.class, MutableClock.Config.class})
+@Import({TestPostgres.class, RecordingPushSender.Config.class, MutableClock.Config.class})
 @ExtendWith(OutputCaptureExtension.class)
 class MailboxIT {
 
@@ -57,6 +61,9 @@ class MailboxIT {
 
     @Autowired
     RecordingEmailSender mail;
+
+    @Autowired
+    RecordingPushSender pushes;
 
     @Autowired
     MutableClock clock;
@@ -578,6 +585,68 @@ class MailboxIT {
     }
 
     @Test
+    @DisplayName("each Message pushes to the other side's devices only: the same words both ways, no name, no text")
+    void eachMessagePushesTheOtherSide() {
+        Drawn drawn = drawnFamily();
+        Member giver = drawn.family().luis();
+        Member receiver = drawn.receiverOf(giver);
+        URI giversPhone = subscribedDevice(giver.user());
+        URI receiversPhone = subscribedDevice(receiver.user());
+        String mailbox = mailboxIdOf(giver, drawn, "GIVER");
+        pushes.clear();
+
+        send(giver, mailbox, "Mensaje secreto del Giver").expectStatus().isCreated();
+
+        assertThat(pushes.sent()).extracting(RecordingPushSender.Push::endpoint).containsExactly(receiversPhone);
+        PushMessage toReceiver = pushes.sentTo(receiversPhone).getFirst().message();
+        assertThat(toReceiver.title()).isEqualTo("Mensaje nuevo");
+        assertThat(toReceiver.body()).isEqualTo("Tienes un mensaje nuevo en «Navidad»");
+        assertThat(toReceiver.linkPath()).isEqualTo("/groups/" + drawn.family().groupId());
+        assertThat(toReceiver.urgency()).isEqualTo(PushUrgency.HIGH);
+
+        pushes.clear();
+        send(receiver, mailbox, "Mensaje secreto del Receiver").expectStatus().isCreated();
+
+        assertThat(pushes.sent()).extracting(RecordingPushSender.Push::endpoint).containsExactly(giversPhone);
+        PushMessage toGiver = pushes.sentTo(giversPhone).getFirst().message();
+        assertThat(toGiver)
+                .as("only the topic tells the two directions apart")
+                .usingRecursiveComparison()
+                .ignoringFields("topic")
+                .isEqualTo(toReceiver);
+        assertThat(toGiver.topic())
+                .as("each side's devices have a thread of their own")
+                .isNotEqualTo(toReceiver.topic());
+        List<String> forbidden = new ArrayList<>(
+                List.of("Mensaje secreto", giver.id(), giver.user().email(), mailbox));
+        drawn.family().members().forEach(member -> forbidden.add(member.name()));
+        for (PushMessage push : List.of(toReceiver, toGiver)) {
+            for (String content : List.of(push.title(), push.body(), push.linkPath(), push.topic())) {
+                assertThat(content).doesNotContain(forbidden);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("the new-Message push is in the Language of the side it is sent to")
+    void newMessagePushInTheRecipientsLanguage() {
+        Drawn drawn = drawnFamily();
+        Member giver = drawn.family().luis();
+        Member receiver = drawn.receiverOf(giver);
+        speaks(receiver.user(), "en");
+        URI receiversPhone = subscribedDevice(receiver.user());
+        pushes.clear();
+
+        send(giver, mailboxIdOf(giver, drawn, "GIVER"), "¿Qué talla usas?")
+                .expectStatus()
+                .isCreated();
+
+        PushMessage push = pushes.sentTo(receiversPhone).getFirst().message();
+        assertThat(push.title()).isEqualTo("New Message");
+        assertThat(push.body()).isEqualTo("You have a new Message in “Navidad”");
+    }
+
+    @Test
     @DisplayName("a Message that is not stored emails nobody")
     void noEmailWithoutAStoredMessage() {
         Drawn drawn = drawnFamily();
@@ -747,6 +816,28 @@ class MailboxIT {
                 .exchange()
                 .expectStatus()
                 .isOk();
+    }
+
+    /** Turns notifications on for a new device of {@code user}, and returns its endpoint. */
+    private URI subscribedDevice(User user) {
+        String endpoint = "https://fcm.googleapis.com/fcm/send/" + UUID.randomUUID();
+        http.put()
+                .uri("/api/v1/push-subscriptions")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "endpoint",
+                        endpoint,
+                        "keys",
+                        Map.of(
+                                "p256dh",
+                                "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+                                "auth",
+                                "BTBZMqHH6r4Tts7J_aSIgg")))
+                .exchange()
+                .expectStatus()
+                .isNoContent();
+        return URI.create(endpoint);
     }
 
     private RestTestClient.ResponseSpec post(User user, String path, Map<String, ?> body) {

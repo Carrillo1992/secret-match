@@ -53,6 +53,14 @@ public class RecordingEmailSender implements EmailSender {
         return sent().stream().filter(email -> email.to().equals(address)).toList();
     }
 
+    /**
+     * Waits until nothing is queued or running on the email executor, pushes included (they go out on the same
+     * one).
+     */
+    public void awaitIdle() {
+        inFlight.awaitNone();
+    }
+
     /** Waits for the emails still on their way, then forgets every email and any held or failing send. */
     public void clear() {
         releaseSends();

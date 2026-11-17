@@ -44,6 +44,9 @@ services:
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:-bG9jYWwtb25seS1wbGFjZWhvbGRlci1jaGFuZ2UtbWUtMDEyMzQ1Ng==}
       # Optional: without it, "Continuar con Google" is off.
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      # Optional: without them, notifications on devices are off (#119).
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
     ports:
       - "${API_PORT:-8080}:8080"
 

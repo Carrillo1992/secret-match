@@ -4,8 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.secretmatch.MutableClock;
 import com.secretmatch.RecordingEmailSender;
+import com.secretmatch.RecordingPushSender;
 import com.secretmatch.TestPostgres;
 import com.secretmatch.notification.application.OutgoingEmail;
+import com.secretmatch.notification.application.PushMessage;
+import com.secretmatch.notification.application.PushUrgency;
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,7 +41,7 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 @ActiveProfiles("test")
-@Import({TestPostgres.class, RecordingEmailSender.Config.class, MutableClock.Config.class})
+@Import({TestPostgres.class, RecordingPushSender.Config.class, MutableClock.Config.class})
 @ExtendWith(OutputCaptureExtension.class)
 class DrawIT {
 
@@ -50,6 +54,9 @@ class DrawIT {
 
     @Autowired
     RecordingEmailSender mail;
+
+    @Autowired
+    RecordingPushSender pushes;
 
     @Autowired
     MutableClock clock;
@@ -234,6 +241,40 @@ class DrawIT {
                 assertThat(email.subject()).doesNotContain(name);
                 assertThat(email.text()).doesNotContain(name);
                 assertThat(email.html()).doesNotContain(name);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("every Member's devices get one push saying the Draw is made, in their own Language, naming nobody")
+    void everyMemberIsPushedOnceWithoutAnyName() {
+        Family family = family();
+        speaks(family.luis(), "en");
+        Map<User, URI> phones = new HashMap<>();
+        for (User member : family.everyone()) {
+            phones.put(member, subscribedDevice(member));
+        }
+        pushes.clear();
+
+        runDraw(family.carmen(), family).expectStatus().isCreated();
+
+        assertThat(pushes.sent()).hasSize(4);
+        for (User member : family.everyone()) {
+            List<RecordingPushSender.Push> received = pushes.sentTo(phones.get(member));
+            assertThat(received).as("%s's pushes", member.displayName()).hasSize(1);
+            PushMessage push = received.getFirst().message();
+            if (member.equals(family.luis())) {
+                assertThat(push.title()).isEqualTo("You've got your secret person! 🤫");
+                assertThat(push.body()).isEqualTo("Open the envelope in “Navidad”");
+            } else {
+                assertThat(push.title()).isEqualTo("¡Ya tienes a tu persona secreta! 🤫");
+                assertThat(push.body()).isEqualTo("Abre el sobre en «Navidad»");
+            }
+            assertThat(push.linkPath()).isEqualTo("/groups/" + family.groupId());
+            assertThat(push.urgency()).isEqualTo(PushUrgency.NORMAL);
+            for (String name : family.idsByName().keySet()) {
+                assertThat(push.title()).doesNotContain(name);
+                assertThat(push.body()).doesNotContain(name);
             }
         }
     }
@@ -489,6 +530,28 @@ class DrawIT {
 
     private static String drawOf(Family family) {
         return "/api/v1/groups/" + family.groupId() + "/draw";
+    }
+
+    /** Turns notifications on for a new device of {@code user}, and returns its endpoint. */
+    private URI subscribedDevice(User user) {
+        String endpoint = "https://fcm.googleapis.com/fcm/send/" + UUID.randomUUID();
+        http.put()
+                .uri("/api/v1/push-subscriptions")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + user.accessToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "endpoint",
+                        endpoint,
+                        "keys",
+                        Map.of(
+                                "p256dh",
+                                "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4",
+                                "auth",
+                                "BTBZMqHH6r4Tts7J_aSIgg")))
+                .exchange()
+                .expectStatus()
+                .isNoContent();
+        return URI.create(endpoint);
     }
 
     private RestTestClient.ResponseSpec runDraw(User by, Family family) {

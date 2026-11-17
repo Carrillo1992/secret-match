@@ -3,6 +3,7 @@ package com.secretmatch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.secretmatch.notification.application.EmailSender;
+import com.secretmatch.notification.application.PushSender;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,10 @@ import org.springframework.test.web.servlet.client.RestTestClient;
             "MAIL_FROM_ADDRESS=no-reply@secretmatch.test",
             "APP_BASE_URL=http://spa.test",
             "RESEND_API_KEY=re_placeholder",
-            "JWT_SIGNING_KEY=cHJvZC1wcm9maWxlLXRlc3Qta2V5LW5vdC1hLXNlY3JldC0xMjM0"
+            "JWT_SIGNING_KEY=cHJvZC1wcm9maWxlLXRlc3Qta2V5LW5vdC1hLXNlY3JldC0xMjM0",
+            // RFC 8291's example key pair: public, not a secret.
+            "VAPID_PUBLIC_KEY=BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8",
+            "VAPID_PRIVATE_KEY=yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw"
         })
 @AutoConfigureRestTestClient
 @ActiveProfiles("prod")
@@ -37,10 +41,27 @@ class ProdProfileIT {
     @Autowired
     EmailSender emailSender;
 
+    @Autowired
+    PushSender pushSender;
+
     @Test
     @DisplayName("sends email through Resend in prod")
     void sendsEmailThroughResend() {
         assertThat(emailSender.getClass().getSimpleName()).isEqualTo("ResendEmailSender");
+    }
+
+    @Test
+    @DisplayName("pushes through the browsers' push services in prod, and hands out its VAPID public key")
+    void pushesThroughWebPush() {
+        assertThat(pushSender.getClass().getSimpleName()).isEqualTo("WebPushSender");
+        http.get()
+                .uri("/api/v1/push/public-key")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.publicKey")
+                .isEqualTo("BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8");
     }
 
     @ParameterizedTest

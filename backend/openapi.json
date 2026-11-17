@@ -896,6 +896,70 @@
         "tags" : [ "password-reset" ]
       }
     },
+    "/api/v1/push-subscriptions" : {
+      "delete" : {
+        "description" : "Forgets the subscription with this endpoint if it is the signed-in User's; anyone else's stays.",
+        "operationId" : "unsubscribe",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PushUnsubscriptionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Turn notifications off for this device",
+        "tags" : [ "push" ]
+      },
+      "put" : {
+        "description" : "The browser's push subscription as its Push API gives it. Sending one that is already kept, also for another User, makes it the signed-in User's. 422 invalid-push-subscription unless the endpoint is a browser's push service, over HTTPS.",
+        "operationId" : "subscribe",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PushSubscriptionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "summary" : "Turn notifications on for this device",
+        "tags" : [ "push" ]
+      }
+    },
+    "/api/v1/push/public-key" : {
+      "get" : {
+        "description" : "Needs no Session. 404 push-off when this API sends no notifications.",
+        "operationId" : "publicKey",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PushPublicKeyResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "The key browsers subscribe to notifications with",
+        "tags" : [ "push" ]
+      }
+    },
     "/api/v1/sessions" : {
       "post" : {
         "description" : "Sets the refresh token cookie. A wrong email or password gets the same answer.",
@@ -1588,6 +1652,22 @@
         },
         "required" : [ "inviteCode" ]
       },
+      "Keys" : {
+        "type" : "object",
+        "properties" : {
+          "auth" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "p256dh" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "auth", "p256dh" ]
+      },
       "LanguageRequest" : {
         "type" : "object",
         "properties" : {
@@ -1746,6 +1826,40 @@
             "type" : "string"
           }
         }
+      },
+      "PushPublicKeyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "publicKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "publicKey" ]
+      },
+      "PushSubscriptionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "endpoint" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "keys" : {
+            "$ref" : "#/components/schemas/Keys"
+          }
+        },
+        "required" : [ "endpoint", "keys" ]
+      },
+      "PushUnsubscriptionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "endpoint" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "endpoint" ]
       },
       "ReceiverResponse" : {
         "type" : "object",

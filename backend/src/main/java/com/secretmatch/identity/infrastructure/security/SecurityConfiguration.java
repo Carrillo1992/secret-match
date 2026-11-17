@@ -64,6 +64,9 @@ class SecurityConfiguration {
                         .permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/sessions/current")
                         .permitAll()
+                        // The VAPID public key browsers subscribe with is public by design (#119).
+                        .requestMatchers(HttpMethod.GET, "/api/v1/push/public-key")
+                        .permitAll()
                         // Only exposed actuator endpoints exist (application.yml), today just health.
                         .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**")
                         .permitAll()

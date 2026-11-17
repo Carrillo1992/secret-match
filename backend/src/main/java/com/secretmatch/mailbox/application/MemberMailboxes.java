@@ -14,6 +14,7 @@ import com.secretmatch.mailbox.domain.UserId;
 import com.secretmatch.notification.application.EmailRequested;
 import com.secretmatch.notification.application.EmailText;
 import com.secretmatch.notification.application.PushRequested;
+import com.secretmatch.notification.application.PushText;
 import com.secretmatch.notification.application.PushUrgency;
 import com.secretmatch.shared.domain.Language;
 import java.time.Clock;
@@ -203,25 +204,16 @@ public class MemberMailboxes {
                 new EmailRequested(to.email(), to.language(), newMessageText(to.language(), groupName), link));
         // One thread per Mailbox and side, so a burst of Messages shows as one notification on the device.
         String thread = "mailbox:" + mailbox.id().value() + ":" + recipient.value();
-        events.publishEvent(
-                switch (to.language()) {
-                    case SPANISH ->
-                        new PushRequested(
-                                recipient.value(),
-                                "Mensaje nuevo",
-                                "Tienes un mensaje nuevo en «%s»".formatted(groupName),
-                                link,
-                                thread,
-                                PushUrgency.HIGH);
-                    case ENGLISH ->
-                        new PushRequested(
-                                recipient.value(),
-                                "New Message",
-                                "You have a new Message in “%s”".formatted(groupName),
-                                link,
-                                thread,
-                                PushUrgency.HIGH);
-                });
+        events.publishEvent(new PushRequested(
+                recipient.value(), newMessagePush(to.language(), groupName), link, thread, PushUrgency.HIGH));
+    }
+
+    /** The new-Message notification's text: the same for both sides of the Mailbox. */
+    private static PushText newMessagePush(Language language, String groupName) {
+        return switch (language) {
+            case SPANISH -> new PushText("Mensaje nuevo", "Tienes un mensaje nuevo en «%s»".formatted(groupName));
+            case ENGLISH -> new PushText("New Message", "You have a new Message in “%s”".formatted(groupName));
+        };
     }
 
     /** Email 5's text: the same for both sides of the Mailbox. */

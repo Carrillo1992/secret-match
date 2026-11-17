@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { Api } from '../api/generated/api';
@@ -114,7 +113,8 @@ export class AuthSession {
       return true;
     } catch (error) {
       this.token.set(null);
-      if (error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500) {
+      // Only the API saying the session is over; throttling or an outage says nothing about it.
+      if (problemCode(error) === 'session-expired') {
         this.endings.next();
       }
       return false;

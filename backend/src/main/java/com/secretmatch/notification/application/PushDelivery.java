@@ -48,7 +48,7 @@ public class PushDelivery {
                 topicOf(request.thread()),
                 request.urgency(),
                 TIME_TO_LIVE);
-        for (PushSubscription subscription : subscriptions.of(request.recipient())) {
+        for (PushSubscription subscription : subscriptions.ownedBy(request.recipient())) {
             pushTo(subscription, message);
         }
     }
@@ -56,7 +56,7 @@ public class PushDelivery {
     private void pushTo(PushSubscription subscription, PushMessage message) {
         try {
             if (sender.send(subscription, message) == PushSender.Delivery.SUBSCRIPTION_GONE) {
-                subscriptions.remove(subscription.endpoint());
+                subscriptions.removeEndpoint(subscription.endpoint());
             }
         } catch (PushDeliveryException e) {
             log.warn("Push not delivered: {}", e.getMessage());

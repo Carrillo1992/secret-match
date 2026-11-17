@@ -34,6 +34,11 @@ public record PushRequested(
         }
     }
 
+    /** A notification to {@code recipient}, saying {@code text}, which is written in their Language. */
+    public PushRequested(UUID recipient, PushText text, String linkPath, String thread, PushUrgency urgency) {
+        this(recipient, text.title(), text.body(), linkPath, thread, urgency);
+    }
+
     /** Leaves out the text and the thread: they may carry personal data (anonymity invariant). */
     @Override
     public String toString() {

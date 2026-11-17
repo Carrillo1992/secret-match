@@ -15,6 +15,7 @@ import { SwPush } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
 import { Api } from '../api/generated/api';
 import { publicKey, subscribe, unsubscribe } from '../api/generated/functions';
+import { problemCode } from '../api/problem';
 import { AuthSession } from '../auth/auth-session';
 import { AppInstall } from '../install/app-install';
 
@@ -190,8 +191,12 @@ export class DevicePush {
   /** Finds out whether this device can, does or may get notifications, and resyncs a subscription. */
   private async check(): Promise<void> {
     const key = await this.fetchServerKey();
-    if (!key) {
+    if (key === 'push-off') {
       this.state.set('unsupported');
+      return;
+    }
+    if (key === 'unreachable') {
+      // Nothing is known yet: offer nothing now, and ask again on the next sign-in.
       return;
     }
     if (this.platform.permission() === 'denied') {
@@ -211,16 +216,18 @@ export class DevicePush {
     }
   }
 
-  private async fetchServerKey(): Promise<string | null> {
-    if (this.serverKey()) {
-      return this.serverKey();
+  /** The API's VAPID key; `push-off` when it sends no notifications, `unreachable` when it can't say. */
+  private async fetchServerKey(): Promise<string | 'push-off' | 'unreachable'> {
+    const known = this.serverKey();
+    if (known) {
+      return known;
     }
     try {
       const { publicKey: key } = await this.api.invoke(publicKey);
       this.serverKey.set(key);
       return key;
-    } catch {
-      return null;
+    } catch (error) {
+      return problemCode(error) === 'push-off' ? 'push-off' : 'unreachable';
     }
   }
 

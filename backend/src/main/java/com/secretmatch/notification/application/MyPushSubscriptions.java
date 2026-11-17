@@ -1,7 +1,6 @@
 package com.secretmatch.notification.application;
 
 import com.secretmatch.notification.domain.PushSubscription;
-import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -39,7 +38,6 @@ public class MyPushSubscriptions {
     /** No more notifications on this device, if it is {@code user}'s; anyone else's stays as it is. */
     @Transactional
     public void unsubscribe(UUID user, String endpoint) {
-        URI parsed = PushSubscription.parsed(endpoint);
-        subscriptions.remove(user, parsed);
+        subscriptions.removeOwnedBy(user, PushSubscription.parsed(endpoint));
     }
 }

@@ -145,6 +145,26 @@ describe('DevicePush', () => {
       expect(push.available()).toBe(false);
     });
 
+    it('offers nothing while the API cannot be reached, and asks again on the next sign-in', async () => {
+      const push = setUp();
+      TestBed.runInInjectionContext(() => push.start());
+      TestBed.tick();
+      await settle();
+      http.expectOne(PUBLIC_KEY_URL).error(new ProgressEvent('error'), { status: 0 });
+      await settle();
+      expect(push.available()).toBe(false);
+
+      signedIn.set(false);
+      TestBed.tick();
+      signedIn.set(true);
+      TestBed.tick();
+      await settle();
+      http.expectOne(PUBLIC_KEY_URL).flush({ publicKey: KEY });
+      await settle();
+
+      expect(push.available()).toBe(true);
+    });
+
     it('offers nothing signed out', async () => {
       const push = await started();
 

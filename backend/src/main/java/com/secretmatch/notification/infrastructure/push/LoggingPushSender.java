@@ -22,11 +22,8 @@ class LoggingPushSender implements PushSender {
 
     @Override
     public Delivery send(PushSubscription to, PushMessage message) {
-        log.info(
-                "Push not sent, there are no VAPID keys: \"{}\" / \"{}\" opening {}",
-                message.title(),
-                message.body(),
-                message.linkPath());
+        // Like emails, never the text: it names the Group.
+        log.info("Push not sent, there are no VAPID keys: it would have opened {}", message.linkPath());
         return Delivery.ACCEPTED;
     }
 }

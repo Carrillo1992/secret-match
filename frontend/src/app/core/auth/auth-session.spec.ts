@@ -258,8 +258,14 @@ describe('AuthSession', () => {
       expect(ends()).toBe(3);
     });
 
-    it('does not when the API cannot be reached: the session may well still be there', async () => {
+    it('does not when the API cannot be reached or throttles: the session may well still be there', async () => {
       const ends = watchEnds();
+
+      const throttled = session.refresh();
+      http
+        .expectOne(REFRESH_URL)
+        .flush({ status: 429 }, { status: 429, statusText: 'Too Many Requests' });
+      await throttled;
 
       const refresh = session.refresh();
       http.expectOne(REFRESH_URL).error(new ProgressEvent('error'), { status: 0 });

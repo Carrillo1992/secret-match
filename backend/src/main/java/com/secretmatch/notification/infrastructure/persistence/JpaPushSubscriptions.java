@@ -32,19 +32,19 @@ class JpaPushSubscriptions implements PushSubscriptions {
     }
 
     @Override
-    public void remove(UUID user, URI endpoint) {
+    public void removeOwnedBy(UUID user, URI endpoint) {
         subscriptions.removeOwned(user, endpoint.toString());
     }
 
     // Called from delivery, outside any use case's transaction.
     @Override
     @Transactional
-    public void remove(URI endpoint) {
+    public void removeEndpoint(URI endpoint) {
         subscriptions.removeEndpoint(endpoint.toString());
     }
 
     @Override
-    public List<PushSubscription> of(UUID user) {
+    public List<PushSubscription> ownedBy(UUID user) {
         return subscriptions.findOf(user).stream()
                 .map(PushSubscriptionEntity::toSubscription)
                 .toList();

@@ -15,10 +15,11 @@ public interface PushSubscriptions {
     void save(UUID user, PushSubscription subscription);
 
     /** Forgets the subscription with that endpoint if it belongs to {@code user}. */
-    void remove(UUID user, URI endpoint);
+    void removeOwnedBy(UUID user, URI endpoint);
 
     /** Forgets the subscription with that endpoint, whoever it belongs to. */
-    void remove(URI endpoint);
+    void removeEndpoint(URI endpoint);
 
-    List<PushSubscription> of(UUID user);
+    /** Every device {@code user} turned notifications on for. */
+    List<PushSubscription> ownedBy(UUID user);
 }

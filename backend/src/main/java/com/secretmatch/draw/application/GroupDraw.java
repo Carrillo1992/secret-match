@@ -19,6 +19,7 @@ import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import com.secretmatch.notification.application.EmailText;
 import com.secretmatch.notification.application.PushRequested;
+import com.secretmatch.notification.application.PushText;
 import com.secretmatch.notification.application.PushUrgency;
 import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
@@ -227,27 +228,14 @@ public class GroupDraw {
         for (Roster.Member member : roster.members()) {
             EmailRecipient to = users.recipientOf(member.id().value())
                     .orElseThrow(() -> new IllegalStateException("a Member has no User"));
-            String link = "/groups/" + groupId;
-            String thread = "draw:" + groupId;
-            events.publishEvent(
-                    switch (to.language()) {
-                        case SPANISH ->
-                            new PushRequested(
-                                    member.id().value(),
-                                    "¡Ya tienes a tu persona secreta! 🤫",
-                                    "Abre el sobre en «%s»".formatted(groupName),
-                                    link,
-                                    thread,
-                                    PushUrgency.NORMAL);
-                        case ENGLISH ->
-                            new PushRequested(
-                                    member.id().value(),
-                                    "You've got your secret person! 🤫",
-                                    "Open the envelope in “%s”".formatted(groupName),
-                                    link,
-                                    thread,
-                                    PushUrgency.NORMAL);
-                    });
+            PushText text = switch (to.language()) {
+                case SPANISH ->
+                    new PushText("¡Ya tienes a tu persona secreta! 🤫", "Abre el sobre en «%s»".formatted(groupName));
+                case ENGLISH ->
+                    new PushText("You've got your secret person! 🤫", "Open the envelope in “%s”".formatted(groupName));
+            };
+            events.publishEvent(new PushRequested(
+                    member.id().value(), text, "/groups/" + groupId, "draw:" + groupId, PushUrgency.NORMAL));
         }
     }
 

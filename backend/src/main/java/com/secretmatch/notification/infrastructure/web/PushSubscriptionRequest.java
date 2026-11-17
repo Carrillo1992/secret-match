@@ -13,9 +13,9 @@ record PushSubscriptionRequest(
         String endpoint,
 
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED) @NotNull @Valid
-        Keys keys) {
+        PushKeys keys) {
 
-    record Keys(
+    record PushKeys(
             @Schema(requiredMode = Schema.RequiredMode.REQUIRED) @NotBlank @Size(max = 100)
             String p256dh,
 
@@ -24,7 +24,7 @@ record PushSubscriptionRequest(
 
         @Override
         public String toString() {
-            return "Keys[redacted]";
+            return "PushKeys[redacted]";
         }
     }
 

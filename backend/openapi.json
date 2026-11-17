@@ -1652,22 +1652,6 @@
         },
         "required" : [ "inviteCode" ]
       },
-      "Keys" : {
-        "type" : "object",
-        "properties" : {
-          "auth" : {
-            "type" : "string",
-            "maxLength" : 50,
-            "minLength" : 0
-          },
-          "p256dh" : {
-            "type" : "string",
-            "maxLength" : 100,
-            "minLength" : 0
-          }
-        },
-        "required" : [ "auth", "p256dh" ]
-      },
       "LanguageRequest" : {
         "type" : "object",
         "properties" : {
@@ -1827,6 +1811,22 @@
           }
         }
       },
+      "PushKeys" : {
+        "type" : "object",
+        "properties" : {
+          "auth" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "p256dh" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "auth", "p256dh" ]
+      },
       "PushPublicKeyResponse" : {
         "type" : "object",
         "properties" : {
@@ -1845,7 +1845,7 @@
             "minLength" : 0
           },
           "keys" : {
-            "$ref" : "#/components/schemas/Keys"
+            "$ref" : "#/components/schemas/PushKeys"
           }
         },
         "required" : [ "endpoint", "keys" ]

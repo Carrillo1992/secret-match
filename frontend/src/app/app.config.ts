@@ -15,6 +15,7 @@ import { APP_CONFIG, AppConfig } from './core/config/app-config';
 import { Language } from './core/language';
 import { LanguagePreference } from './core/preferences/language-preference';
 import { AppInstall } from './core/install/app-install';
+import { DevicePush } from './core/push/device-push';
 import { AppUpdates } from './core/updates/app-updates';
 import { routes } from './app.routes';
 
@@ -37,6 +38,8 @@ export function appConfig(config: AppConfig, language: Language): ApplicationCon
       }),
       provideAppInitializer(() => inject(AppUpdates).start()),
       provideAppInitializer(() => inject(AppInstall).start()),
+      // Notifications on this device (#119); after AppInstall, which tells an uninstalled iPhone.
+      provideAppInitializer(() => inject(DevicePush).start()),
     ],
   };
 }

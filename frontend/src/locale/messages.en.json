@@ -271,7 +271,6 @@
     "5208991661382466171": "Creating…",
     "158616734160395511": " Your account has been deleted. We've sent you an email to confirm it. ",
     "3719444131931127463": " We can't reach the server ",
-    "6108505942430776627": "Mailbox",
     "7624963997447615504": "We couldn't load the Mailbox. Please try again.",
     "984551775772483118": "Mailboxes",
     "7641917739252152161": "You're their Giver. They'll never know it's you.",
@@ -459,6 +458,19 @@
     "8317982875766066757": "Choose {$START_TAG_STRONG}“Add to Home Screen”{$CLOSE_TAG_STRONG}.",
     "1514840031907710026": "Tap {$START_TAG_STRONG}“Add”{$CLOSE_TAG_STRONG}.",
     "2000040548022770858": " App ",
-    "1108442375961821684": "Install the app"
+    "1108442375961821684": "Install the app",
+    "5675009521667649946": " Mailbox ",
+    "6894283789011739445": "Notifications on this device",
+    "8338531064448791643": "Turning on…",
+    "3439095150059154160": "Turning off…",
+    "7314504983553518008": "New Messages and the Draw.",
+    "4727177244341711313": "Blocked in this browser: turn them on in the site settings.",
+    "7493002985479219892": " We couldn't change the notifications. Please try again. ",
+    "4254439375508934108": "We'll let you know on this device.",
+    "5197934251831868812": "You've blocked notifications in this browser. You can turn them on in the site settings.",
+    "3119731518204278525": "Let me know here when the Draw is done",
+    "1745888348820815146": "Let me know here when someone writes to me",
+    "4898199500186388290": " We couldn't turn on notifications. Please try again. ",
+    "4047995910798912236": "Turn on notifications"
   }
 }

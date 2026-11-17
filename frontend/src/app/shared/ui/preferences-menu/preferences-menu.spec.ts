@@ -7,6 +7,7 @@ import { authInterceptor } from '../../../core/auth/auth.interceptor';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { AppInstall, InstallOutcome, InstallWay } from '../../../core/install/app-install';
 import { PAGE_RELOAD } from '../../../core/preferences/language-preference';
+import { DevicePush, PushOutcome, PushStatus } from '../../../core/push/device-push';
 import { PreferencesMenu } from './preferences-menu';
 
 @Component({
@@ -29,15 +30,29 @@ describe('PreferencesMenu', () => {
     way: ReturnType<typeof signal<InstallWay>>;
     install: ReturnType<typeof vi.fn<() => Promise<InstallOutcome>>>;
   };
+  /** Stands in for DevicePush, whose rules are tested in its own spec. */
+  let devicePush: {
+    available: ReturnType<typeof signal<boolean>>;
+    status: ReturnType<typeof signal<PushStatus>>;
+    turnOn: ReturnType<typeof vi.fn<() => Promise<PushOutcome>>>;
+    turnOff: ReturnType<typeof vi.fn<() => Promise<PushOutcome>>>;
+  };
 
   beforeAll(() => import('@lucide/angular'), 90_000);
 
   beforeEach(async () => {
     reload = vi.fn();
     appInstall = { way: signal<InstallWay>(null), install: vi.fn() };
+    devicePush = {
+      available: signal(false),
+      status: signal<PushStatus>('unsupported'),
+      turnOn: vi.fn(),
+      turnOff: vi.fn(),
+    };
     TestBed.configureTestingModule({
       providers: [
         { provide: AppInstall, useValue: appInstall },
+        { provide: DevicePush, useValue: devicePush },
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         provideApiConfiguration('http://api.test'),
@@ -307,6 +322,94 @@ describe('PreferencesMenu', () => {
 
       expect(guide().open).toBe(false);
       expect(document.activeElement).toBe(trigger());
+    });
+  });
+
+  describe('notifications on this device', () => {
+    const toggle = () => dialog().querySelector<HTMLButtonElement>('[role="switch"]');
+    const offered = async (status: PushStatus) => {
+      devicePush.available.set(true);
+      devicePush.status.set(status);
+      await openMenu();
+    };
+
+    it('offers nothing where notifications are not offered', async () => {
+      await openMenu();
+
+      expect(toggle()).toBeNull();
+    });
+
+    it('is a switch named "Avisos en este dispositivo" in the "App" group', async () => {
+      await offered('off');
+
+      expect(toggle()?.textContent).toContain('Avisos en este dispositivo');
+      expect(toggle()?.getAttribute('aria-checked')).toBe('false');
+      const group = toggle()?.closest('section');
+      expect(
+        document.getElementById(group?.getAttribute('aria-labelledby') ?? '')?.textContent?.trim(),
+      ).toBe('App');
+    });
+
+    it('turns them on, saying so while it works, and then what they are for', async () => {
+      let finish: (outcome: PushOutcome) => void = () => undefined;
+      devicePush.turnOn.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+      await offered('off');
+
+      toggle()?.click();
+      await fixture.whenStable();
+      expect(toggle()?.disabled).toBe(true);
+      expect(toggle()?.textContent).toContain('Activando…');
+
+      devicePush.status.set('on');
+      finish('on');
+      await fixture.whenStable();
+      expect(toggle()?.disabled).toBe(false);
+      expect(toggle()?.getAttribute('aria-checked')).toBe('true');
+      expect(
+        document.getElementById(toggle()?.getAttribute('aria-describedby') ?? '')?.textContent,
+      ).toContain('Mensajes nuevos y el sorteo.');
+    });
+
+    it('turns them off', async () => {
+      devicePush.turnOff.mockImplementation(async () => {
+        devicePush.status.set('off');
+        return 'off';
+      });
+      await offered('on');
+
+      toggle()?.click();
+      await fixture.whenStable();
+
+      expect(devicePush.turnOff).toHaveBeenCalledOnce();
+      expect(toggle()?.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('says so when they cannot be changed', async () => {
+      devicePush.turnOn.mockResolvedValue('failed');
+      await offered('off');
+
+      toggle()?.click();
+      await fixture.whenStable();
+
+      expect(dialog().querySelector('[role="alert"]')?.textContent).toContain(
+        'No hemos podido cambiar los avisos',
+      );
+    });
+
+    it('is held still where the browser blocks them, and says where to undo that', async () => {
+      await offered('denied');
+
+      expect(toggle()?.disabled).toBe(true);
+      expect(
+        document.getElementById(toggle()?.getAttribute('aria-describedby') ?? '')?.textContent,
+      ).toContain('actívalos en los ajustes del sitio');
+    });
+
+    it('shows the "App" group for notifications alone, where the app cannot be installed', async () => {
+      await offered('off');
+
+      expect(dialog().textContent).not.toContain('Instalar la app');
+      expect(toggle()).not.toBeNull();
     });
   });
 });

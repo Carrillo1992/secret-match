@@ -10,6 +10,7 @@ import { Router, RouterLink } from '@angular/router';
 import { LucideLogOut, LucidePlus, LucideUserRound } from '@lucide/angular';
 import { AuthSession } from '../../../../core/auth/auth-session';
 import { CurrentUser } from '../../../../core/auth/current-user';
+import { DevicePush } from '../../../../core/push/device-push';
 import { AppShell } from '../../../../shared/ui/app-shell/app-shell';
 import { Button } from '../../../../shared/ui/button/button';
 import { GiftIllustration } from '../../../../shared/ui/gift-illustration/gift-illustration';
@@ -38,6 +39,7 @@ import { SIGN_IN } from '../../../../core/route-paths';
 })
 export class MyGroupsPage {
   private readonly session = inject(AuthSession);
+  private readonly devicePush = inject(DevicePush);
   private readonly router = inject(Router);
   private readonly groupsApi = inject(GroupsApi);
 
@@ -59,6 +61,8 @@ export class MyGroupsPage {
 
   protected async signOut(): Promise<void> {
     this.signOutFailed.set(false);
+    // While the session still works, so the API forgets this device too (#119).
+    await this.devicePush.forgetThisDevice();
     if (await this.session.signOut()) {
       await this.router.navigateByUrl(SIGN_IN);
     } else {

@@ -1,4 +1,6 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { Observable, Subject } from 'rxjs';
 import { Api } from '../api/generated/api';
 import { refresh, signIn, signInWithGoogle, signOut } from '../api/generated/functions';
 import { isTooManyRequests, problemCode } from '../api/problem';
@@ -20,10 +22,17 @@ export class AuthSession {
   private readonly api = inject(Api);
   private readonly token = signal<string | null>(null);
   private refreshing: Promise<boolean> | null = null;
+  private readonly endings = new Subject<void>();
 
   /** The access token to send as `Authorization: Bearer`, or `null` when signed out. */
   readonly accessToken = this.token.asReadonly();
   readonly isSignedIn = computed(() => this.token() !== null);
+
+  /**
+   * Emits when the session on this device is over: signed out, account deleted, or refused by the
+   * API (expired, revoked). Not when the API cannot be reached, since the session may well survive.
+   */
+  readonly ended: Observable<void> = this.endings.asObservable();
 
   async signIn(email: string, password: string): Promise<SignInOutcome> {
     try {
@@ -80,6 +89,7 @@ export class AuthSession {
       return false;
     }
     this.token.set(null);
+    this.endings.next();
     return true;
   }
 
@@ -89,6 +99,7 @@ export class AuthSession {
    */
   async endDeletedSession(): Promise<void> {
     this.token.set(null);
+    this.endings.next();
     try {
       await this.api.invoke(signOut);
     } catch {
@@ -101,8 +112,11 @@ export class AuthSession {
       const { accessToken } = await this.api.invoke(refresh);
       this.token.set(accessToken);
       return true;
-    } catch {
+    } catch (error) {
       this.token.set(null);
+      if (error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500) {
+        this.endings.next();
+      }
       return false;
     }
   }

@@ -313,7 +313,7 @@
     "1250897724494286010": "No creas cuentas por nadie: cada uno entra con el enlace de invitación.",
     "778069151168497597": "Haz el sorteo",
     "8967232617907831973": "Lanzas el sorteo y cada uno abre su sobre.",
-    "6108505942430776627": "Buzón",
+    "5675009521667649946": " Buzón ",
     "7624963997447615504": "No hemos podido cargar el buzón. Inténtalo de nuevo.",
     "984551775772483118": "Buzones",
     "7641917739252152161": "Le regalas tú. No sabrá quién eres.",
@@ -458,7 +458,19 @@
     "8951812121956160613": "No hemos podido cambiar el idioma. Inténtalo de nuevo.",
     "2000040548022770858": " App ",
     "1108442375961821684": "Instalar la app",
+    "6894283789011739445": "Avisos en este dispositivo",
+    "8338531064448791643": "Activando…",
+    "3439095150059154160": "Desactivando…",
+    "7314504983553518008": "Mensajes nuevos y el sorteo.",
+    "4727177244341711313": "Bloqueados en este navegador: actívalos en los ajustes del sitio.",
+    "7493002985479219892": " No hemos podido cambiar los avisos. Inténtalo de nuevo. ",
     "7141801258089700354": "También se usa en tus emails.",
+    "4254439375508934108": "Te avisaremos en este dispositivo.",
+    "5197934251831868812": "Has bloqueado los avisos en este navegador. Puedes activarlos en los ajustes del sitio.",
+    "3119731518204278525": "Avísame aquí cuando se haga el sorteo",
+    "1745888348820815146": "Avísame aquí cuando te escriban",
+    "4898199500186388290": " No hemos podido activar los avisos. Inténtalo de nuevo. ",
+    "4047995910798912236": "Activar avisos",
     "1199908807070149151": "SecretMatch no se ha podido iniciar. Recarga la página en unos minutos."
   }
 }

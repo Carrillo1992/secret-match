@@ -230,6 +230,49 @@ describe('AuthSession', () => {
     });
   });
 
+  describe('telling when the session has ended', () => {
+    const watchEnds = () => {
+      let ends = 0;
+      session.ended.subscribe(() => ends++);
+      return () => ends;
+    };
+
+    it('says so when the API refuses the refresh, signing out or deleting the account', async () => {
+      const ends = watchEnds();
+
+      const refused = session.refresh();
+      http.expectOne(REFRESH_URL).flush(problem('session-expired'), unprocessable);
+      await refused;
+      expect(ends()).toBe(1);
+
+      await signedIn();
+      const signOut = session.signOut();
+      http.expectOne(SIGN_OUT_URL).flush(null, { status: 204, statusText: 'No Content' });
+      await signOut;
+      expect(ends()).toBe(2);
+
+      await signedIn();
+      const deleted = session.endDeletedSession();
+      http.expectOne(SIGN_OUT_URL).flush(null, { status: 204, statusText: 'No Content' });
+      await deleted;
+      expect(ends()).toBe(3);
+    });
+
+    it('does not when the API cannot be reached: the session may well still be there', async () => {
+      const ends = watchEnds();
+
+      const refresh = session.refresh();
+      http.expectOne(REFRESH_URL).error(new ProgressEvent('error'), { status: 0 });
+      await refresh;
+      await signedIn();
+      const signOut = session.signOut();
+      http.expectOne(SIGN_OUT_URL).error(new ProgressEvent('error'), { status: 0 });
+      await signOut;
+
+      expect(ends()).toBe(0);
+    });
+  });
+
   describe('the guard', () => {
     const guard = (url: string) =>
       TestBed.runInInjectionContext(() => authGuard({} as never, { url } as never)) as Promise<

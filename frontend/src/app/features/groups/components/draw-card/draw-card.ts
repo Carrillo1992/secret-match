@@ -183,6 +183,10 @@ export type CancelStatus = 'idle' | 'cancelling' | 'failed';
               </button>
             }
           }
+          @if (!finished()) {
+            <!-- The page's invitation to be notified when the Draw is made (#119). -->
+            <ng-content select="[cardFooter]" />
+          }
         }
       }
     </section>

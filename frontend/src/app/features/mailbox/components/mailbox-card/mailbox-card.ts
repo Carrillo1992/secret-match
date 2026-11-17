@@ -37,7 +37,14 @@ const LOADING: ThreadState = { status: 'loading' };
           >
             <svg lucideMail [size]="20"></svg>
           </div>
-          <h2 id="group-mailbox" class="font-display text-lg font-semibold" i18n>Buzón</h2>
+          <h2
+            id="group-mailbox"
+            tabindex="-1"
+            class="font-display text-lg font-semibold focus:outline-none"
+            i18n
+          >
+            Buzón
+          </h2>
         </div>
 
         @if (mailboxes().status === 'failed') {
@@ -124,6 +131,8 @@ const LOADING: ThreadState = { status: 'loading' };
             </div>
           }
         }
+        <!-- The page's invitation to be notified of new Messages (#119). -->
+        <ng-content select="[cardFooter]" />
       </section>
     }
   `,

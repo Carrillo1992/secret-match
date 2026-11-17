@@ -162,6 +162,8 @@ describe('MyGroupsPage', () => {
     await open([]);
 
     button('Cerrar sesión')?.click();
+    // Notifications on this device are forgotten first (#119).
+    await settle();
     http.expectOne(SIGN_OUT_URL).flush(null, { status: 204, statusText: 'No Content' });
     await settle();
 
@@ -173,6 +175,8 @@ describe('MyGroupsPage', () => {
     await open([]);
 
     button('Cerrar sesión')?.click();
+    // Notifications on this device are forgotten first (#119).
+    await settle();
     http.expectOne(SIGN_OUT_URL).error(new ProgressEvent('error'), { status: 0 });
     await settle();
 

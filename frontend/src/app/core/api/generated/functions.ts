@@ -63,6 +63,12 @@ export type { SendResetLink$Params as SendResetLink$Params } from './fn/password
 export { sendResetLink as sendResetLink } from './fn/password-reset/send-reset-link';
 export type { ResetPassword$Params as ResetPassword$Params } from './fn/password-reset/reset-password';
 export { resetPassword as resetPassword } from './fn/password-reset/reset-password';
+export type { Subscribe$Params as Subscribe$Params } from './fn/push/subscribe';
+export { subscribe as subscribe } from './fn/push/subscribe';
+export type { Unsubscribe$Params as Unsubscribe$Params } from './fn/push/unsubscribe';
+export { unsubscribe as unsubscribe } from './fn/push/unsubscribe';
+export type { PublicKey$Params as PublicKey$Params } from './fn/push/public-key';
+export { publicKey as publicKey } from './fn/push/public-key';
 export type { SignIn$Params as SignIn$Params } from './fn/sessions/sign-in';
 export { signIn as signIn } from './fn/sessions/sign-in';
 export type { SignOut$Params as SignOut$Params } from './fn/sessions/sign-out';

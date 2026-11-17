@@ -14,3 +14,7 @@ We chose a single generic event, `notification.application.EmailRequested(recipi
 ## Considered Options
 
 - **Business events, text written in `notification`**: modules publish events such as `MemberJoined` or `DrawMade`, and `notification` listens and writes every email. All the text would sit in one module, which makes it easier to review it all at once. But `notification` would depend on every module's events and need lookups (names, emails) through their application APIs. It would also grow one listener per email. Upgrade path, if keeping all the text in one place becomes worth that cost: add a listener in `notification` per event, and keep `EmailRequested` as the internal step.
+
+## Addendum: notifications on devices (#119)
+
+Pushes follow the same rule. The use case publishes `notification.application.PushRequested` next to its `EmailRequested`, with the title and body already written in the recipient's Language; `notification` only encrypts and sends it. We considered one `NotificationRequested` that `notification` would fan out to email and push, but the two channels need different things (an address and a subject, a User id and a short title), and it would have meant rewriting every existing email.

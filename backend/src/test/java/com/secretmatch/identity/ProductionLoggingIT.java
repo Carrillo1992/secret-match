@@ -42,7 +42,11 @@ import tools.jackson.databind.json.JsonMapper;
             "logging.level.root=DEBUG",
             "logging.level.org.springframework=TRACE",
             "logging.level.org.apache=TRACE",
-            "secretmatch.mail.resend.api-key=unused"
+            "secretmatch.mail.resend.api-key=unused",
+            // RFC 8291's example key pair: public, not a secret.
+            "secretmatch.push.vapid.public-key="
+                    + "BP4z9KsN6nGRTbVYI_c7VJSPQTBtkgcy27mlmlMoZIIgDll6e3vCYLocInmYWAmS6TlzAC8wEqKK6PBru3jl7A8",
+            "secretmatch.push.vapid.private-key=yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw"
         })
 @AutoConfigureRestTestClient
 @ActiveProfiles({"test", "prod"})

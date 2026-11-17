@@ -18,6 +18,9 @@ import com.secretmatch.identity.application.UserDeletionRequested;
 import com.secretmatch.identity.application.UserDirectory;
 import com.secretmatch.notification.application.EmailRequested;
 import com.secretmatch.notification.application.EmailText;
+import com.secretmatch.notification.application.PushRequested;
+import com.secretmatch.notification.application.PushText;
+import com.secretmatch.notification.application.PushUrgency;
 import com.secretmatch.shared.domain.Language;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -103,6 +106,7 @@ public class GroupDraw {
             case DrawResult.NoValidDraw noValidDraw -> throw new NoValidDrawException();
         }
         emailDrawMade(groupId, roster);
+        pushDrawMade(groupId, roster);
         return receiverOf(groupId, roster, new MemberId(admin));
     }
 
@@ -213,6 +217,26 @@ public class GroupDraw {
 
                         Go in to find out who you are giving a gift to.""".formatted(groupName));
         });
+    }
+
+    /**
+     * The push twin of email 3, to every Member's devices (#119): the same words for everyone, naming nobody. A
+     * newer one for the same Group replaces it on the device.
+     */
+    private void pushDrawMade(UUID groupId, Roster roster) {
+        String groupName = roster.groupName();
+        for (Roster.Member member : roster.members()) {
+            EmailRecipient to = users.recipientOf(member.id().value())
+                    .orElseThrow(() -> new IllegalStateException("a Member has no User"));
+            PushText text = switch (to.language()) {
+                case SPANISH ->
+                    new PushText("¡Ya tienes a tu persona secreta! 🤫", "Abre el sobre en «%s»".formatted(groupName));
+                case ENGLISH ->
+                    new PushText("You've got your secret person! 🤫", "Open the envelope in “%s”".formatted(groupName));
+            };
+            events.publishEvent(new PushRequested(
+                    member.id().value(), text, "/groups/" + groupId, "draw:" + groupId, PushUrgency.NORMAL));
+        }
     }
 
     /**

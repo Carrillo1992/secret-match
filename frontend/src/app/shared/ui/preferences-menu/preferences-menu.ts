@@ -2,6 +2,7 @@ import {
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
+  computed,
   ElementRef,
   inject,
   input,
@@ -9,8 +10,12 @@ import {
   viewChild,
 } from '@angular/core';
 import {
+  LucideBell,
+  LucideBellOff,
+  LucideBellRing,
   LucideChevronRight,
   LucideLanguages,
+  LucideLoaderCircle,
   LucideMonitor,
   LucideMoon,
   LucideSettings2,
@@ -19,6 +24,7 @@ import {
 } from '@lucide/angular';
 import { AuthSession } from '../../../core/auth/auth-session';
 import { AppInstall } from '../../../core/install/app-install';
+import { DevicePush } from '../../../core/push/device-push';
 import { Language } from '../../../core/language';
 import { LanguagePreference } from '../../../core/preferences/language-preference';
 import { Theme, ThemePreference } from '../../../core/preferences/theme-preference';
@@ -41,6 +47,9 @@ const LANGUAGES: readonly ChoiceOption<Language>[] = [
   { value: 'en', label: 'English', icon: LucideLanguages, lang: 'en' },
 ];
 
+const APP_ROW =
+  'flex min-h-13 w-full items-center gap-3 px-4 text-left font-semibold text-ink transition-colors duration-200 hover:bg-subtle focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-primary disabled:cursor-default disabled:hover:bg-canvas';
+
 /**
  * The Preferences menu (#86): an icon button at the end of a header that opens a bottom sheet with
  * the Theme and the Language. A Theme applies as soon as it is chosen. `raised` puts the button on
@@ -50,7 +59,10 @@ const LANGUAGES: readonly ChoiceOption<Language>[] = [
  * (#89). Signed in, it is saved to the User first and the menu says emails use it too: the row
  * reads "Guardando…" meanwhile, and a failure keeps the page as it is with an alert (#91). Closing the sheet gives focus back to the button.
  *
- * Where this device can install SecretMatch, an "App" group offers "Instalar la app" (#118).
+ * Where this device can install SecretMatch, an "App" group offers "Instalar la app" (#118). Signed
+ * in, where notifications are offered on this device, the same group has the "Avisos en este
+ * dispositivo" switch (#119): turning it on may open the browser's permission dialog; blocked in the
+ * browser, it is disabled and says where to undo that.
  */
 @Component({
   selector: 'app-preferences-menu',
@@ -62,7 +74,11 @@ const LANGUAGES: readonly ChoiceOption<Language>[] = [
     IconButton,
     InstallGuide,
     KoFiLink,
+    LucideBell,
+    LucideBellOff,
+    LucideBellRing,
     LucideChevronRight,
+    LucideLoaderCircle,
     LucideSettings2,
     LucideSmartphone,
   ],
@@ -103,20 +119,81 @@ const LANGUAGES: readonly ChoiceOption<Language>[] = [
       @if (languagePreference.saveFailed()) {
         <p appAlert class="mt-4" i18n>No hemos podido cambiar el idioma. Inténtalo de nuevo.</p>
       }
-      @if (appInstall.way()) {
+      @if (appInstall.way() || devicePush.available()) {
         <section class="mt-5" aria-labelledby="preferences-app">
           <h3 id="preferences-app" class="font-display text-sm font-semibold text-ink-muted" i18n>
             App
           </h3>
-          <button
-            type="button"
-            class="mt-2 flex min-h-13 w-full items-center gap-3 rounded-field bg-canvas px-4 text-left font-semibold text-ink transition-colors duration-200 hover:bg-subtle focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-primary"
-            (click)="install()"
-          >
-            <svg lucideSmartphone [size]="20" class="shrink-0"></svg>
-            <span class="flex-1" i18n>Instalar la app</span>
-            <svg lucideChevronRight [size]="20" class="shrink-0 text-ink-muted"></svg>
-          </button>
+          <div class="mt-2 divide-y divide-line/30 overflow-hidden rounded-field bg-canvas">
+            @if (appInstall.way()) {
+              <button type="button" [class]="row" (click)="install()">
+                <svg lucideSmartphone [size]="20" class="shrink-0"></svg>
+                <span class="flex-1" i18n>Instalar la app</span>
+                <svg lucideChevronRight [size]="20" class="shrink-0 text-ink-muted"></svg>
+              </button>
+            }
+            @if (devicePush.available()) {
+              <button
+                type="button"
+                role="switch"
+                [attr.aria-checked]="pushOn()"
+                [attr.aria-describedby]="pushHint() ? 'preferences-push-hint' : null"
+                [attr.aria-busy]="pushWorking() ? true : null"
+                [disabled]="pushWorking() !== null || devicePush.status() === 'denied'"
+                [class]="row"
+                (click)="togglePush()"
+              >
+                @if (devicePush.status() === 'denied') {
+                  <svg lucideBellOff [size]="20" class="shrink-0 text-ink-muted"></svg>
+                } @else if (pushOn()) {
+                  <svg lucideBellRing [size]="20" class="shrink-0"></svg>
+                } @else {
+                  <svg lucideBell [size]="20" class="shrink-0"></svg>
+                }
+                <span class="flex-1" [class.text-ink-muted]="devicePush.status() === 'denied'" i18n
+                  >Avisos en este dispositivo</span
+                >
+                @if (pushWorking(); as working) {
+                  <span class="inline-flex shrink-0 items-center gap-1.5 text-sm text-ink-muted">
+                    <svg lucideLoaderCircle [size]="16" class="motion-safe:animate-spin"></svg>
+                    @if (working === 'on') {
+                      <ng-container i18n>Activando…</ng-container>
+                    } @else {
+                      <ng-container i18n>Desactivando…</ng-container>
+                    }
+                  </span>
+                } @else {
+                  <span
+                    aria-hidden="true"
+                    class="inline-flex h-7 w-12 shrink-0 items-center rounded-full border-2 transition-colors duration-200"
+                    [class]="pushOn() ? 'border-primary bg-primary' : 'border-line bg-subtle'"
+                    [class.opacity-60]="devicePush.status() === 'denied'"
+                  >
+                    <span
+                      class="size-5 rounded-full bg-surface shadow-card transition-transform duration-200"
+                      [class]="pushOn() ? 'translate-x-5.5' : 'translate-x-0.5'"
+                    ></span>
+                  </span>
+                }
+              </button>
+            }
+          </div>
+          @if (pushHint(); as hint) {
+            <p id="preferences-push-hint" class="mt-2 text-sm text-ink-muted">
+              @if (hint === 'on') {
+                <ng-container i18n>Mensajes nuevos y el sorteo.</ng-container>
+              } @else {
+                <ng-container i18n
+                  >Bloqueados en este navegador: actívalos en los ajustes del sitio.</ng-container
+                >
+              }
+            </p>
+          }
+          @if (pushFailed()) {
+            <p appAlert class="mt-4" i18n>
+              No hemos podido cambiar los avisos. Inténtalo de nuevo.
+            </p>
+          }
         </section>
       }
       <p class="mt-5">
@@ -137,6 +214,18 @@ export class PreferencesMenu {
   protected readonly themes = THEMES;
   protected readonly languages = LANGUAGES;
   protected readonly appInstall = inject(AppInstall);
+  protected readonly devicePush = inject(DevicePush);
+  /** A row in the "App" well, in the choice-row look. */
+  protected readonly row = APP_ROW;
+  /** Which way the notifications switch is being turned, while it is. */
+  protected readonly pushWorking = signal<'on' | 'off' | null>(null);
+  protected readonly pushFailed = signal(false);
+  /** During a change the switch keeps showing the previous value. */
+  protected readonly pushOn = computed(() => this.devicePush.status() === 'on');
+  protected readonly pushHint = computed(() => {
+    const status = this.devicePush.status();
+    return status === 'on' || status === 'denied' ? status : null;
+  });
   protected readonly open = signal(false);
   protected readonly guideOpen = signal(false);
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
@@ -155,6 +244,16 @@ export class PreferencesMenu {
       this.open.set(false);
       this.guideOpen.set(true);
     }
+  }
+
+  /** "Avisos en este dispositivo": turns notifications on or off for this device. */
+  protected async togglePush(): Promise<void> {
+    const turningOn = !this.pushOn();
+    this.pushFailed.set(false);
+    this.pushWorking.set(turningOn ? 'on' : 'off');
+    const outcome = turningOn ? await this.devicePush.turnOn() : await this.devicePush.turnOff();
+    this.pushWorking.set(null);
+    this.pushFailed.set(outcome === 'failed');
   }
 
   /** The row that opened the guide is gone with its sheet, so focus goes back to the button. */

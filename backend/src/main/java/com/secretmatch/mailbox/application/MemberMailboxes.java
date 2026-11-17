@@ -13,6 +13,9 @@ import com.secretmatch.mailbox.domain.MessageText;
 import com.secretmatch.mailbox.domain.UserId;
 import com.secretmatch.notification.application.EmailRequested;
 import com.secretmatch.notification.application.EmailText;
+import com.secretmatch.notification.application.PushRequested;
+import com.secretmatch.notification.application.PushText;
+import com.secretmatch.notification.application.PushUrgency;
 import com.secretmatch.shared.domain.Language;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -126,7 +129,7 @@ public class MemberMailboxes {
         }
         MemberId me = new MemberId(author);
         StoredMessage sent = mailboxes.addMessage(mailbox.id(), me, new MessageText(text), clock.instant());
-        mailbox.otherSideOf(me).ifPresent(recipient -> emailNewMessage(mailbox, me, recipient));
+        mailbox.otherSideOf(me).ifPresent(recipient -> notifyNewMessage(mailbox, me, recipient));
         return seenBy(me, sent, timeZoneOf(mailbox, me));
     }
 
@@ -184,11 +187,11 @@ public class MemberMailboxes {
     }
 
     /**
-     * Catalogue email 5: "you have a new Message", to the other side of the Mailbox. One template whichever side
-     * wrote it, with neither the Message nor anything about its author, so it never tells a Receiver who their
-     * Giver is (ADR 0001). Sent only once the Message is committed.
+     * Catalogue email 5: "you have a new Message", to the other side of the Mailbox, and the same as a push to their
+     * devices (#119). One text whichever side wrote it, with neither the Message nor anything about its author, so
+     * it never tells a Receiver who their Giver is (ADR 0001). Sent only once the Message is committed.
      */
-    private void emailNewMessage(Mailbox mailbox, MemberId author, MemberId recipient) {
+    private void notifyNewMessage(Mailbox mailbox, MemberId author, MemberId recipient) {
         UUID groupId = mailbox.groupId().value();
         String groupName = groupMembers
                 .nameOf(groupId, author.value())
@@ -196,8 +199,21 @@ public class MemberMailboxes {
         MemberEmails.Recipient to = memberEmails
                 .recipientOf(recipient)
                 .orElseThrow(() -> new IllegalStateException("a Mailbox side has no User"));
-        events.publishEvent(new EmailRequested(
-                to.email(), to.language(), newMessageText(to.language(), groupName), "/groups/" + groupId));
+        String link = "/groups/" + groupId;
+        events.publishEvent(
+                new EmailRequested(to.email(), to.language(), newMessageText(to.language(), groupName), link));
+        // One thread per Mailbox and side, so a burst of Messages shows as one notification on the device.
+        String thread = "mailbox:" + mailbox.id().value() + ":" + recipient.value();
+        events.publishEvent(new PushRequested(
+                recipient.value(), newMessagePush(to.language(), groupName), link, thread, PushUrgency.HIGH));
+    }
+
+    /** The new-Message notification's text: the same for both sides of the Mailbox. */
+    private static PushText newMessagePush(Language language, String groupName) {
+        return switch (language) {
+            case SPANISH -> new PushText("Mensaje nuevo", "Tienes un mensaje nuevo en «%s»".formatted(groupName));
+            case ENGLISH -> new PushText("New Message", "You have a new Message in “%s”".formatted(groupName));
+        };
     }
 
     /** Email 5's text: the same for both sides of the Mailbox. */

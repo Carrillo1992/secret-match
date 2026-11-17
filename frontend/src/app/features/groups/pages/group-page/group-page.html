@@ -38,7 +38,18 @@
       (retry)="reloadDraw()"
       [alreadyOpened]="envelopeAlreadyOpened()"
       (envelopeOpened)="rememberEnvelope()"
-    />
+    >
+      @if (pushInvite(); as invite) {
+        <app-push-invite
+          cardFooter
+          about="draw"
+          [state]="invite"
+          returnFocusTo="group-draw"
+          (turnOn)="turnOnPush()"
+          (dismiss)="dismissPush()"
+        />
+      }
+    </app-draw-card>
 
     @if (mailboxes(); as mailboxes) {
       @if (mailboxes.status === 'failed' || mailboxes.mailboxes.length > 0) {
@@ -54,7 +65,18 @@
           (retryMailboxes)="reloadMailboxes()"
           (retryMessages)="loadMessages($event)"
           (send)="sendMessage($event)"
-        />
+        >
+          @if (!group.finished && pushInvite(); as invite) {
+            <app-push-invite
+              cardFooter
+              about="mailbox"
+              [state]="invite"
+              returnFocusTo="group-mailbox"
+              (turnOn)="turnOnPush()"
+              (dismiss)="dismissPush()"
+            />
+          }
+        </app-mailbox-card>
       }
     }
 

@@ -135,3 +135,13 @@ _Avoid_: Chat, inbox, thread
 **Message**:
 One text entry in a Mailbox, written by either the Giver or the Receiver.
 _Avoid_: Question, note, comment
+
+### Notifications
+
+**Device Notification**:
+A short notice SecretMatch shows on a User's device, on its lock screen or notification centre, as any app's would, sent alongside the email for two moments: the Draw being made and a new Message in one of their Mailboxes. Anyone near the device can read it, so it never carries a Message's text or anything that tells a Receiver who their Giver is. In Spanish, "avisos".
+_Avoid_: Alert, push (in product copy), email notification
+
+**Push Subscription**:
+What lets SecretMatch send Device Notifications to one browser on one device: turned on per device by a signed-in User, and belonging to whoever turned it on last there. Signing out on that device ends it.
+_Avoid_: Device token, registration

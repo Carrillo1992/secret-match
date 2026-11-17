@@ -59,11 +59,21 @@ import { ThreadState } from '../../../mailbox/components/mailbox-thread/mailbox-
 import { MailboxApi } from '../../../mailbox/data-access/mailbox-api';
 import { HOME } from '../../../../core/route-paths';
 import { AppInstall } from '../../../../core/install/app-install';
+import { DevicePush, PushOutcome } from '../../../../core/push/device-push';
+import { PushInvite, PushInviteState } from '../../../../shared/ui/push-invite/push-invite';
 import { InstallGuide } from '../../../../shared/ui/install-guide/install-guide';
 import { InstallBar } from '../../components/install-bar/install-bar';
 import { isJustJoined } from '../../data-access/just-joined';
 
 /** A Group as its Members see it: its details and who is in it. */
+/** What the invitation shows after an attempt; `null` offers it again (dialog closed unanswered). */
+const INVITE_AFTER: Record<PushOutcome, PushInviteState | null> = {
+  on: 'done',
+  denied: 'denied',
+  failed: 'failed',
+  off: null,
+};
+
 @Component({
   selector: 'app-group-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,6 +94,7 @@ import { isJustJoined } from '../../data-access/just-joined';
     GroupDetailsCard,
     InstallBar,
     InstallGuide,
+    PushInvite,
     LucideChevronLeft,
     LucideChevronRight,
     LucideCircleCheck,
@@ -272,6 +283,9 @@ export class GroupPage {
   protected readonly sends = signal<Readonly<Record<string, SendStatus>>>({});
 
   private readonly appInstall = inject(AppInstall);
+  private readonly devicePush = inject(DevicePush);
+  /** How turning notifications on from the invitation went, while on this page. */
+  private readonly pushOutcome = signal<PushInviteState | null>(null);
   /** Reached right after joining or creating this Group: when the install suggestion first shows. */
   private readonly justJoined = isJustJoined(this.router.currentNavigation()?.extras.state);
   protected readonly installSuggestion = this.appInstall.suggestionVisible;
@@ -305,6 +319,25 @@ export class GroupPage {
   }
 
   /** "Ahora no": the bar goes, and focus with it would be lost, so it moves to the Group's name. */
+  /**
+   * The invitation to notifications on this device (#119): offered by `DevicePush`, then showing
+   * how turning them on went until the page is left.
+   */
+  protected readonly pushInvite = computed<PushInviteState | null>(
+    () => this.pushOutcome() ?? (this.devicePush.inviteVisible() ? 'visible' : null),
+  );
+
+  protected async turnOnPush(): Promise<void> {
+    this.pushOutcome.set('working');
+    const outcome: PushOutcome = await this.devicePush.turnOn();
+    this.pushOutcome.set(INVITE_AFTER[outcome]);
+  }
+
+  protected dismissPush(): void {
+    this.pushOutcome.set(null);
+    this.devicePush.dismissInvite();
+  }
+
   protected dismissInstall(): void {
     this.appInstall.dismissSuggestion();
     afterNextRender(() => this.document.getElementById('group-name')?.focus(), {

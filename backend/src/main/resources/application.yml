@@ -56,6 +56,16 @@ secretmatch:
     from-address: ${MAIL_FROM_ADDRESS}
     # The SPA's public address; email links point into it.
     app-base-url: ${APP_BASE_URL}
+  # Notifications on devices through the browsers' Web Push (#119). The VAPID key pair identifies the API to the
+  # push services: the public key is an uncompressed P-256 point and the private key its 32-byte scalar, both
+  # base64url (e.g. `npx web-push generate-vapid-keys`). Required in prod; elsewhere, left empty, pushing is off
+  # and a push is only logged. Changing the pair makes every browser subscribe again.
+  push:
+    vapid:
+      public-key: ${VAPID_PUBLIC_KEY:}
+      private-key: ${VAPID_PRIVATE_KEY:}
+      # A contact for the push services' operators: a mailto: or https: URL.
+      subject: ${VAPID_SUBJECT:mailto:no-reply@secret-match.app}
   # Throttling of the signed-out identity endpoints (ADR 0006). Each limit is `capacity` requests per
   # `period`, all back once the period has passed. Override any of them with an environment variable,
   # e.g. SECRETMATCH_RATELIMIT_DAILYEMAILCAP=80 or SECRETMATCH_RATELIMIT_PERIP_SIGNIN_CAPACITY=20.

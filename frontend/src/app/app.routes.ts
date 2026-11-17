@@ -1,3 +1,4 @@
+import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { HOME_SEGMENT, SIGN_IN_SEGMENT } from './core/route-paths';
@@ -97,5 +98,18 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/groups/pages/join-page/join-page').then((m) => m.JoinPage),
   },
+  // PROTOTYPE (#119), throwaway and dev builds only: the push notifications invitation and toggle.
+  ...(isDevMode()
+    ? [
+        {
+          path: 'prototype/push',
+          title: 'Prototipo · Avisos',
+          loadComponent: () =>
+            import('./features/push/prototype/push-prototype-page').then(
+              (m) => m.PushPrototypePage,
+            ),
+        },
+      ]
+    : []),
   { path: '**', redirectTo: '' },
 ];

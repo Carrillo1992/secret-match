@@ -7,6 +7,24 @@ import { provideApiConfiguration } from './core/api/generated/api-configuration'
 import { App } from './app';
 import { routes } from './app.routes';
 
+const REFRESH_URL = 'http://api.test/api/v1/sessions/refresh';
+const ACCESS_TOKEN = { accessToken: 'access-1', expiresAt: '2026-12-01T10:15:00Z' };
+const SESSION_EXPIRED = [
+  { type: 'urn:secretmatch:problem:session-expired', status: 422 },
+  { status: 422, statusText: 'Unprocessable Content' },
+] as const;
+
+/** Lets the router reach the request a guard is awaiting. */
+const settle = () => new Promise((resolve) => setTimeout(resolve));
+
+/** Answers the refresh the landing asks for when the app opens: no session to bring back. */
+async function noSessionToRestore(): Promise<void> {
+  await settle();
+  TestBed.inject(HttpTestingController)
+    .expectOne(REFRESH_URL)
+    .flush(...SESSION_EXPIRED);
+}
+
 describe('App routes', () => {
   // The routed pages are lazy-loaded inside each test, and @lucide/angular ships every icon in
   // one large module that takes several seconds to load the first time under the test runner.
@@ -32,7 +50,9 @@ describe('App routes', () => {
 
   it('renders the routed page inside the app shell', async () => {
     const fixture = TestBed.createComponent(App);
-    await TestBed.inject(Router).navigateByUrl('/');
+    const navigation = TestBed.inject(Router).navigateByUrl('/');
+    await noSessionToRestore();
+    await navigation;
     TestBed.tick();
 
     expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent).toContain(
@@ -86,7 +106,48 @@ describe('App routes', () => {
 
   it('sends unknown URLs to the landing page', async () => {
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/no-such-page');
+    const navigation = harness.navigateByUrl('/no-such-page');
+    await noSessionToRestore();
+    await navigation;
+
+    expect(TestBed.inject(Router).url).toBe('/');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain(
+      'Tu amigo invisible',
+    );
+  });
+
+  // #124: the installed app opens at its start_url, `/`.
+  it('opens /home when the app starts at / and the session comes back', async () => {
+    const harness = await RouterTestingHarness.create();
+    const navigation = harness.navigateByUrl('/');
+    await settle();
+    TestBed.inject(HttpTestingController).expectOne(REFRESH_URL).flush(ACCESS_TOKEN);
+    await navigation;
+
+    expect(TestBed.inject(Router).url).toBe('/home');
+  });
+
+  it('opens /home from / without asking the API again when already signed in', async () => {
+    const harness = await RouterTestingHarness.create();
+    const toHome = harness.navigateByUrl('/home');
+    await settle();
+    TestBed.inject(HttpTestingController).expectOne(REFRESH_URL).flush(ACCESS_TOKEN);
+    await toHome;
+
+    await harness.navigateByUrl('/');
+
+    TestBed.inject(HttpTestingController).expectNone(REFRESH_URL);
+    expect(TestBed.inject(Router).url).toBe('/home');
+  });
+
+  it('shows the landing at / when the API cannot be reached', async () => {
+    const harness = await RouterTestingHarness.create();
+    const navigation = harness.navigateByUrl('/');
+    await settle();
+    TestBed.inject(HttpTestingController)
+      .expectOne(REFRESH_URL)
+      .error(new ProgressEvent('error'), { status: 0 });
+    await navigation;
 
     expect(TestBed.inject(Router).url).toBe('/');
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain(

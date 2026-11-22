@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth/auth.guard';
+import { authGuard, signedInToHomeGuard } from './core/auth/auth.guard';
 import { HOME_SEGMENT, SIGN_IN_SEGMENT } from './core/route-paths';
 
 export const routes: Routes = [
   {
     path: '',
     title: $localize`SecretMatch · Tu amigo invisible, sin papelitos`,
+    canActivate: [signedInToHomeGuard],
     loadComponent: () =>
       import('./features/landing/pages/landing-page/landing-page').then((m) => m.LandingPage),
   },
